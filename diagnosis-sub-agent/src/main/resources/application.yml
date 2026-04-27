@@ -1,10 +1,5 @@
 server:
   port: 10006
-  servlet:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
 
 agentscope:
   model:
@@ -51,6 +46,8 @@ agentscope:
 spring:
   application:
     name: diagnosis-sub-agent
+  main:
+    web-application-type: reactive
 
 agent:
   prompts:

@@ -1,10 +1,5 @@
 server:
   port: 10008
-  servlet:
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
 
 agentscope:
   model:
@@ -27,6 +22,8 @@ agentscope:
 spring:
   application:
     name: supervisor-agent
+  main:
+    web-application-type: reactive
   web:
     resources:
       static-locations: ${SPRING_WEB_RESOURCES_STATIC_LOCATIONS:classpath:/static/}
@@ -53,7 +50,7 @@ management:
 
 agent:
   a2a:
-    child-agent-timeout: ${A2A_CHILD_AGENT_TIMEOUT:PT10M}
+    child-agent-timeout: ${A2A_CHILD_AGENT_TIMEOUT:PT15M}
     child-agent-retry-attempts: ${A2A_CHILD_AGENT_RETRY_ATTEMPTS:3}
     child-agent-retry-backoff: ${A2A_CHILD_AGENT_RETRY_BACKOFF:PT0.2S}
   supervisor:

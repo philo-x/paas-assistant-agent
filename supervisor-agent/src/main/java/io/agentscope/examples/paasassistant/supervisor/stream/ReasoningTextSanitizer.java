@@ -52,14 +52,12 @@ final class ReasoningTextSanitizer {
             return "";
         }
 
-        String summarized = looksLikeFormattedAnswer(normalized)
-                ? summarizeFormattedAnswer(normalized)
-                : normalized.replaceAll("[ \\t]+", " ").replaceAll("\\n{3,}", "\n\n").trim();
+        String summarized = normalized;
 
         if (summarized.length() <= DEFAULT_MAX_LENGTH) {
             return summarized;
         }
-        return summarized.substring(0, DEFAULT_MAX_LENGTH - 3).trim() + "...";
+        return summarized.substring(0, DEFAULT_MAX_LENGTH - 3) + "...";
     }
 
     private static boolean looksLikeFormattedAnswer(String text) {

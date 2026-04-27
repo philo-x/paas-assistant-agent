@@ -31,8 +31,8 @@ class ToolNarratorTest {
                         """);
 
         assertThat(summarized).contains("Kubernetes CRD 详解");
-        assertThat(summarized).doesNotContain("| --- | --- |");
-        assertThat(summarized.length()).isLessThanOrEqualTo(240);
+        assertThat(summarized).contains("| --- | --- |");
+        assertThat(summarized.length()).isLessThanOrEqualTo(1000);
     }
 
     @Test

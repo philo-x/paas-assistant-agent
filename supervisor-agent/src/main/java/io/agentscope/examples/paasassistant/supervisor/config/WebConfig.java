@@ -22,9 +22,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import org.springframework.web.servlet.resource.PathResourceResolver;
+import org.springframework.web.reactive.config.ResourceHandlerRegistry;
+import org.springframework.web.reactive.config.WebFluxConfigurer;
+import org.springframework.web.reactive.resource.PathResourceResolver;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 /**
  * Web configuration for serving static frontend files.
@@ -34,7 +36,7 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
  * - Local dev: serves from classpath:/static/
  */
 @Configuration
-public class WebConfig implements WebMvcConfigurer {
+public class WebConfig implements WebFluxConfigurer {
 
     @Value("${spring.web.resources.static-locations:classpath:/static/}")
     private String staticLocations;
@@ -54,20 +56,14 @@ public class WebConfig implements WebMvcConfigurer {
     private class SpaPathResourceResolver extends PathResourceResolver {
 
         @Override
-        protected Resource getResource(String resourcePath, Resource location) throws IOException {
-            Resource resource = location.createRelative(resourcePath);
-
-            // If resource exists and is readable, return it
-            if (resource.exists() && resource.isReadable()) {
-                return resource;
-            }
-
-            // For SPA: return index.html for non-API, non-asset routes
-            if (shouldReturnIndexHtml(resourcePath)) {
-                return getIndexHtml(location);
-            }
-
-            return null;
+        protected Mono<Resource> getResource(String resourcePath, Resource location) {
+            return super.getResource(resourcePath, location)
+                    .switchIfEmpty(Mono.defer(() -> {
+                        if (shouldReturnIndexHtml(resourcePath)) {
+                            return getIndexHtml(location);
+                        }
+                        return Mono.empty();
+                    }));
         }
 
         private boolean shouldReturnIndexHtml(String resourcePath) {
@@ -82,25 +78,29 @@ public class WebConfig implements WebMvcConfigurer {
             return true;
         }
 
-        private Resource getIndexHtml(Resource location) throws IOException {
-            Resource indexHtml = location.createRelative("index.html");
-            if (indexHtml.exists() && indexHtml.isReadable()) {
-                return indexHtml;
+        private Mono<Resource> getIndexHtml(Resource location) {
+            try {
+                Resource indexHtml = location.createRelative("index.html");
+                if (indexHtml.exists() && indexHtml.isReadable()) {
+                    return Mono.just(indexHtml);
+                }
+
+                // Fallback: try classpath (local dev with repackaged JAR)
+                Resource classpathIndex = new ClassPathResource("static/index.html");
+                if (classpathIndex.exists() && classpathIndex.isReadable()) {
+                    return Mono.just(classpathIndex);
+                }
+
+                // Fallback: try file system (Docker)
+                Resource fileIndex = new FileSystemResource("/app/static/index.html");
+                if (fileIndex.exists() && fileIndex.isReadable()) {
+                    return Mono.just(fileIndex);
+                }
+            } catch (IOException e) {
+                return Mono.empty();
             }
 
-            // Fallback: try classpath (local dev with repackaged JAR)
-            Resource classpathIndex = new ClassPathResource("static/index.html");
-            if (classpathIndex.exists() && classpathIndex.isReadable()) {
-                return classpathIndex;
-            }
-
-            // Fallback: try file system (Docker)
-            Resource fileIndex = new FileSystemResource("/app/static/index.html");
-            if (fileIndex.exists() && fileIndex.isReadable()) {
-                return fileIndex;
-            }
-
-            return null;
+            return Mono.empty();
         }
     }
 }
