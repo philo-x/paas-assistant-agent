@@ -31,14 +31,19 @@ import io.agentscope.examples.paasassistant.supervisor.stream.StructuredTraceReg
 import io.agentscope.examples.paasassistant.supervisor.stream.ToolNarrator;
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import reactor.core.Exceptions;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 @Component
 public class A2aAgentTools {
@@ -47,12 +52,11 @@ public class A2aAgentTools {
 
     private static final Pattern TRACE_ID_PATTERN = Pattern.compile("<traceId>(.+?)</traceId>");
 
-    private static final int CHILD_AGENT_MAX_ATTEMPTS = 3;
-
-    private static final long CHILD_AGENT_RETRY_BACKOFF_MILLIS = 200L;
-
     private static final String CHILD_AGENT_UNAVAILABLE_MESSAGE =
             "子 Agent 暂时不可用，A2A 流式响应在读取过程中中断。请稍后重试；如果持续出现，请检查子 Agent 服务状态和网络连接。";
+
+    private static final String CHILD_AGENT_TIMEOUT_MESSAGE =
+            "子 Agent 执行超时，已取消本次 A2A 任务。请稍后重试，或缩小诊断范围后再次发起。";
 
     private static final StreamOptions CHILD_AGENT_STREAM_OPTIONS =
             StreamOptions.builder()
@@ -71,20 +75,32 @@ public class A2aAgentTools {
 
     private final StructuredTraceRegistry traceRegistry;
 
+    private final Duration childAgentTimeout;
+
+    private final int childAgentRetryAttempts;
+
+    private final Duration childAgentRetryBackoff;
+
     public A2aAgentTools(
             @Qualifier("guideAgent") ObjectProvider<A2aAgent> guideAgentProvider,
             @Qualifier("diagnosisAgent") ObjectProvider<A2aAgent> diagnosisAgentProvider,
-            StructuredTraceRegistry traceRegistry) {
+            StructuredTraceRegistry traceRegistry,
+            @Value("${agent.a2a.child-agent-timeout:PT10M}") Duration childAgentTimeout,
+            @Value("${agent.a2a.child-agent-retry-attempts:3}") int childAgentRetryAttempts,
+            @Value("${agent.a2a.child-agent-retry-backoff:PT0.2S}") Duration childAgentRetryBackoff) {
         this.guideAgentProvider = guideAgentProvider;
         this.diagnosisAgentProvider = diagnosisAgentProvider;
         this.traceRegistry = traceRegistry;
+        this.childAgentTimeout = childAgentTimeout;
+        this.childAgentRetryAttempts = Math.max(1, childAgentRetryAttempts);
+        this.childAgentRetryBackoff = childAgentRetryBackoff;
     }
 
     @Tool(
             description =
                     "Route read-only Kubernetes explanation requests to the guide agent."
                             + " Pass the full conversational context.")
-    public String callGuideAgent(
+    public Mono<String> callGuideAgent(
             @ToolParam(name = "context", description = "Complete context") String context,
             @ToolParam(name = "userId", description = "User's UserId") String userId) {
         context = "<userId>" + userId + "</userId>" + context;
@@ -97,7 +113,7 @@ public class A2aAgentTools {
             description =
                     "Route Kubernetes diagnosis, incident and controlled change requests to the diagnosis agent."
                             + " Pass the full conversational context.")
-    public String callDiagnosisAgent(
+    public Mono<String> callDiagnosisAgent(
             @ToolParam(name = "context", description = "Complete context") String context,
             @ToolParam(name = "userId", description = "User's UserId") String userId) {
         context = "<userId>" + userId + "</userId>" + context;
@@ -106,51 +122,98 @@ public class A2aAgentTools {
         return callChildAgent(diagnosisAgent, "diagnosis_agent", msg, context);
     }
 
-    private String callChildAgent(
+    private Mono<String> callChildAgent(
             A2aAgent agent, String childAgentName, Msg msg, String contextWithTags) {
+        String traceId = extractTraceId(contextWithTags);
         StructuredSseEmitter emitter = resolveEmitter(contextWithTags);
 
-        RuntimeException lastFailure = null;
-        for (int attempt = 1; attempt <= CHILD_AGENT_MAX_ATTEMPTS; attempt++) {
-            StringBuilder finalAnswer = new StringBuilder();
-            ChildStreamState state = new ChildStreamState();
-            try {
-                agent.stream(msg, CHILD_AGENT_STREAM_OPTIONS)
-                        .doOnNext(
-                                event ->
-                                        handleChildEvent(
+        Mono<String> childCall =
+                Mono.defer(
+                                () -> {
+                                    StringBuilder finalAnswer = new StringBuilder();
+                                    ChildStreamState state = new ChildStreamState();
+                                    return agent.stream(msg, CHILD_AGENT_STREAM_OPTIONS)
+                                            .doOnNext(
+                                                    event ->
+                                                            handleChildEvent(
+                                                                    childAgentName,
+                                                                    event,
+                                                                    emitter,
+                                                                    finalAnswer,
+                                                                    state))
+                                            .then(Mono.fromSupplier(() -> finalAnswer.toString().trim()));
+                                })
+                        .timeout(childAgentTimeout);
+
+        return applyTransientRetry(childCall, childAgentName, traceId)
+                .onErrorResume(
+                        throwable ->
+                                handleChildAgentFailure(
+                                        throwable, agent, childAgentName, traceId, emitter));
+    }
+
+    private Mono<String> applyTransientRetry(
+            Mono<String> childCall, String childAgentName, String traceId) {
+        if (childAgentRetryAttempts <= 1) {
+            return childCall;
+        }
+        return childCall.retryWhen(
+                Retry.fixedDelay(childAgentRetryAttempts - 1, childAgentRetryBackoff)
+                        .filter(A2aAgentTools::isTransientA2aTransportFailure)
+                        .doBeforeRetry(
+                                signal ->
+                                        log.warn(
+                                                "Transient A2A streaming error from {}. Retrying stream call. failedAttempt={}/{} nextAttempt={} traceId={}",
                                                 childAgentName,
-                                                event,
-                                                emitter,
-                                                finalAnswer,
-                                                state))
-                        .collectList()
-                        .block();
-                return finalAnswer.toString().trim();
-            } catch (RuntimeException ex) {
-                lastFailure = ex;
-                if (!shouldRetryChildAgentCall(ex, attempt)) {
-                    break;
-                }
-                log.warn(
-                        "Transient A2A streaming error from {}. Retrying stream call. attempt={}/{}",
-                        childAgentName,
-                        attempt,
-                        CHILD_AGENT_MAX_ATTEMPTS,
-                        ex);
-                sleepBeforeRetry();
-            }
+                                                signal.totalRetriesInARow() + 1,
+                                                childAgentRetryAttempts,
+                                                signal.totalRetriesInARow() + 2,
+                                                traceId,
+                                                signal.failure())));
+    }
+
+    private Mono<String> handleChildAgentFailure(
+            Throwable throwable,
+            A2aAgent agent,
+            String childAgentName,
+            String traceId,
+            StructuredSseEmitter emitter) {
+        if (isTimeoutFailure(throwable)) {
+            log.error(
+                    "A2A streaming call to {} timed out after {}. traceId={}",
+                    childAgentName,
+                    childAgentTimeout,
+                    traceId,
+                    throwable);
+            interruptChildAgent(agent, childAgentName, traceId);
+            emitChildAgentError(emitter, childAgentName, CHILD_AGENT_TIMEOUT_MESSAGE);
+            return Mono.just(CHILD_AGENT_TIMEOUT_MESSAGE);
         }
 
-        log.error("A2A streaming call to {} failed.", childAgentName, lastFailure);
-        if (emitter != null) {
-            emitter.emitError(CHILD_AGENT_UNAVAILABLE_MESSAGE, childAgentName);
+        if (isInterruptedFailure(throwable)) {
+            log.warn(
+                    "A2A streaming call to {} was interrupted. traceId={}",
+                    childAgentName,
+                    traceId,
+                    throwable);
+            emitChildAgentError(emitter, childAgentName, CHILD_AGENT_UNAVAILABLE_MESSAGE);
+            return Mono.just(CHILD_AGENT_UNAVAILABLE_MESSAGE);
         }
-        return CHILD_AGENT_UNAVAILABLE_MESSAGE;
+
+        log.error("A2A streaming call to {} failed. traceId={}", childAgentName, traceId, throwable);
+        emitChildAgentError(emitter, childAgentName, CHILD_AGENT_UNAVAILABLE_MESSAGE);
+        return Mono.just(CHILD_AGENT_UNAVAILABLE_MESSAGE);
+    }
+
+    private static void emitChildAgentError(
+            StructuredSseEmitter emitter, String childAgentName, String message) {
+        if (emitter != null) {
+            emitter.emitError(message, childAgentName);
+        }
     }
 
     static boolean shouldRetryChildAgentCall(RuntimeException ex, int attempt) {
-        return attempt < CHILD_AGENT_MAX_ATTEMPTS && isTransientA2aTransportFailure(ex);
+        return attempt < 3 && isTransientA2aTransportFailure(ex);
     }
 
     static boolean isTransientA2aTransportFailure(Throwable throwable) {
@@ -170,6 +233,25 @@ public class A2aAgentTools {
         return false;
     }
 
+    static boolean isTimeoutFailure(Throwable throwable) {
+        return findCause(throwable, TimeoutException.class) != null;
+    }
+
+    static boolean isInterruptedFailure(Throwable throwable) {
+        return findCause(throwable, InterruptedException.class) != null;
+    }
+
+    private static <T extends Throwable> T findCause(Throwable throwable, Class<T> type) {
+        Throwable current = Exceptions.unwrap(throwable);
+        while (current != null) {
+            if (type.isInstance(current)) {
+                return type.cast(current);
+            }
+            current = current.getCause();
+        }
+        return null;
+    }
+
     private static boolean hasChunkedTransferMessage(Throwable throwable) {
         String message = throwable.getMessage();
         if (message == null) {
@@ -180,11 +262,15 @@ public class A2aAgentTools {
                 || message.contains("EOF reached while reading");
     }
 
-    private void sleepBeforeRetry() {
+    private void interruptChildAgent(A2aAgent agent, String childAgentName, String traceId) {
         try {
-            TimeUnit.MILLISECONDS.sleep(CHILD_AGENT_RETRY_BACKOFF_MILLIS);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
+            agent.interrupt();
+        } catch (RuntimeException ex) {
+            log.warn(
+                    "Failed to interrupt A2A task for {} after timeout. traceId={}",
+                    childAgentName,
+                    traceId,
+                    ex);
         }
     }
 

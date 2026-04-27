@@ -18,16 +18,18 @@ package io.agentscope.examples.paasassistant.supervisor.agent;
 
 import io.agentscope.core.ReActAgent;
 import io.agentscope.core.agent.Event;
+import io.agentscope.core.hook.Hook;
 import io.agentscope.core.memory.Memory;
 import io.agentscope.core.memory.autocontext.AutoContextMemory;
 import io.agentscope.core.message.Msg;
+import io.agentscope.core.model.ExecutionConfig;
 import io.agentscope.core.model.Model;
-import io.agentscope.core.hook.Hook;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.examples.paasassistant.supervisor.tools.A2aAgentTools;
 import io.agentscope.examples.paasassistant.supervisor.utils.MonitoringHook;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.List;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
@@ -58,17 +60,21 @@ public class SupervisorAgent {
 
     private final SupervisorSessionHistoryStore sessionHistoryStore;
 
+    private final Duration toolTimeout;
+
     public SupervisorAgent(
             Model model,
             A2aAgentTools tools,
             String sysPrompt,
             String dbName,
-            DataSource dataSource) {
+            DataSource dataSource,
+            Duration toolTimeout) {
         this.model = model;
         this.tools = tools;
         this.sysPrompt = sysPrompt;
         this.dbName = dbName;
         this.dataSource = dataSource;
+        this.toolTimeout = toolTimeout;
         this.historySanitizer = new SupervisorConversationHistorySanitizer();
         this.sessionHistoryStore =
                 new SupervisorSessionHistoryStore(model, dataSource, dbName, historySanitizer);
@@ -123,6 +129,11 @@ public class SupervisorAgent {
                         .toolkit(toolkit)
                         .hook(hook)
                         .model(model)
+                        .toolExecutionConfig(
+                                ExecutionConfig.builder()
+                                        .timeout(toolTimeout)
+                                        .maxAttempts(1)
+                                        .build())
                         .memory(memory)
                         .build();
         return agent;

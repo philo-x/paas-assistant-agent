@@ -22,12 +22,10 @@ import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.examples.paasassistant.supervisor.agent.SupervisorAgent;
-import io.agentscope.examples.paasassistant.supervisor.controller.dto.StructuredChatContext;
 import io.agentscope.examples.paasassistant.supervisor.controller.dto.StructuredChatRequest;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredSseEmitter;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredStreamHook;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredTraceRegistry;
-import java.util.Objects;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,13 +106,8 @@ public class SupervisorAgentController {
         String chatId = safe(request.chat_id());
         String userId = safe(request.user_id());
         String userQuery = safe(request.user_query());
-        StructuredChatContext context = normalizeContext(request.context());
 
-        logger.info(
-                "Received structured user query: {}, namespace: {}, mode: {}",
-                userQuery,
-                context.normalizedNamespace(),
-                context.normalizedMode());
+        logger.info("Received structured user query: {}", userQuery);
 
         if (chatId.isBlank() || userId.isBlank() || userQuery.isBlank()) {
             return Flux.just(
@@ -130,7 +123,7 @@ public class SupervisorAgentController {
                     Sinks.many().unicast().onBackpressureBuffer();
             StructuredSseEmitter emitter = new StructuredSseEmitter(sink, objectMapper);
             String traceId = UUID.randomUUID().toString();
-            emitter.emitUser(userQuery, context);
+            emitter.emitUser(userQuery);
             traceRegistry.register(traceId, emitter);
 
             Msg msg =
@@ -140,7 +133,7 @@ public class SupervisorAgentController {
                                     TextBlock.builder()
                                             .text(
                                                     formatStructuredUserInput(
-                                                            userQuery, userId, context, traceId))
+                                                            userQuery, userId, traceId))
                                             .build())
                             .build();
 
@@ -251,33 +244,9 @@ public class SupervisorAgentController {
                         });
     }
 
-    private StructuredChatContext normalizeContext(StructuredChatContext context) {
-        return context == null ? new StructuredChatContext("default", "", "", "auto") : context;
-    }
-
-    private String formatStructuredUserInput(
-            String userQuery, String userId, StructuredChatContext context, String traceId) {
+    private String formatStructuredUserInput(String userQuery, String userId, String traceId) {
         StringBuilder builder = new StringBuilder();
         builder.append("本轮请求是唯一需要路由和处理的用户请求；历史记录只能作为参考，不能替换本轮问题。\n\n");
-        builder.append("用户上下文:\n");
-        builder.append("- namespace: ").append(context.normalizedNamespace()).append('\n');
-        if (!context.normalizedKind().isBlank()) {
-            builder.append("- kind: ").append(context.normalizedKind()).append('\n');
-        }
-        if (!context.normalizedName().isBlank()) {
-            builder.append("- name: ").append(context.normalizedName()).append('\n');
-        }
-        builder.append("- mode: ").append(context.normalizedMode()).append("\n\n");
-
-        if (!Objects.equals("auto", context.normalizedMode())) {
-            builder.append("路由提示: ");
-            if (Objects.equals("diagnose", context.normalizedMode())) {
-                builder.append("优先按照 Kubernetes 诊断与变更编排请求理解并路由。\n\n");
-            } else {
-                builder.append("优先按照 Kubernetes 指南、解释、命令推荐请求理解并路由。\n\n");
-            }
-        }
-
         builder.append("本轮用户问题:\n").append(userQuery).append('\n');
         builder.append("<traceId>").append(traceId).append("</traceId>\n");
         builder.append("<userId>").append(userId).append("</userId>");

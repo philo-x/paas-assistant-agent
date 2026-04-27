@@ -19,6 +19,7 @@ package io.agentscope.examples.paasassistant.supervisor.config;
 import io.agentscope.core.model.Model;
 import io.agentscope.examples.paasassistant.supervisor.agent.SupervisorAgent;
 import io.agentscope.examples.paasassistant.supervisor.tools.A2aAgentTools;
+import java.time.Duration;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +38,18 @@ public class SupervisorAgentConfig {
     @Value("${DB_NAME:paas_agent_assistant}")
     private String dbName;
 
+    @Value("${agent.supervisor.tool-timeout:PT10M30S}")
+    private Duration toolTimeout;
+
     @Bean
     public SupervisorAgent supervisorAgent(Model model, A2aAgentTools tools, DataSource dataSource) {
         logger.info("SupervisorAgent initialized - creates new agent for each request");
         return new SupervisorAgent(
-                model, tools, promptConfig.getSupervisorAgentInstruction(), dbName, dataSource);
+                model,
+                tools,
+                promptConfig.getSupervisorAgentInstruction(),
+                dbName,
+                dataSource,
+                toolTimeout);
     }
 }

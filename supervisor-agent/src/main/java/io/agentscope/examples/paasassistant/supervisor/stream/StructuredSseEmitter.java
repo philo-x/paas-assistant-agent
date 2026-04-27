@@ -18,7 +18,6 @@ package io.agentscope.examples.paasassistant.supervisor.stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.agentscope.examples.paasassistant.supervisor.controller.dto.StructuredChatContext;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -43,10 +42,9 @@ public class StructuredSseEmitter {
         this.objectMapper = objectMapper;
     }
 
-    public void emitUser(String question, StructuredChatContext context) {
+    public void emitUser(String question) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("question", question);
-        payload.put("context", toContextMap(context));
         emit("user", payload);
     }
 
@@ -112,16 +110,5 @@ public class StructuredSseEmitter {
                             .data("{\"message\":\"Failed to serialize SSE payload\",\"stage\":\"serialization\"}")
                             .build());
         }
-    }
-
-    private Map<String, Object> toContextMap(StructuredChatContext context) {
-        StructuredChatContext safeContext =
-                context == null ? new StructuredChatContext("default", "", "", "auto") : context;
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("namespace", safeContext.normalizedNamespace());
-        payload.put("kind", safeContext.normalizedKind());
-        payload.put("name", safeContext.normalizedName());
-        payload.put("mode", safeContext.normalizedMode());
-        return payload;
     }
 }

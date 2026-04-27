@@ -16,5 +16,4 @@
 
 package io.agentscope.examples.paasassistant.supervisor.controller.dto;
 
-public record StructuredChatRequest(
-        String chat_id, String user_id, String user_query, StructuredChatContext context) {}
+public record StructuredChatRequest(String chat_id, String user_id, String user_query) {}

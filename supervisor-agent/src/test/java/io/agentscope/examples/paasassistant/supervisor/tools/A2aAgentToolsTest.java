@@ -1,9 +1,15 @@
 package io.agentscope.examples.paasassistant.supervisor.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.agentscope.core.agent.StreamOptions;
 import io.agentscope.core.a2a.agent.A2aAgent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.TextBlock;
@@ -12,13 +18,16 @@ import io.agentscope.examples.paasassistant.supervisor.stream.StructuredSseEmitt
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredTraceRegistry;
 import java.io.EOFException;
 import java.io.IOException;
+import java.time.Duration;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.codec.ServerSentEvent;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
 class A2aAgentToolsTest {
@@ -27,8 +36,7 @@ class A2aAgentToolsTest {
 
     @Test
     void emitsChildToolResultBlocksIntoStructuredTimeline() throws Exception {
-        A2aAgentTools tools =
-                new A2aAgentTools(emptyProvider(), emptyProvider(), new StructuredTraceRegistry());
+        A2aAgentTools tools = createTools(new StructuredTraceRegistry());
         Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().replay().all();
         StructuredSseEmitter emitter = new StructuredSseEmitter(sink, objectMapper);
         Msg message =
@@ -73,7 +81,7 @@ class A2aAgentToolsTest {
     @Test
     void fallsBackToLatestEmitterWhenTraceIdIsNotPresentInContext() throws Exception {
         StructuredTraceRegistry registry = new StructuredTraceRegistry();
-        A2aAgentTools tools = new A2aAgentTools(emptyProvider(), emptyProvider(), registry);
+        A2aAgentTools tools = createTools(registry);
         StructuredSseEmitter latestEmitter =
                 new StructuredSseEmitter(Sinks.many().replay().all(), objectMapper);
         registry.register("trace-latest", latestEmitter);
@@ -115,6 +123,103 @@ class A2aAgentToolsTest {
         assertThat(A2aAgentTools.shouldRetryChildAgentCall(failure, 1)).isTrue();
         assertThat(A2aAgentTools.shouldRetryChildAgentCall(failure, 2)).isTrue();
         assertThat(A2aAgentTools.shouldRetryChildAgentCall(failure, 3)).isFalse();
+    }
+
+    @Test
+    void doesNotRetryTimeoutFailures() {
+        TimeoutException failure = new TimeoutException("child agent timeout");
+
+        assertThat(A2aAgentTools.isTransientA2aTransportFailure(failure)).isFalse();
+        assertThat(A2aAgentTools.isTimeoutFailure(new RuntimeException(failure))).isTrue();
+        assertThat(A2aAgentTools.shouldRetryChildAgentCall(new RuntimeException(failure), 1))
+                .isFalse();
+    }
+
+    @Test
+    void detectsInterruptedFailuresSeparatelyFromTransientTransportFailures() {
+        RuntimeException failure = new RuntimeException(new InterruptedException("interrupted"));
+
+        assertThat(A2aAgentTools.isInterruptedFailure(failure)).isTrue();
+        assertThat(A2aAgentTools.isTransientA2aTransportFailure(failure)).isFalse();
+    }
+
+    @Test
+    void returnsStructuredTimeoutErrorAndInterruptsChildAgent() {
+        A2aAgent guideAgent = org.mockito.Mockito.mock(A2aAgent.class);
+        when(guideAgent.stream(any(Msg.class), any(StreamOptions.class))).thenReturn(Flux.never());
+        StructuredTraceRegistry registry = new StructuredTraceRegistry();
+        Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().replay().all();
+        StructuredSseEmitter emitter = new StructuredSseEmitter(sink, objectMapper);
+        registry.register("trace-timeout", emitter);
+        A2aAgentTools tools =
+                new A2aAgentTools(
+                        provider(guideAgent),
+                        emptyProvider(),
+                        registry,
+                        Duration.ofMillis(10),
+                        3,
+                        Duration.ofMillis(1));
+
+        String result =
+                tools.callGuideAgent("<traceId>trace-timeout</traceId>请诊断", "user-1")
+                        .block(Duration.ofSeconds(1));
+
+        assertThat(result).contains("子 Agent 执行超时");
+        verify(guideAgent).interrupt();
+        verify(guideAgent, never()).call(anyList());
+
+        ServerSentEvent<String> event = sink.asFlux().next().block(Duration.ofSeconds(1));
+        assertThat(event).isNotNull();
+        assertThat(event.event()).isEqualTo("error");
+    }
+
+    private A2aAgentTools createTools(StructuredTraceRegistry registry) {
+        return new A2aAgentTools(
+                emptyProvider(),
+                emptyProvider(),
+                registry,
+                Duration.ofMinutes(10),
+                3,
+                Duration.ofMillis(200));
+    }
+
+    private ObjectProvider<A2aAgent> provider(A2aAgent agent) {
+        return new ObjectProvider<>() {
+            @Override
+            public A2aAgent getObject(Object... args) {
+                return agent;
+            }
+
+            @Override
+            public A2aAgent getIfAvailable() {
+                return agent;
+            }
+
+            @Override
+            public A2aAgent getIfUnique() {
+                return agent;
+            }
+
+            @Override
+            public A2aAgent getObject() {
+                return agent;
+            }
+
+            @Override
+            public Stream<A2aAgent> stream() {
+                return Stream.of(agent);
+            }
+
+            @Override
+            public Stream<A2aAgent> orderedStream() {
+                return Stream.of(agent);
+            }
+
+            @Override
+            public java.util.Iterator<A2aAgent> iterator() {
+                return Collections.singleton(agent).iterator();
+            }
+        };
     }
 
     private ObjectProvider<A2aAgent> emptyProvider() {
