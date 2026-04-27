@@ -29,8 +29,13 @@ import io.agentscope.core.tool.ToolParam;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredSseEmitter;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredTraceRegistry;
 import io.agentscope.examples.paasassistant.supervisor.stream.ToolNarrator;
+import java.io.EOFException;
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -38,7 +43,16 @@ import org.springframework.stereotype.Component;
 @Component
 public class A2aAgentTools {
 
+    private static final Logger log = LoggerFactory.getLogger(A2aAgentTools.class);
+
     private static final Pattern TRACE_ID_PATTERN = Pattern.compile("<traceId>(.+?)</traceId>");
+
+    private static final int CHILD_AGENT_MAX_ATTEMPTS = 3;
+
+    private static final long CHILD_AGENT_RETRY_BACKOFF_MILLIS = 200L;
+
+    private static final String CHILD_AGENT_UNAVAILABLE_MESSAGE =
+            "子 Agent 暂时不可用，A2A 流式响应在读取过程中中断。请稍后重试；如果持续出现，请检查子 Agent 服务状态和网络连接。";
 
     private static final StreamOptions CHILD_AGENT_STREAM_OPTIONS =
             StreamOptions.builder()
@@ -96,31 +110,82 @@ public class A2aAgentTools {
             A2aAgent agent, String childAgentName, Msg msg, String contextWithTags) {
         StructuredSseEmitter emitter = resolveEmitter(contextWithTags);
 
-        if (emitter == null) {
-            return combineAgentResponse(agent.call(msg).block());
+        RuntimeException lastFailure = null;
+        for (int attempt = 1; attempt <= CHILD_AGENT_MAX_ATTEMPTS; attempt++) {
+            StringBuilder finalAnswer = new StringBuilder();
+            ChildStreamState state = new ChildStreamState();
+            try {
+                agent.stream(msg, CHILD_AGENT_STREAM_OPTIONS)
+                        .doOnNext(
+                                event ->
+                                        handleChildEvent(
+                                                childAgentName,
+                                                event,
+                                                emitter,
+                                                finalAnswer,
+                                                state))
+                        .collectList()
+                        .block();
+                return finalAnswer.toString().trim();
+            } catch (RuntimeException ex) {
+                lastFailure = ex;
+                if (!shouldRetryChildAgentCall(ex, attempt)) {
+                    break;
+                }
+                log.warn(
+                        "Transient A2A streaming error from {}. Retrying stream call. attempt={}/{}",
+                        childAgentName,
+                        attempt,
+                        CHILD_AGENT_MAX_ATTEMPTS,
+                        ex);
+                sleepBeforeRetry();
+            }
         }
 
-        StringBuilder finalAnswer = new StringBuilder();
-        ChildStreamState state = new ChildStreamState();
-        agent.stream(msg, CHILD_AGENT_STREAM_OPTIONS)
-                .onErrorResume(
-                        throwable -> {
-                            return agent.call(msg)
-                                    .map(
-                                            fallback ->
-                                                    new Event(
-                                                            EventType.AGENT_RESULT,
-                                                            fallback,
-                                                            true))
-                                    .flux();
-                        })
-                .doOnNext(
-                        event ->
-                                handleChildEvent(
-                                        childAgentName, event, emitter, finalAnswer, state))
-                .collectList()
-                .block();
-        return finalAnswer.toString().trim();
+        log.error("A2A streaming call to {} failed.", childAgentName, lastFailure);
+        if (emitter != null) {
+            emitter.emitError(CHILD_AGENT_UNAVAILABLE_MESSAGE, childAgentName);
+        }
+        return CHILD_AGENT_UNAVAILABLE_MESSAGE;
+    }
+
+    static boolean shouldRetryChildAgentCall(RuntimeException ex, int attempt) {
+        return attempt < CHILD_AGENT_MAX_ATTEMPTS && isTransientA2aTransportFailure(ex);
+    }
+
+    static boolean isTransientA2aTransportFailure(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof EOFException) {
+                return true;
+            }
+            if (current instanceof IOException && hasChunkedTransferMessage(current)) {
+                return true;
+            }
+            if (hasChunkedTransferMessage(current)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static boolean hasChunkedTransferMessage(Throwable throwable) {
+        String message = throwable.getMessage();
+        if (message == null) {
+            return false;
+        }
+        return message.contains("chunked transfer encoding")
+                || message.contains("READING_LENGTH")
+                || message.contains("EOF reached while reading");
+    }
+
+    private void sleepBeforeRetry() {
+        try {
+            TimeUnit.MILLISECONDS.sleep(CHILD_AGENT_RETRY_BACKOFF_MILLIS);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void handleChildEvent(
@@ -143,7 +208,9 @@ public class A2aAgentTools {
                     .reduce("", String::concat);
             thinking = ToolNarrator.extractThinkingChunk(thinking);
             if (!thinking.isEmpty()) {
-                emitter.emitReasoningDelta(childAgentName, thinking);
+                if (emitter != null) {
+                    emitter.emitReasoningDelta(childAgentName, thinking);
+                }
                 state.markStepEmitted();
                 return;
             }
@@ -154,7 +221,9 @@ public class A2aAgentTools {
                         .reduce("", String::concat);
                 text = ToolNarrator.extractThinkingChunk(text);
                 if (!text.isEmpty()) {
-                    emitter.emitReasoningDelta(childAgentName, text);
+                    if (emitter != null) {
+                        emitter.emitReasoningDelta(childAgentName, text);
+                    }
                     state.markStepEmitted();
                 }
             }
@@ -173,7 +242,9 @@ public class A2aAgentTools {
             if (!state.hasStepEmitted()) {
                 String summary = ToolNarrator.extractThinkingText(finalAnswer.toString());
                 if (!summary.isEmpty()) {
-                    emitter.emitReasoningDelta(childAgentName, summary);
+                    if (emitter != null) {
+                        emitter.emitReasoningDelta(childAgentName, summary);
+                    }
                     state.markStepEmitted();
                 }
             }
@@ -182,7 +253,7 @@ public class A2aAgentTools {
 
     private boolean emitToolResultBlocks(
             String childAgentName, Msg message, StructuredSseEmitter emitter) {
-        if (message == null) {
+        if (message == null || emitter == null) {
             return false;
         }
 
@@ -236,17 +307,6 @@ public class A2aAgentTools {
             return emitter;
         }
         return traceRegistry.getLatest();
-    }
-
-    private String combineAgentResponse(Msg responseMsg) {
-        if (null == responseMsg) {
-            return "";
-        }
-        StringBuilder result = new StringBuilder();
-        responseMsg.getContent().stream()
-                .filter(block -> block instanceof TextBlock)
-                .forEach(block -> result.append(((TextBlock) block).getText()));
-        return result.toString();
     }
 
     private String extractTraceId(String context) {

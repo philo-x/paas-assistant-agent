@@ -10,6 +10,8 @@ import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.message.ToolResultBlock;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredSseEmitter;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredTraceRegistry;
+import java.io.EOFException;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.Map;
@@ -83,6 +85,36 @@ class A2aAgentToolsTest {
         Object resolved = resolveEmitter.invoke(tools, "用户问题: 请检查 default 命名空间中的 Pod");
 
         assertThat(resolved).isSameAs(latestEmitter);
+    }
+
+    @Test
+    void treatsChunkedEofAsTransientA2aTransportFailure() {
+        IOException chunkedFailure =
+                new IOException(
+                        "chunked transfer encoding, state: READING_LENGTH",
+                        new EOFException("EOF reached while reading"));
+
+        assertThat(A2aAgentTools.isTransientA2aTransportFailure(chunkedFailure)).isTrue();
+    }
+
+    @Test
+    void doesNotTreatUnrelatedFailuresAsTransientA2aTransportFailure() {
+        IllegalArgumentException failure = new IllegalArgumentException("invalid tool input");
+
+        assertThat(A2aAgentTools.isTransientA2aTransportFailure(failure)).isFalse();
+    }
+
+    @Test
+    void retriesTransientA2aTransportFailuresForAtMostThreeTotalAttempts() {
+        RuntimeException failure =
+                new RuntimeException(
+                        new IOException(
+                                "chunked transfer encoding, state: READING_LENGTH",
+                                new EOFException("EOF reached while reading")));
+
+        assertThat(A2aAgentTools.shouldRetryChildAgentCall(failure, 1)).isTrue();
+        assertThat(A2aAgentTools.shouldRetryChildAgentCall(failure, 2)).isTrue();
+        assertThat(A2aAgentTools.shouldRetryChildAgentCall(failure, 3)).isFalse();
     }
 
     private ObjectProvider<A2aAgent> emptyProvider() {
