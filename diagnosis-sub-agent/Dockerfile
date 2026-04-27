@@ -43,6 +43,11 @@ EXPOSE 10006
 
 # Define environment variables with defaults
 ENV SERVER_PORT=10006 \
+    MODEL_PROVIDER=dashscope \
+    MODEL_API_KEY="" \
+    MODEL_NAME=qwen-max \
+    K8SGPT_MCP_URL=http://k8sgpt-server:8089/mcp \
+    MEM0_API_KEY="" \
     NACOS_SERVER_ADDR=127.0.0.1:8848 \
     NACOS_NAMESPACE=public \
     JAVA_OPTS="-Xms512m -Xmx1024m"

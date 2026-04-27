@@ -43,6 +43,13 @@ EXPOSE 10005
 
 # Define environment variables with defaults
 ENV SERVER_PORT=10005 \
+    MODEL_PROVIDER=dashscope \
+    MODEL_API_KEY="" \
+    MODEL_NAME=qwen-max \
+    DASHSCOPE_ACCESS_KEY_ID="" \
+    DASHSCOPE_ACCESS_KEY_SECRET="" \
+    DASHSCOPE_WORKSPACE_ID="" \
+    DASHSCOPE_INDEX_ID=3i861vcc36 \
     DB_HOST=localhost \
     DB_PORT=3306 \
     DB_NAME=paas_agent_assistant \

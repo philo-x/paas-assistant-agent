@@ -64,6 +64,9 @@ USER appuser
 EXPOSE 10008
 
 ENV SERVER_PORT=10008 \
+    MODEL_PROVIDER=openai \
+    MODEL_API_KEY="" \
+    MODEL_NAME=gpt-5 \
     DB_HOST=localhost \
     DB_PORT=3306 \
     DB_NAME=paas_agent_assistant \
@@ -71,7 +74,7 @@ ENV SERVER_PORT=10008 \
     DB_PASSWORD=paas_agent_assistant@321 \
     NACOS_SERVER_ADDR=127.0.0.1:8848 \
     NACOS_NAMESPACE=public \
-    DASHSCOPE_MODEL=qwen-plus \
+    A2A_CHILD_AGENT_TIMEOUT=PT10M \
     JAVA_OPTS="-Xms512m -Xmx1024m" \
     SPRING_WEB_RESOURCES_STATIC_LOCATIONS="file:/app/static/"
 

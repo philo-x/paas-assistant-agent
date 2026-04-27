@@ -1,1 +1,0 @@
-k8sgpt serve --port 8082 --mcp --mcp-http --mcp-port 8089
