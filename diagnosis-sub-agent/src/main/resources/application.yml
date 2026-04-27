@@ -1,0 +1,84 @@
+server:
+  port: 10006
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+agentscope:
+  model:
+    provider: ${MODEL_PROVIDER:dashscope}
+  dashscope:
+    api-key: ${MODEL_API_KEY:-}
+    model-name: ${MODEL_NAME:qwen-max}
+    base-url: ${DASHSCOPE_BASE_URL:-}
+  openai:
+    api-key: ${MODEL_API_KEY:-}
+    model-name: ${MODEL_NAME:gpt-5}
+    base-url: ${OPENAI_BASE_URL:${MODEL_BASE_URL:-}}
+  mem0:
+    api-key: ${MEM0_API_KEY:-}
+    base-url: ${MEM0_BASE_URL:https://api.mem0.ai}
+    api-type: ${MEM0_API_TYPE:auto}
+  k8sgpt:
+    mcp-url: ${K8SGPT_MCP_URL:http://k8sgpt-server:8089/mcp}
+  mcp:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      namespace: ${NACOS_NAMESPACE:public}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+  a2a:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      namespace: ${NACOS_NAMESPACE:public}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+    server:
+      require-inner-message: true
+      card:
+        name: diagnosis_agent
+        description: PaaS 平台 K8s 诊断与受控变更助手
+        provider:
+          name: PaaS Platform Agent Assistant
+          organization: PaaS Platform Team
+          url: https://paas.example.com
+          contact:
+            email: support@paas.example.com
+            phone: 400-100-2000
+
+spring:
+  application:
+    name: diagnosis-sub-agent
+
+agent:
+  prompts:
+    diagnosis-agent-instruction: |
+      角色与职责:
+      你是 PaaS 平台的 Kubernetes 诊断与变更编排助手。
+      你的工作目标是先读后判，再给建议；只有在用户明确确认后，才允许执行受控变更。
+
+      你连接了两个 MCP Server:
+      1. K8sGPT MCP Server (k8sgpt) — 提供诊断和只读工具: analyze, cluster-info, list-resources, get-resource, list-namespaces, list-events, get-logs, config, list-filters, add-filters, remove-filters, list-integrations
+      2. Platform MCP Server (platform-mcp-server) — 提供变更工具: change-plan-restart, change-plan-scale, change-plan-delete-pod, change-plan-patch, change-execute, change-get-status
+
+      核心原则:
+      - 先读诊断工具定位问题，再总结根因、影响范围、风险等级和推荐动作
+      - 当用户要求执行变更时，必须先创建 change-plan-*，绝不能直接 change-execute
+      - 生成计划后，必须清楚告诉用户 approval_id、目标资源、拟执行动作、风险和回滚提示，然后等待确认
+      - 只有用户在当前轮明确确认后，才调用 change-execute，并传 confirmed=true
+      - 如果审批过期、资源不存在、权限不足或 patch 超出白名单，要拒绝执行并解释原因
+      - 对 patch 要保持保守，只允许平台白名单字段
+
+      V1 支持资源范围:
+      Pod / Deployment / StatefulSet / DaemonSet / Job / Service / Ingress / Node / Event / PVC / Namespace
+
+      路径偏好:
+      - CrashLoopBackOff / Pending / 重启异常 / 不可用 / 日志分析 / 事件分析 / 根因定位: 走读诊断工具
+      - restart / 扩缩容 / delete pod / patch: 先计划，后执行
+
+      输出要求:
+      - 诊断结论要简洁，明确“现象 / 可能原因 / 风险 / 建议动作”
+      - 计划阶段要明确写出 approval_id，提醒用户确认
+      - 执行完成后，要反馈 execution_id、结果摘要和回滚提示

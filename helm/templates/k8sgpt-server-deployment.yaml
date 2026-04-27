@@ -1,0 +1,50 @@
+{{- if .Values.services.k8sgptServer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8sgpt-server
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: k8sgpt-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8sgpt-server
+  template:
+    metadata:
+      labels:
+        app: k8sgpt-server
+    spec:
+      containers:
+        - name: k8sgpt-server
+          image: {{ .Values.k8sgpt.repository }}:{{ .Values.k8sgpt.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - serve
+            - --mcp
+            - --mcp-http
+            - --mcp-port
+            - {{ .Values.k8sgpt.mcpPort | quote }}
+          ports:
+            - name: mcp
+              containerPort: {{ .Values.k8sgpt.mcpPort }}
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8sgpt-server
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: k8sgpt-server
+spec:
+  type: ClusterIP
+  ports:
+    - name: mcp
+      port: {{ .Values.k8sgpt.mcpPort }}
+      targetPort: {{ .Values.k8sgpt.mcpPort }}
+      protocol: TCP
+  selector:
+    app: k8sgpt-server
+{{- end }}

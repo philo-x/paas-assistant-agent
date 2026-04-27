@@ -1,0 +1,57 @@
+================================================================
+  AgentScope Multi-Agent System Deployed Successfully!
+================================================================
+
+📦 Deployment Info:
+  Release Name: {{ .Release.Name }}
+  Namespace:    {{ .Values.global.namespace }}
+  Chart:        {{ .Chart.Name }}-{{ .Chart.Version }}
+
+🚀 Enabled Services:
+
+{{- if .Values.mysql.deployEnabled }}
+  ✅ MySQL Database
+     - Service: {{ .Values.mysql.host }}:3306
+     - Database: paas_agent_assistant
+{{- end }}
+
+{{- if .Values.services.supervisorAgent.enabled }}
+  ✅ Supervisor Agent + Frontend
+     - Port: 80 (mapped to 10008)
+     - Unified access point for frontend and API
+{{- end }}
+
+{{- if .Values.services.platformMcpServer.enabled }}
+  ✅ Platform MCP Server - Port: 10002
+{{- end }}
+
+{{- if .Values.services.diagnosisSubAgent.enabled }}
+  ✅ Diagnosis Sub Agent - Port: 10006
+{{- end }}
+
+{{- if .Values.services.guideSubAgent.enabled }}
+  ✅ Guide Sub Agent - Port: 10005
+{{- end }}
+
+{{- if .Values.services.k8sgptServer.enabled }}
+  ✅ K8sGPT MCP Server - Port: {{ .Values.k8sgpt.mcpPort }}
+{{- end }}
+
+📋 Check Deployment Status:
+  kubectl get pods -n {{ .Values.global.namespace }}
+  kubectl get deployments -n {{ .Values.global.namespace }}
+  kubectl get services -n {{ .Values.global.namespace }}
+
+⚠️  Notes:
+  - MySQL uses emptyDir storage (ephemeral storage)
+  - Data will be lost after pod restart, suitable for dev/test only
+
+🔐 Security Reminder:
+  - Current configuration contains API Keys and passwords
+  - Recommend using Kubernetes Secrets for production
+  - Override sensitive configs via --set parameter
+
+📚 More Information:
+  - Documentation: Please refer to README.md
+
+================================================================

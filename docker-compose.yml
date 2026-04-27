@@ -1,0 +1,279 @@
+# Copyright 2024-2026 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# =============================================================================
+# PaaS Agent Assistant - Docker Compose Configuration
+# =============================================================================
+
+services:
+  # ============================================================================
+  # Infrastructure Services
+  # ============================================================================
+
+  # MySQL Database
+  mysql:
+    image: ${IMAGE_REGISTRY:-registry.cn-hangzhou.aliyuncs.com/agentscope}/mysql:${IMAGE_TAG:-1.0.11}
+    container_name: agentscope-mysql
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD:-paas_agent_assistant@321}
+      - DB_NAME=${DB_NAME:-paas_agent_assistant}
+      - DB_USERNAME=${DB_USERNAME:-paas_agent_assistant}
+      - DB_PASSWORD=${DB_PASSWORD:-paas_agent_assistant@321}
+      - TZ=Asia/Shanghai
+      - MYSQL_CHARACTER_SET_SERVER=utf8mb4
+      - MYSQL_COLLATION_SERVER=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-p${DB_PASSWORD:-paas_agent_assistant@321}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - agentscope-network
+
+  # Nacos Service Registry and Discovery
+  nacos-server:
+    image: ${IMAGE_REGISTRY:-registry.cn-hangzhou.aliyuncs.com/agentscope}/nacos-server:${IMAGE_TAG:-1.0.11}
+    container_name: agentscope-nacos
+    restart: unless-stopped
+    ports:
+      - "${NACOS_PORT:-8848}:8848"
+      - "${NACOS_GRPC_PORT:-9848}:9848"
+      - "${NACOS_CONSOLE_PORT:-8080}:8080"
+    environment:
+      - PREFER_HOST_MODE=hostname
+      - MODE=standalone
+      - NACOS_AUTH_IDENTITY_KEY=serverIdentity
+      - NACOS_AUTH_IDENTITY_VALUE=security
+      - NACOS_AUTH_TOKEN=eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=
+      - TZ=Asia/Shanghai
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8848"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - agentscope-network
+
+  # ============================================================================
+  # Platform Services
+  # ============================================================================
+
+  # K8s GPT MCP Server
+  k8sgpt-server:
+    image: ghcr.io/k8sgpt-ai/k8sgpt:${K8SGPT_IMAGE_TAG:-v0.4.26}
+    container_name: agentscope-k8sgpt
+    restart: unless-stopped
+    command: ["serve", "--mcp", "--mcp-http", "--mcp-port", "8089"]
+    ports:
+      - "${K8SGPT_MCP_PORT:-8089}:8089"
+    environment:
+      - KUBECONFIG=/root/.kube/config
+    volumes:
+      - ${HOME}/.kube/config:/root/.kube/config:ro
+    networks:
+      - agentscope-network
+
+  # Platform MCP Server
+  platform-mcp-server:
+    image: ${IMAGE_REGISTRY:-registry.cn-hangzhou.aliyuncs.com/agentscope}/platform-mcp-server:${IMAGE_TAG:-1.0.11}
+    container_name: agentscope-platform-mcp-server
+    restart: unless-stopped
+    ports:
+      - "${PLATFORM_MCP_SERVER_PORT:-10002}:10002"
+    environment:
+      - SERVER_PORT=10002
+      # Model Configuration
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-dashscope}
+      - MODEL_API_KEY=${MODEL_API_KEY}
+      - MODEL_NAME=${MODEL_NAME:-qwen-max}
+      - MODEL_BASE_URL=${MODEL_BASE_URL:-}
+      # DashScope RAG Configuration
+      - DASHSCOPE_ACCESS_KEY_ID=${DASHSCOPE_ACCESS_KEY_ID}
+      - DASHSCOPE_ACCESS_KEY_SECRET=${DASHSCOPE_ACCESS_KEY_SECRET}
+      - DASHSCOPE_WORKSPACE_ID=${DASHSCOPE_WORKSPACE_ID}
+      - DASHSCOPE_INDEX_ID=${DASHSCOPE_INDEX_ID}
+      # Database Configuration
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-paas_agent_assistant}
+      - DB_USERNAME=${DB_USERNAME:-paas_agent_assistant}
+      - DB_PASSWORD=${DB_PASSWORD:-paas_agent_assistant@321}
+      # Mem0 Configuration
+      - MEM0_API_KEY=${MEM0_API_KEY}
+      - MEM0_BASE_URL=${MEM0_BASE_URL:-https://api.mem0.ai}
+      - MEM0_API_TYPE=${MEM0_API_TYPE:-auto}
+      # Nacos Configuration
+      - NACOS_SERVER_ADDR=nacos-server:8848
+      - NACOS_NAMESPACE=${NACOS_NAMESPACE:-public}
+      - NACOS_REGISTER_ENABLED=${NACOS_REGISTER_ENABLED:-true}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      # Kubernetes and execution configuration
+      - K8S_AUTH_MODE=${K8S_AUTH_MODE:-kubeconfig}
+      - KUBECONFIG_PATH=/root/.kube/config
+      - K8S_CONTEXT=${K8S_CONTEXT:-}
+      - EXECUTION_APPROVAL_TTL_SECONDS=${EXECUTION_APPROVAL_TTL_SECONDS:-600}
+    volumes:
+      - ${HOME}/.kube/config:/root/.kube/config:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos-server:
+        condition: service_healthy
+    networks:
+      - agentscope-network
+
+  # Guide Sub Agent
+  guide-sub-agent:
+    image: ${IMAGE_REGISTRY:-registry.cn-hangzhou.aliyuncs.com/agentscope}/guide-sub-agent:${IMAGE_TAG:-1.0.11}
+    container_name: agentscope-guide-sub-agent
+    restart: unless-stopped
+    ports:
+      - "${GUIDE_SUB_AGENT_PORT:-10005}:10005"
+    environment:
+      - SERVER_PORT=10005
+      # Model Configuration
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-dashscope}
+      - MODEL_API_KEY=${MODEL_API_KEY}
+      - MODEL_NAME=${MODEL_NAME:-qwen-max}
+      - MODEL_BASE_URL=${MODEL_BASE_URL:-}
+      # DashScope RAG Configuration
+      - DASHSCOPE_ACCESS_KEY_ID=${DASHSCOPE_ACCESS_KEY_ID}
+      - DASHSCOPE_ACCESS_KEY_SECRET=${DASHSCOPE_ACCESS_KEY_SECRET}
+      - DASHSCOPE_WORKSPACE_ID=${DASHSCOPE_WORKSPACE_ID}
+      - DASHSCOPE_INDEX_ID=${DASHSCOPE_INDEX_ID}
+      # Mem0 Configuration
+      - MEM0_API_KEY=${MEM0_API_KEY}
+      - MEM0_BASE_URL=${MEM0_BASE_URL:-https://api.mem0.ai}
+      - MEM0_API_TYPE=${MEM0_API_TYPE:-auto}
+      # Nacos Configuration
+      - NACOS_SERVER_ADDR=nacos-server:8848
+      - NACOS_NAMESPACE=${NACOS_NAMESPACE:-public}
+      - NACOS_REGISTER_ENABLED=${NACOS_REGISTER_ENABLED:-true}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+    depends_on:
+      nacos-server:
+        condition: service_healthy
+    networks:
+      - agentscope-network
+
+  # Diagnosis Sub Agent
+  diagnosis-sub-agent:
+    image: ${IMAGE_REGISTRY:-registry.cn-hangzhou.aliyuncs.com/agentscope}/diagnosis-sub-agent:${IMAGE_TAG:-1.0.11}
+    container_name: agentscope-diagnosis-sub-agent
+    restart: unless-stopped
+    ports:
+      - "${DIAGNOSIS_SUB_AGENT_PORT:-10006}:10006"
+    environment:
+      - SERVER_PORT=10006
+      # Model Configuration
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-dashscope}
+      - MODEL_API_KEY=${MODEL_API_KEY}
+      - MODEL_NAME=${MODEL_NAME:-qwen-max}
+      - MODEL_BASE_URL=${MODEL_BASE_URL:-}
+      # DashScope RAG Configuration
+      - DASHSCOPE_ACCESS_KEY_ID=${DASHSCOPE_ACCESS_KEY_ID}
+      - DASHSCOPE_ACCESS_KEY_SECRET=${DASHSCOPE_ACCESS_KEY_SECRET}
+      - DASHSCOPE_WORKSPACE_ID=${DASHSCOPE_WORKSPACE_ID}
+      - DASHSCOPE_INDEX_ID=${DASHSCOPE_INDEX_ID}
+      # Mem0 Configuration
+      - MEM0_API_KEY=${MEM0_API_KEY}
+      - MEM0_BASE_URL=${MEM0_BASE_URL:-https://api.mem0.ai}
+      - MEM0_API_TYPE=${MEM0_API_TYPE:-auto}
+      # Nacos Configuration
+      - NACOS_SERVER_ADDR=nacos-server:8848
+      - NACOS_NAMESPACE=${NACOS_NAMESPACE:-public}
+      - NACOS_REGISTER_ENABLED=${NACOS_REGISTER_ENABLED:-true}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      # K8sGPT direct MCP connection
+      - K8SGPT_MCP_URL=http://k8sgpt-server:8089/mcp
+    depends_on:
+      nacos-server:
+        condition: service_healthy
+      k8sgpt-server:
+        condition: service_started
+    networks:
+      - agentscope-network
+
+  # Supervisor Agent + Frontend
+  supervisor-agent:
+    image: ${IMAGE_REGISTRY:-registry.cn-hangzhou.aliyuncs.com/agentscope}/supervisor-agent:${IMAGE_TAG:-1.0.11}
+    container_name: agentscope-supervisor-agent
+    restart: unless-stopped
+    ports:
+      - "${SUPERVISOR_AGENT_PORT:-10008}:10008"
+    environment:
+      - SERVER_PORT=10008
+      # Model Configuration
+      - MODEL_PROVIDER=${MODEL_PROVIDER:-dashscope}
+      - MODEL_API_KEY=${MODEL_API_KEY}
+      - MODEL_NAME=${MODEL_NAME:-qwen-max}
+      - MODEL_BASE_URL=${MODEL_BASE_URL:-}
+      # DashScope RAG Configuration
+      - DASHSCOPE_ACCESS_KEY_ID=${DASHSCOPE_ACCESS_KEY_ID}
+      - DASHSCOPE_ACCESS_KEY_SECRET=${DASHSCOPE_ACCESS_KEY_SECRET}
+      - DASHSCOPE_WORKSPACE_ID=${DASHSCOPE_WORKSPACE_ID}
+      - DASHSCOPE_INDEX_ID=${DASHSCOPE_INDEX_ID}
+      # Database Configuration
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=${DB_NAME:-paas_agent_assistant}
+      - DB_USERNAME=${DB_USERNAME:-paas_agent_assistant}
+      - DB_PASSWORD=${DB_PASSWORD:-paas_agent_assistant@321}
+      # Mem0 Configuration
+      - MEM0_API_KEY=${MEM0_API_KEY}
+      - MEM0_BASE_URL=${MEM0_BASE_URL:-https://api.mem0.ai}
+      - MEM0_API_TYPE=${MEM0_API_TYPE:-auto}
+      # Nacos Configuration
+      - NACOS_SERVER_ADDR=nacos-server:8848
+      - NACOS_NAMESPACE=${NACOS_NAMESPACE:-public}
+      - NACOS_REGISTER_ENABLED=${NACOS_REGISTER_ENABLED:-true}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos-server:
+        condition: service_healthy
+      platform-mcp-server:
+        condition: service_started
+      guide-sub-agent:
+        condition: service_started
+      diagnosis-sub-agent:
+        condition: service_started
+    networks:
+      - agentscope-network
+
+# ============================================================================
+# Network Configuration
+# ============================================================================
+networks:
+  agentscope-network:
+    driver: bridge
+
+# ============================================================================
+# Volume Configuration
+# ============================================================================
+volumes:
+  mysql-data:
+    driver: local

@@ -1,0 +1,73 @@
+server:
+  port: 10005
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+agentscope:
+  model:
+    provider: ${MODEL_PROVIDER:dashscope}
+  dashscope:
+    api-key: ${MODEL_API_KEY:-}
+    model-name: ${MODEL_NAME:qwen-max}
+    base-url: ${DASHSCOPE_BASE_URL:-}
+    # dashscope RAG
+    access-key-id: ${DASHSCOPE_ACCESS_KEY_ID:-}
+    access-key-secret: ${DASHSCOPE_ACCESS_KEY_SECRET:-}
+    workspace-id: ${DASHSCOPE_WORKSPACE_ID:-}
+    index-id: ${DASHSCOPE_INDEX_ID:3i861vcc36}
+  openai:
+    api-key: ${MODEL_API_KEY:-}
+    model-name: ${MODEL_NAME:gpt-5}
+    base-url: ${OPENAI_BASE_URL:${MODEL_BASE_URL:-}}
+  mem0:
+    api-key: ${MEM0_API_KEY:-}
+    base-url: ${MEM0_BASE_URL:https://api.mem0.ai}
+    api-type: ${MEM0_API_TYPE:auto}
+  a2a:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      namespace: ${NACOS_NAMESPACE:public}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+    server:
+      require-inner-message: true
+      card:
+        name: guide_agent
+        description: PaaS 平台 K8s 指南与解释助手
+        provider:
+          name: PaaS Platform Agent Assistant
+          organization: PaaS Platform Team
+          url: https://paas.example.com
+          contact:
+            email: support@paas.example.com
+            phone: 400-100-2000
+
+spring:
+  application:
+    name: guide-sub-agent
+
+agent:
+  prompts:
+    guide-agent-instruction: |
+      角色与职责:
+      你是 PaaS 平台的 Kubernetes 指南与解释助手。
+      你负责解释 YAML 字段、解读 describe 输出、推荐排障命令、讲清资源工作方式。
+      你不能执行变更，也不能调用任何 change-plan-* 或 change-execute。
+
+      可用能力:
+      - RAG 知识检索: 用于引用 Kubernetes 官方文档和平台运行手册
+      - 本地只读工具: guide-translate-yaml-field, guide-interpret-describe, guide-recommend-command
+
+      工作原则:
+      - 优先解释，不擅自执行
+      - 需要上下文时，只使用只读工具补充证据
+      - 对命令推荐要保持保守，优先 kubectl get / describe / logs / events
+      - 当问题实质上是故障定位、修复、重启、扩缩容、patch 时，明确建议切换到 diagnosis_agent 处理
+
+      输出要求:
+      - 回答要有结构，讲清“字段含义 / 默认行为 / 常见风险 / 推荐排查命令”
+      - 引用知识库内容时要说明依据来自官方文档或平台手册
+      - 如果上下文不够，明确指出还需要哪些只读信息

@@ -1,0 +1,76 @@
+server:
+  port: 10008
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+agentscope:
+  model:
+    provider: ${MODEL_PROVIDER:openai}
+  dashscope:
+    api-key: ${MODEL_API_KEY:-}
+    model-name: ${MODEL_NAME:qwen-max}
+    base-url: ${DASHSCOPE_BASE_URL:-}
+  openai:
+    api-key: ${MODEL_API_KEY:-}
+    model-name: ${MODEL_NAME:gpt-5}
+    base-url: ${OPENAI_BASE_URL:${MODEL_BASE_URL:-}}
+  a2a:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      namespace: ${NACOS_NAMESPACE:public}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+
+spring:
+  application:
+    name: supervisor-agent
+  web:
+    resources:
+      static-locations: ${SPRING_WEB_RESOURCES_STATIC_LOCATIONS:classpath:/static/}
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:paas_agent_assistant}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useAffectedRows=true
+    username: ${DB_USERNAME:paas_agent_assistant}
+    password: ${DB_PASSWORD:paas_agent_assistant@321}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      cors:
+        allowed-origin-patterns: "*"
+        allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+        allowed-headers: "*"
+        allow-credentials: true
+        max-age: 3600
+  endpoint:
+    health:
+      show-details: when-authorized
+
+agent:
+  prompts:
+    supervisor-agent-instruction: |
+      角色与职责:
+      你是 PaaS 平台 Agent 助手的调度层 Supervisor。
+      你不直接处理 Kubernetes 业务，而是把请求路由给最合适的子 Agent。
+
+      你可以调用两个子 Agent:
+      - diagnosis_agent: 负责 K8s 诊断、异常分析、变更计划和确认后执行
+      - guide_agent: 负责 YAML 字段解释、describe 解读、命令推荐和资源使用指南
+
+      路由规则:
+      - 出现诊断、异常、故障、不可用、CrashLoop、Pending、重启、扩缩容、修复、patch、删除 Pod、执行变更、确认执行 等语义时，调用 diagnosis_agent
+      - 出现实时查询集群资源、列出资源、查看当前集群/命名空间/Pod/Deployment/Service 等现状的语义时，调用 diagnosis_agent
+      - 出现“这个字段是什么意思”“这个 describe 怎么看”“给我命令”“这个 YAML 怎么写”“这个资源怎么配置”这类语义时，调用 guide_agent
+      - 如果用户明确要求执行动作，必须交给 diagnosis_agent，由它负责先计划再等待确认
+
+      约束:
+      - 每轮路由必须以最新的“本轮用户问题”为准，历史对话、历史诊断结论、历史工具调用结果只能作为参考，不能替换或改写本轮问题
+      - 如果历史内容与本轮用户问题不一致，忽略历史任务，按本轮用户问题重新判断路由
+      - 你只负责协调和路由，不直接给出未经核实的诊断结论
+      - 如果请求同时包含诊断和解释，以诊断优先，再让 diagnosis_agent 决定是否需要补充说明
+      - 保持 /api/assistant/chat 接口的对外行为稳定，输出保持自然、清晰、面向平台用户
