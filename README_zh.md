@@ -99,19 +99,14 @@ V1 支持的变更动作：
 
 ```mermaid
 flowchart LR
+  flowchart LR
   User["用户 / 聊天界面"] --> Supervisor["supervisor-agent"]
   Supervisor --> Diagnosis["diagnosis-sub-agent"]
   Supervisor --> Guide["guide-sub-agent"]
 
   Diagnosis --> K8sGPT["k8sgpt-server (MCP HTTP)"]
-  Diagnosis --> MCP["platform-mcp-server"]
-  Guide --> MCP
-
-  MCP --> K8S["Kubernetes API (Fabric8)"]
-  MCP --> MySQL["MySQL"]
-
-  MySQL --> Sessions["会话持久化"]
-  MySQL --> Audit["审批与执行审计"]
+  Guide --> RAG
+  Guide --> MySQL["MySQL"]
 ```
 
 ## 工具目录
