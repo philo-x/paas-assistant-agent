@@ -87,8 +87,8 @@ const appendReasoningText = (existing: string, incoming: string) => {
 }
 
 const normalizeReasoningDescription = (value: string) => {
-  // trimStart only — preserve trailing newlines so subsequent chunks keep Markdown block separation.
-  return value.trimStart()
+  // Do not trimStart — preserve leading indentation for nested lists.
+  return value
 }
 
 const repairUnclosedBacktick = (text: string) => {

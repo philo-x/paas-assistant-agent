@@ -25,7 +25,6 @@ import {
   Input,
   message,
   Popover,
-  Select,
   Space,
   Tag,
   Tooltip
@@ -50,8 +49,6 @@ import { getLocale, setLocale } from '@/base/i18n'
 import { createThoughtsTimelineLabels } from '@/utils/thoughtsTimeline'
 import type {
   AssistantMessage,
-  ChatContext,
-  ChatMode,
   Message as ChatMessage,
   StructuredSseEvent,
   UserMessage
@@ -74,58 +71,12 @@ const languageMenuItems = computed(() => [
   { key: 'en', label: t('common.english') }
 ])
 
-const resourceKindOptions = computed(() => [
-  'Pod',
-  'Deployment',
-  'StatefulSet',
-  'DaemonSet',
-  'Job',
-  'Service',
-  'Ingress',
-  'Node',
-  'PVC',
-  'Namespace'
-].map((value) => ({ label: value, value })))
-
-const modeOptions = computed(() => [
-  { label: t('chat.context.modeOptions.auto'), value: 'auto' },
-  { label: t('chat.context.modeOptions.diagnose'), value: 'diagnose' },
-  { label: t('chat.context.modeOptions.guide'), value: 'guide' }
-])
-
 const chatExamples = computed(() => [
   { text: t('chat.examples.diagnosePods'), icon: AlertOutlined },
   { text: t('chat.examples.explainYaml'), icon: CodeOutlined },
   { text: t('chat.examples.inspectDescribe'), icon: SearchOutlined },
   { text: t('chat.examples.scaleDeployment'), icon: ControlOutlined }
 ])
-
-const namespaceValue = computed({
-  get: () => configStore.chatContext.namespace,
-  set: (value: string) => configStore.updateChatContext({ namespace: value })
-})
-
-const kindValue = computed({
-  get: () => configStore.chatContext.kind,
-  set: (value: string) => configStore.updateChatContext({ kind: value || '' })
-})
-
-const nameValue = computed({
-  get: () => configStore.chatContext.name,
-  set: (value: string) => configStore.updateChatContext({ name: value })
-})
-
-const modeValue = computed({
-  get: () => configStore.chatContext.mode,
-  set: (value: ChatMode) => configStore.updateChatContext({ mode: value })
-})
-
-const normalizedContext = computed<ChatContext>(() => ({
-  namespace: configStore.chatContext.namespace.trim() || 'default',
-  kind: configStore.chatContext.kind.trim(),
-  name: configStore.chatContext.name.trim(),
-  mode: configStore.chatContext.mode
-}))
 
 const hasBaseUrl = computed(() => configStore.baseUrl.trim().length > 0)
 const hasUserId = computed(() => configStore.userId.trim().length > 0)
@@ -196,31 +147,6 @@ const clearChat = () => {
   focusChatInputTextArea()
 }
 
-const formatContextTag = (context: ChatContext) => {
-  const tags = [
-    `${t('chat.context.namespace')}: ${context.namespace || 'default'}`,
-    `${t('chat.context.mode')}: ${getModeLabel(context.mode)}`
-  ]
-
-  if (context.kind) {
-    tags.push(`${t('chat.context.kind')}: ${context.kind}`)
-  }
-  if (context.name) {
-    tags.push(`${t('chat.context.name')}: ${context.name}`)
-  }
-
-  return tags
-}
-
-const getModeLabel = (mode: ChatMode) => {
-  const modeLabelMap = {
-    auto: t('chat.context.modeOptions.auto'),
-    diagnose: t('chat.context.modeOptions.diagnose'),
-    guide: t('chat.context.modeOptions.guide')
-  }
-  return modeLabelMap[mode]
-}
-
 const thoughtsTimelineLabels = computed(() => createThoughtsTimelineLabels(t))
 
 const handleStructuredEvent = (event: StructuredSseEvent) => {
@@ -251,13 +177,12 @@ const sendMessage = async () => {
   }
 
   const userMessage = inputValue.value.trim()
-  const context = { ...normalizedContext.value }
 
   await nextTick(() => {
     inputValue.value = ''
   })
 
-  chatStore.addUserMessage(userMessage, context)
+  chatStore.addUserMessage(userMessage)
   chatStore.addAssistantMessage({ isStreaming: true })
   scrollToBottom()
 
@@ -265,7 +190,7 @@ const sendMessage = async () => {
     chatStore.setLoading(true)
     chatStore.setError(null)
 
-    await chatApiService.sendStructuredMessage(userMessage, context, handleStructuredEvent)
+    await chatApiService.sendStructuredMessage(userMessage, handleStructuredEvent)
   } catch (error: any) {
     console.error('Structured chat error details:', {
       error,
@@ -382,11 +307,6 @@ onMounted(() => {
             <div class="message-bubble" :class="{ 'assistant-bubble': isAssistantMessage(msg) }">
               <template v-if="isUserMessage(msg)">
                 <div class="user-question">{{ msg.question }}</div>
-                <div class="context-tags">
-                  <Tag v-for="tag in formatContextTag(msg.context)" :key="tag" class="context-tag">
-                    {{ tag }}
-                  </Tag>
-                </div>
               </template>
 
               <AssistantMessageCard v-else :message="msg" />
@@ -398,34 +318,6 @@ onMounted(() => {
 
     <div class="chat-input">
       <div class="input-container">
-        <div class="context-bar">
-          <div class="context-title">{{ t('chat.context.title') }}</div>
-          <div class="context-fields">
-            <Input
-              v-model:value="namespaceValue"
-              :placeholder="t('chat.context.namespacePlaceholder')"
-              class="context-field context-field-namespace"
-            />
-            <Select
-              v-model:value="kindValue"
-              allow-clear
-              :options="resourceKindOptions"
-              :placeholder="t('chat.context.kindPlaceholder')"
-              class="context-field context-field-kind"
-            />
-            <Input
-              v-model:value="nameValue"
-              :placeholder="t('chat.context.namePlaceholder')"
-              class="context-field context-field-name"
-            />
-            <Select
-              v-model:value="modeValue"
-              :options="modeOptions"
-              class="context-field context-field-mode"
-            />
-          </div>
-        </div>
-
         <div v-if="chatStore.messages.length <= 1" class="chat-examples">
           <Space wrap>
             <Tag
@@ -684,28 +576,6 @@ onMounted(() => {
   word-break: break-word;
 }
 
-.context-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.context-tag {
-  margin: 0;
-  border-radius: 12px;
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 12px;
-}
-
-.message-wrapper:not(.user-message) .context-tag {
-  border-color: #d6e3f2;
-  background: #f8fbff;
-  color: #1f4b7a;
-}
-
 .chat-input {
   border-top: 1px solid #e5ebf2;
   background: #ffffff;
@@ -718,28 +588,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.context-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.context-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.context-fields {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.9fr);
-  gap: 10px;
-}
-
-.context-field {
-  width: 100%;
 }
 
 .chat-examples {
@@ -823,12 +671,6 @@ onMounted(() => {
   height: 28px;
 }
 
-@media (max-width: 900px) {
-  .context-fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 768px) {
   .chat-header {
     padding: 14px 16px;
@@ -852,10 +694,6 @@ onMounted(() => {
   .input-wrapper {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .context-fields {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .send-button {

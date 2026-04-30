@@ -15,3 +15,14 @@ target/
 
 # Node modules (如果 frontend 是 Node 项目)
 node_modules/
+
+# Offline dependency payloads are generated outside Git.
+offline-deps/*
+!offline-deps/.gitkeep
+!offline-deps/maven-repository/
+offline-deps/maven-repository/**
+!offline-deps/maven-repository/.gitkeep
+!offline-deps/npm-cache/
+offline-deps/npm-cache/**
+!offline-deps/npm-cache/.gitkeep
+offline-deps/node_modules-*.tar.gz

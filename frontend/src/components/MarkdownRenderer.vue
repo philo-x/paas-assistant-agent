@@ -197,12 +197,12 @@ watch(() => props.isStreaming, (newVal, oldVal) => {
 
 .markdown-content :deep(ul),
 .markdown-content :deep(ol) {
-  margin: 0.5em 0;
-  padding-left: 1.5em;
+  margin: 0.8em 0;
+  padding-left: 1.8em;
 }
 
 .markdown-content :deep(li) {
-  margin: 0.5em 0;
+  margin: 0.4em 0;
   line-height: 1.6;
   position: relative;
 }
@@ -238,15 +238,6 @@ watch(() => props.isStreaming, (newVal, oldVal) => {
   padding-left: 0.2em;
 }
 
-.markdown-content :deep(ul) {
-  margin: 1em 0;
-  padding-left: 1.8em;
-}
-
-.markdown-content :deep(ol) {
-  margin: 1em 0;
-  padding-left: 1.8em;
-}
 
 .markdown-content :deep(blockquote) {
   margin: 0.5em 0;

@@ -16,7 +16,7 @@
 
 import axios from 'axios'
 import { useConfigStore } from '@/stores/config'
-import type { ChatContext, StructuredChatRequest, StructuredSseEvent, StructuredSseEventName } from '@/types'
+import type { StructuredChatRequest, StructuredSseEvent, StructuredSseEventName } from '@/types'
 
 export interface ChatRequest {
   chat_id: string
@@ -84,14 +84,12 @@ export class ChatApiService {
 
   async sendStructuredMessage(
     query: string,
-    context: ChatContext,
     onEvent: (event: StructuredSseEvent) => void
   ): Promise<void> {
     const payload: StructuredChatRequest = {
       chat_id: this.configStore.chatId,
       user_id: this.configStore.userId,
-      user_query: query,
-      context
+      user_query: query
     }
 
     const response = await fetch(this.configStore.structuredApiUrl, {
@@ -190,4 +188,3 @@ export class ChatApiService {
 }
 
 export const chatApiService = new ChatApiService()
-

@@ -16,20 +16,12 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { ChatContext } from '@/types'
 
 export interface ConfigState {
   baseUrl: string
   userId: string
   chatId: string
 }
-
-const defaultChatContext = (): ChatContext => ({
-  namespace: 'default',
-  kind: '',
-  name: '',
-  mode: 'auto'
-})
 
 export const useConfigStore = defineStore('config', () => {
   // Read initial baseUrl from window config (injected at runtime) or use default
@@ -46,7 +38,6 @@ export const useConfigStore = defineStore('config', () => {
   const baseUrl = ref(getInitialBaseUrl())
   const userId = ref('')
   const chatId = ref('')
-  const chatContext = ref<ChatContext>(defaultChatContext())
 
   // Getters
   const apiUrl = computed(() => `${baseUrl.value}/api/assistant/chat`)
@@ -56,8 +47,7 @@ export const useConfigStore = defineStore('config', () => {
     localStorage.setItem('paas-agent-config', JSON.stringify({
       baseUrl: baseUrl.value,
       userId: userId.value,
-      chatId: chatId.value,
-      chatContext: chatContext.value
+      chatId: chatId.value
     }))
   }
 
@@ -76,14 +66,6 @@ export const useConfigStore = defineStore('config', () => {
     persist()
   }
 
-  function updateChatContext(newContext: Partial<ChatContext>) {
-    chatContext.value = {
-      ...chatContext.value,
-      ...newContext
-    }
-    persist()
-  }
-
   function loadConfig() {
     const saved = localStorage.getItem('paas-agent-config')
     if (saved) {
@@ -93,10 +75,6 @@ export const useConfigStore = defineStore('config', () => {
         userId.value = config.userId || ''
         // Load saved chatId if exists
         chatId.value = config.chatId || ''
-        chatContext.value = {
-          ...defaultChatContext(),
-          ...(config.chatContext || {})
-        }
       } catch (error) {
         console.error('Failed to load config:', error)
       }
@@ -122,11 +100,9 @@ export const useConfigStore = defineStore('config', () => {
     baseUrl,
     userId,
     chatId,
-    chatContext,
     apiUrl,
     structuredApiUrl,
     updateConfig,
-    updateChatContext,
     loadConfig,
     generateNewChatId,
     initializeChatId

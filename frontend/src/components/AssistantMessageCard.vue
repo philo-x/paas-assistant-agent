@@ -42,10 +42,10 @@ const normalizeEscapedText = (raw: string) => {
     return ''
   }
 
-  let text = raw.trim()
-  if (text.startsWith('"') && text.endsWith('"')) {
+  let text = raw
+  if (text.trim().startsWith('"') && text.trim().endsWith('"')) {
     try {
-      const parsed = JSON.parse(text)
+      const parsed = JSON.parse(text.trim())
       if (typeof parsed === 'string') {
         text = parsed
       }
@@ -60,7 +60,6 @@ const normalizeEscapedText = (raw: string) => {
     .replace(/\\t/g, '\t')
     .replace(/\\"/g, '"')
     .replace(/\\\\/g, '\\')
-    .trim()
 }
 
 const toggleThoughts = () => {

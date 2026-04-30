@@ -84,21 +84,6 @@ export default {
       noBaseUrl: '请在右上角的设置页面设置后端地址',
       noUserId: '请在右上角的设置页面设置用户ID'
     },
-    context: {
-      title: '当前上下文',
-      namespace: '命名空间',
-      kind: '资源类型',
-      name: '资源名称',
-      mode: '模式',
-      namespacePlaceholder: '默认 default',
-      kindPlaceholder: '可选资源类型',
-      namePlaceholder: '可选资源名称',
-      modeOptions: {
-        auto: '自动路由',
-        diagnose: '诊断优先',
-        guide: '咨询优先'
-      }
-    },
     sections: {
       answer: '最终回答',
       tools: '工具调用',

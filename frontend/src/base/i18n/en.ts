@@ -84,21 +84,6 @@ export default {
       noBaseUrl: 'Please set the backend URL in settings',
       noUserId: 'Please set the user ID in settings'
     },
-    context: {
-      title: 'Current Context',
-      namespace: 'Namespace',
-      kind: 'Kind',
-      name: 'Name',
-      mode: 'Mode',
-      namespacePlaceholder: 'Default: default',
-      kindPlaceholder: 'Optional resource kind',
-      namePlaceholder: 'Optional resource name',
-      modeOptions: {
-        auto: 'Auto Routing',
-        diagnose: 'Diagnose First',
-        guide: 'Guide First'
-      }
-    },
     sections: {
       answer: 'Final Answer',
       tools: 'Tool Calls',

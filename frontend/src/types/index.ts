@@ -14,15 +14,6 @@
  * limitations under the License.
  */
 
-export type ChatMode = 'auto' | 'diagnose' | 'guide'
-
-export interface ChatContext {
-  namespace: string
-  kind: string
-  name: string
-  mode: ChatMode
-}
-
 export type ToolTraceStatus = 'pending' | 'success' | 'error'
 
 export type ThinkingTimelineStepKind = 'reasoning' | 'tool' | 'handoff' | 'error'
@@ -51,7 +42,6 @@ export interface BaseMessage {
 export interface UserMessage extends BaseMessage {
   type: 'user'
   question: string
-  context: ChatContext
 }
 
 export interface AssistantMessage extends BaseMessage {
@@ -87,9 +77,7 @@ export interface ChatRequest {
   user_query: string
 }
 
-export interface StructuredChatRequest extends ChatRequest {
-  context: ChatContext
-}
+export type StructuredChatRequest = ChatRequest
 
 export interface ChatResponse {
   success: boolean

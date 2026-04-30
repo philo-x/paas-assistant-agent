@@ -18,7 +18,6 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type {
   AssistantMessage,
-  ChatContext,
   Message,
   StructuredSseEvent
 } from '@/types'
@@ -32,12 +31,11 @@ export const useChatStore = defineStore('chat', () => {
 
   const buildId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`
 
-  function addUserMessage(question: string, context: ChatContext) {
+  function addUserMessage(question: string) {
     messages.value.push({
       id: buildId('user'),
       type: 'user',
       question,
-      context: { ...context },
       timestamp: Date.now()
     })
   }

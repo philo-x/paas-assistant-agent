@@ -22,12 +22,18 @@ WORKDIR /frontend
 
 # Copy frontend dependency configuration
 COPY frontend/package*.json ./
+COPY offline-deps/npm-cache /offline-deps/npm-cache
 
 # Install dependencies
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm install --legacy-peer-deps
+ARG NPM_OFFLINE=false
+RUN if [ "$NPM_OFFLINE" = "true" ]; then \
+        npm ci --offline --cache /offline-deps/npm-cache --legacy-peer-deps; \
+    else \
+        npm config set registry https://registry.npmmirror.com && \
+        npm ci --cache /offline-deps/npm-cache --legacy-peer-deps --prefer-offline; \
+    fi
 
 COPY frontend/ .
 
