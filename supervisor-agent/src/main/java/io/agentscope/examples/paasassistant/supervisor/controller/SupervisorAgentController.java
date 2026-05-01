@@ -123,7 +123,6 @@ public class SupervisorAgentController {
                     Sinks.many().unicast().onBackpressureBuffer();
             StructuredSseEmitter emitter = new StructuredSseEmitter(sink, objectMapper);
             String traceId = UUID.randomUUID().toString();
-            emitter.emitUser(userQuery);
             traceRegistry.register(traceId, emitter);
 
             Msg msg =

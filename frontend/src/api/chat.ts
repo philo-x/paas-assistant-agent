@@ -18,6 +18,64 @@ import axios from 'axios'
 import { useConfigStore } from '@/stores/config'
 import type { StructuredChatRequest, StructuredSseEvent, StructuredSseEventName } from '@/types'
 
+const KNOWN_STRUCTURED_EVENTS = new Set<string>([
+  'reasoning_delta',
+  'tool_start',
+  'tool_result',
+  'answer_delta',
+  'done',
+  'error'
+])
+
+export const parseStructuredEvent = (chunk: string): StructuredSseEvent | null => {
+  const lines = chunk
+    .split('\n')
+    .map((line) => line.replace(/\r$/, ''))
+    .filter((line) => line.length > 0)
+
+  if (lines.length === 0) {
+    return null
+  }
+
+  let eventName = 'answer_delta'
+  let hasExplicitEvent = false
+  const dataLines: string[] = []
+
+  for (const line of lines) {
+    if (line.startsWith('event:')) {
+      hasExplicitEvent = true
+      eventName = line.slice(6).trim()
+    } else if (line.startsWith('data:')) {
+      dataLines.push(line.slice(5).replace(/^ /, ''))
+    }
+  }
+
+  if (hasExplicitEvent && !KNOWN_STRUCTURED_EVENTS.has(eventName)) {
+    return null
+  }
+
+  const rawData = dataLines.join('\n').trim()
+  if (!rawData) {
+    return null
+  }
+
+  try {
+    return {
+      event: eventName as StructuredSseEventName,
+      data: JSON.parse(rawData)
+    }
+  } catch (error) {
+    console.error('Failed to parse structured SSE payload:', error, rawData)
+    return {
+      event: 'error',
+      data: {
+        message: rawData || 'Failed to parse structured SSE payload',
+        stage: 'frontend'
+      }
+    }
+  }
+}
+
 export interface ChatRequest {
   chat_id: string
   user_id: string
@@ -31,7 +89,9 @@ export interface ChatResponse {
 }
 
 export class ChatApiService {
-  private configStore = useConfigStore()
+  private get configStore() {
+    return useConfigStore()
+  }
 
   async sendMessage(query: string): Promise<ReadableStream<Uint8Array> | null> {
     try {
@@ -128,7 +188,7 @@ export class ChatApiService {
       buffer = chunks.pop() || ''
 
       for (const chunk of chunks) {
-        const event = this.parseStructuredEvent(chunk)
+        const event = parseStructuredEvent(chunk)
         if (event) {
           onEvent(event)
         }
@@ -136,52 +196,9 @@ export class ChatApiService {
     }
 
     if (buffer.trim()) {
-      const event = this.parseStructuredEvent(buffer)
+      const event = parseStructuredEvent(buffer)
       if (event) {
         onEvent(event)
-      }
-    }
-  }
-
-  private parseStructuredEvent(chunk: string): StructuredSseEvent | null {
-    const lines = chunk
-      .split('\n')
-      .map((line) => line.replace(/\r$/, ''))
-      .filter((line) => line.length > 0)
-
-    if (lines.length === 0) {
-      return null
-    }
-
-    let eventName: StructuredSseEventName = 'answer_delta'
-    const dataLines: string[] = []
-
-    for (const line of lines) {
-      if (line.startsWith('event:')) {
-        eventName = line.slice(6).trim() as StructuredSseEventName
-      } else if (line.startsWith('data:')) {
-        dataLines.push(line.slice(5).trim())
-      }
-    }
-
-    if (dataLines.length === 0) {
-      return null
-    }
-
-    const rawData = dataLines.join('\n')
-    try {
-      return {
-        event: eventName,
-        data: JSON.parse(rawData)
-      }
-    } catch (error) {
-      console.error('Failed to parse structured SSE payload:', error, rawData)
-      return {
-        event: 'error',
-        data: {
-          message: rawData || 'Failed to parse structured SSE payload',
-          stage: 'frontend'
-        }
       }
     }
   }

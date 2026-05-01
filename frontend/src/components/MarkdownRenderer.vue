@@ -19,6 +19,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import { normalizeMarkdownContent } from '@/utils/markdown'
 
 interface Props {
   content: string
@@ -72,7 +73,7 @@ const renderMarkdown = async () => {
 const performRender = async () => {
   try {
     // Always perform content preprocessing to ensure correct markdown format
-    let content = processedContent.value
+    let content = normalizeMarkdownContent(processedContent.value)
 
     // Auto-fix tables that lack a preceding blank line (a common LLM formatting mistake that breaks marked.js)
     content = content.replace(/([^\n])\n([ \t]*\|.*\|[ \t]*\n[ \t]*\|[-:| \t]+\|)/g, '$1\n\n$2')
@@ -102,7 +103,7 @@ const performRender = async () => {
       ],
       ALLOWED_ATTR: [
         'href', 'title', 'alt', 'src', 'class', 'id',
-        'target', 'rel', 'style'
+        'target', 'rel'
       ]
     })
   } catch (error) {
@@ -334,5 +335,3 @@ watch(() => props.isStreaming, (newVal, oldVal) => {
   51%, 100% { opacity: 0; }
 }
 </style>
-
-

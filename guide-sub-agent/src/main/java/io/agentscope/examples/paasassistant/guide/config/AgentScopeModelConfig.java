@@ -21,6 +21,7 @@ import io.agentscope.core.formatter.openai.OpenAIChatFormatter;
 import io.agentscope.core.model.DashScopeChatModel;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.OpenAIChatModel;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,7 +62,8 @@ public class AgentScopeModelConfig {
 
     @Bean
     public Model model() {
-        if (PROVIDER_OPENAI.equalsIgnoreCase(modelProvider)) {
+        String provider = normalizeProvider(modelProvider);
+        if (PROVIDER_OPENAI.equals(provider)) {
             logger.info(
                     "Creating OpenAI Model with model: {}, baseUrl: {}",
                     openaiModelName,
@@ -76,7 +78,8 @@ public class AgentScopeModelConfig {
                 builder.baseUrl(openaiBaseUrl);
             }
             return builder.build();
-        } else {
+        }
+        if (PROVIDER_DASHSCOPE.equals(provider)) {
             logger.info(
                     "Creating DashScope Model with model: {}, baseUrl: {}",
                     dashscopeModelName,
@@ -93,5 +96,13 @@ public class AgentScopeModelConfig {
             }
             return builder.build();
         }
+        throw new IllegalArgumentException(
+                "Unsupported agentscope model provider: "
+                        + modelProvider
+                        + ". Supported providers: dashscope, openai");
+    }
+
+    private String normalizeProvider(String provider) {
+        return provider == null ? "" : provider.trim().toLowerCase(Locale.ROOT);
     }
 }

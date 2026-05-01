@@ -86,7 +86,6 @@ export interface ChatResponse {
 }
 
 export type StructuredSseEventName =
-  | 'user'
   | 'reasoning_delta'
   | 'tool_start'
   | 'tool_result'

@@ -42,12 +42,6 @@ public class StructuredSseEmitter {
         this.objectMapper = objectMapper;
     }
 
-    public void emitUser(String question) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("question", question);
-        emit("user", payload);
-    }
-
     public void emitReasoningDelta(String agent, String text) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("agent", agent);

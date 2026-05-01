@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Sinks;
@@ -13,6 +14,15 @@ import reactor.core.publisher.Sinks;
 class StructuredSseEmitterTest {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final Set<String> ALLOWED_EVENTS =
+            Set.of(
+                    "reasoning_delta",
+                    "tool_start",
+                    "tool_result",
+                    "answer_delta",
+                    "done",
+                    "error");
 
     @Test
     void emitsSequenceAndToolMetadataForStructuredTimeline() throws Exception {
@@ -33,6 +43,7 @@ class StructuredSseEmitterTest {
 
         List<ServerSentEvent<String>> events = sink.asFlux().take(3).collectList().block();
         assertThat(events).hasSize(3);
+        assertThat(events).extracting(ServerSentEvent::event).allMatch(ALLOWED_EVENTS::contains);
 
         Map<String, Object> reasoningPayload = payload(events.get(0));
         assertThat(events.get(0).event()).isEqualTo("reasoning_delta");
