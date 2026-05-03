@@ -16,27 +16,11 @@
 
 package io.agentscope.examples.paasassistant.supervisor.stream;
 
+/**
+ * Definition of how a tool should be narrated in the UI.
+ */
 record ToolNarrationDefinition(
         String title,
         boolean delegation,
-        String startTemplate,
-        String successTemplate,
-        boolean appendToolNameToTitle) {
-
-    String titleFor(String tool) {
-        if (appendToolNameToTitle) {
-            return title + " (" + tool + ")";
-        }
-        return title;
-    }
-
-    static ToolNarrationDefinition regular(
-            String title, String startTemplate, String successTemplate) {
-        return new ToolNarrationDefinition(title, false, startTemplate, successTemplate, true);
-    }
-
-    static ToolNarrationDefinition delegation(
-            String title, String startTemplate, String successTemplate) {
-        return new ToolNarrationDefinition(title, true, startTemplate, successTemplate, false);
-    }
-}
+        boolean appendToolNameToTitle
+) {}

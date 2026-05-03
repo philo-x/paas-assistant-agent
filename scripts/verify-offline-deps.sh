@@ -30,9 +30,9 @@ fi
 require_file "$MAVEN_REPO/kr/motd/maven/os-maven-plugin/1.7.1/os-maven-plugin-1.7.1.jar"
 require_file "$MAVEN_REPO/org/codehaus/plexus/plexus-utils/1.1/plexus-utils-1.1.jar"
 require_file "$MAVEN_REPO/org/codehaus/plexus/plexus-utils/3.1.0/plexus-utils-3.1.0.jar"
-require_file "$MAVEN_REPO/org/springframework/boot/spring-boot-dependencies/4.0.3/spring-boot-dependencies-4.0.3.pom"
-require_file "$MAVEN_REPO/io/agentscope/agentscope-dependencies-bom/1.0.11/agentscope-dependencies-bom-1.0.11.pom"
-require_file "$MAVEN_REPO/io/agentscope/agentscope-bom/1.0.11/agentscope-bom-1.0.11.pom"
+require_file "$MAVEN_REPO/org/springframework/boot/spring-boot-dependencies/4.0.4/spring-boot-dependencies-4.0.4.pom"
+require_file "$MAVEN_REPO/io/agentscope/agentscope-dependencies-bom/1.0.12/agentscope-dependencies-bom-1.0.12.pom"
+require_file "$MAVEN_REPO/io/agentscope/agentscope-bom/1.0.12/agentscope-bom-1.0.12.pom"
 
 if find "$MAVEN_REPO" -name "*.lastUpdated" | grep -q .; then
     printf 'Found Maven .lastUpdated marker(s) in offline repository. Regenerate offline-deps before copying.\n' >&2

@@ -1,0 +1,60 @@
+agent:
+  narration:
+    groups:
+      - name: "1. 代理转发 (Delegation)"
+        items:
+          - tools: ["callDiagnosisAgent"]
+            title: "转交 Diagnosis Agent"
+            delegation: true
+            append-tool-name-to-title: false
+          - tools: ["callGuideAgent"]
+            title: "转交 Guide Agent"
+            delegation: true
+            append-tool-name-to-title: false
+
+      - name: "2. 诊断只读 (K8sGPT MCP)"
+        items:
+          - tools: ["analyze"]
+            title: "执行诊断分析"
+          - tools: ["cluster-info"]
+            title: "读取集群信息"
+          - tools: ["list-resources"]
+            title: "查询资源列表"
+          - tools: ["get-resource"]
+            title: "读取资源详情"
+          - tools: ["list-events"]
+            title: "查询资源事件"
+          - tools: ["get-logs"]
+            title: "读取资源日志"
+          - tools: ["list-namespaces"]
+            title: "查询命名空间列表"
+          - tools: ["config"]
+            title: "读取 K8sGPT 配置"
+          - tools: ["list-integrations"]
+            title: "查询集成列表"
+          - tools: ["list-filters", "add-filters", "remove-filters"]
+            title: "管理诊断过滤器"
+
+      - name: "3. 受控变更 (Platform MCP)"
+        items:
+          - tools: ["change-plan-restart"]
+            title: "生成重启计划"
+          - tools: ["change-plan-scale"]
+            title: "生成扩缩容计划"
+          - tools: ["change-plan-delete-pod"]
+            title: "生成删除 Pod 计划"
+          - tools: ["change-plan-patch"]
+            title: "生成 Patch 计划"
+          - tools: ["change-execute"]
+            title: "执行变更"
+          - tools: ["change-get-status"]
+            title: "查询变更状态"
+
+      - name: "4. 引导与指南 (Local Tools)"
+        items:
+          - tools: ["guide-translate-yaml-field"]
+            title: "解释 YAML 字段"
+          - tools: ["guide-interpret-describe"]
+            title: "解读 Describe 输出"
+          - tools: ["guide-recommend-command"]
+            title: "整理建议命令"

@@ -16,39 +16,55 @@
 
 package io.agentscope.examples.paasassistant.supervisor.stream;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public final class ToolNarrator {
 
+    private static final Pattern THINKING_PATTERN = Pattern.compile("<thinking>(.*?)</thinking>", Pattern.DOTALL);
+
     private ToolNarrator() {}
+
+    public static String summarizeToolStart(String agentName, String tool, String inputSummary) {
+        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(tool);
+        String title = definition.title();
+        if (definition.appendToolNameToTitle()) {
+            title += " (" + tool + ")";
+        }
+        return "正在" + title + "。";
+    }
+
+    public static String summarizeToolResult(String agentName, String tool, String outputSummary, String inputSummary) {
+        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(tool);
+        return ToolResultSummarizer.summarize(tool, outputSummary, definition);
+    }
+
+    public static String titleForTool(String tool) {
+        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(tool);
+        String title = definition.title();
+        if (definition.appendToolNameToTitle()) {
+            title += " (" + tool + ")";
+        }
+        return title;
+    }
 
     public static boolean isDelegationTool(String tool) {
         return ToolNarrationCatalog.definitionFor(tool).delegation();
     }
 
-    public static String titleForTool(String tool) {
-        return ToolNarrationCatalog.definitionFor(tool).titleFor(tool);
+    public static String extractThinkingChunk(String chunk) {
+        if (chunk == null || chunk.isEmpty()) {
+            return "";
+        }
+        // Use (?s) so DOTALL is enabled for the regex, matching newlines inside the tags.
+        // DO NOT use .trim() here, as it destroys spaces and newlines between streaming chunks!
+        return chunk.replaceAll("(?s)<thinking>.*?</thinking>", "");
     }
 
-    public static String summarizeToolStart(String agent, String tool, String inputSummary) {
-        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(tool);
-        return ToolNarrationTemplates.render(
-                definition.startTemplate(), ToolInputParser.parse(inputSummary));
-    }
-
-    public static String summarizeToolResult(
-            String agent, String tool, String outputSummary, String inputSummary) {
-        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(tool);
-        return ToolResultSummarizer.summarize(tool, outputSummary, inputSummary, definition);
-    }
-
-    public static String extractThinkingText(String raw) {
-        return ReasoningTextSanitizer.extractThinkingText(raw);
-    }
-
-    public static String extractThinkingChunk(String raw) {
-        return ReasoningTextSanitizer.extractIncrementalChunk(raw);
-    }
-
-    public static String summarizeReasoningText(String raw) {
-        return ReasoningTextSanitizer.summarize(raw);
+    public static String extractThinkingText(String chunk) {
+        if (chunk == null || chunk.isEmpty()) {
+            return "";
+        }
+        return chunk.replaceAll("(?s)<thinking>.*?</thinking>", "").trim();
     }
 }

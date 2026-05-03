@@ -95,7 +95,6 @@ class SupervisorConversationHistorySanitizerTest {
                         .content(new ToolUseBlock("tool-1", "callDiagnosisAgent", Map.of()))
                         .build());
         memory.addMessage(toolResult("resource-list", "工具输出"));
-        memory.addMessage(assistant("[SYNTHETIC_TOOL_RESULT] resource-list\n工具输出"));
         memory.addMessage(assistant("保留最终回答。"));
 
         new SupervisorConversationHistorySanitizer().sanitize(memory);

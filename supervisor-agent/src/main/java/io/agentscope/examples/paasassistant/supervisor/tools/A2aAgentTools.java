@@ -24,14 +24,18 @@ import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.message.ThinkingBlock;
 import io.agentscope.core.message.ToolResultBlock;
+import io.agentscope.core.message.ToolUseBlock;
 import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.ToolParam;
+import io.agentscope.core.util.JsonUtils;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredSseEmitter;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredTraceRegistry;
 import io.agentscope.examples.paasassistant.supervisor.stream.ToolNarrator;
 import java.io.EOFException;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -133,15 +137,15 @@ public class A2aAgentTools {
                                     StringBuilder finalAnswer = new StringBuilder();
                                     ChildStreamState state = new ChildStreamState();
                                     return agent.stream(msg, CHILD_AGENT_STREAM_OPTIONS)
-                                            .doOnNext(
-                                                    event ->
-                                                            handleChildEvent(
-                                                                    childAgentName,
-                                                                    event,
-                                                                    emitter,
-                                                                    finalAnswer,
-                                                                    state))
-                                            .then(Mono.fromSupplier(() -> finalAnswer.toString().trim()));
+                                             .doOnNext(
+                                                     event ->
+                                                             handleChildEvent(
+                                                                     childAgentName,
+                                                                     event,
+                                                                     emitter,
+                                                                     finalAnswer,
+                                                                     state))
+                                             .then(Mono.fromSupplier(() -> finalAnswer.toString().trim()));
                                 })
                         .timeout(childAgentTimeout);
 
@@ -285,7 +289,7 @@ public class A2aAgentTools {
         }
 
         if (event.getType() == EventType.REASONING) {
-            boolean emittedToolStep = emitToolResultBlocks(childAgentName, event.getMessage(), emitter);
+            boolean emittedToolStep = emitToolSteps(childAgentName, event.getMessage(), emitter, state);
             if (emittedToolStep) {
                 state.markStepEmitted();
             }
@@ -317,7 +321,7 @@ public class A2aAgentTools {
         }
 
         if (event.getType() == EventType.TOOL_RESULT) {
-            if (emitToolResultBlocks(childAgentName, event.getMessage(), emitter)) {
+            if (emitToolSteps(childAgentName, event.getMessage(), emitter, state)) {
                 state.markStepEmitted();
             }
             return;
@@ -337,13 +341,33 @@ public class A2aAgentTools {
         }
     }
 
-    private boolean emitToolResultBlocks(
-            String childAgentName, Msg message, StructuredSseEmitter emitter) {
+    private boolean emitToolSteps(
+            String childAgentName, Msg message, StructuredSseEmitter emitter, ChildStreamState state) {
         if (message == null || emitter == null) {
             return false;
         }
 
         boolean emitted = false;
+
+        // Process tool calls (starts)
+        for (ToolUseBlock block : message.getContentBlocks(ToolUseBlock.class)) {
+            String toolName = block.getName();
+            Object inputObj = block.getInput();
+            String inputSummary = "";
+            if (inputObj != null) {
+                try {
+                    inputSummary = JsonUtils.getJsonCodec().toJson(inputObj);
+                } catch (Exception e) {
+                    inputSummary = inputObj.toString();
+                }
+            } else if (block.getContent() != null) {
+                inputSummary = block.getContent();
+            }
+            emitter.emitToolStart(childAgentName, toolName, inputSummary);
+            emitted = true;
+        }
+
+        // Process tool results (completions)
         for (ToolResultBlock block : message.getContentBlocks(ToolResultBlock.class)) {
             String toolName =
                     (block.getName() == null || block.getName().isBlank())
@@ -353,7 +377,8 @@ public class A2aAgentTools {
                     .filter(TextBlock.class::isInstance)
                     .map(TextBlock.class::cast)
                     .map(TextBlock::getText)
-                    .reduce("", String::concat);
+                    .collect(java.util.stream.Collectors.joining("\n"));
+
             emitter.emitToolResult(
                     childAgentName,
                     toolName,
@@ -364,25 +389,6 @@ public class A2aAgentTools {
             emitted = true;
         }
 
-        // Support for synthetic ToolResult transported as TextBlock to bypass A2A framework bugs
-        for (TextBlock textBlock : message.getContentBlocks(TextBlock.class)) {
-            String text = textBlock.getText();
-            if (text != null && text.startsWith("[SYNTHETIC_TOOL_RESULT]")) {
-                String[] parts = text.split("\n", 2);
-                String toolName = parts[0].substring("[SYNTHETIC_TOOL_RESULT]".length()).trim();
-                String outputSummary = parts.length > 1 ? parts[1] : "";
-                if (toolName.isBlank()) {
-                    toolName = "unknown_tool";
-                }
-                emitter.emitToolResult(
-                        childAgentName,
-                        toolName,
-                        "success",
-                        ToolNarrator.summarizeToolResult(childAgentName, toolName, outputSummary, ""),
-                        "");
-                emitted = true;
-            }
-        }
         return emitted;
     }
 
@@ -407,7 +413,6 @@ public class A2aAgentTools {
     }
 
     private static final class ChildStreamState {
-
         private boolean stepEmitted;
 
         private void markStepEmitted() {

@@ -83,12 +83,7 @@ public class McpServerConfig {
                 continue;
             }
 
-            McpSchema.Tool tool =
-                    McpSchema.Tool.builder()
-                            .name(toolSchema.getName())
-                            .description(toolSchema.getDescription())
-                            .inputSchema(toJsonSchema(toolSchema.getParameters()))
-                            .build();
+            McpSchema.Tool tool = toMcpTool(toolSchema);
 
             McpServerFeatures.SyncToolSpecification specification =
                     McpServerFeatures.SyncToolSpecification.builder()
@@ -182,7 +177,16 @@ public class McpServerConfig {
         return false;
     }
 
-    private McpSchema.JsonSchema toJsonSchema(Map<String, Object> parameters) {
+    McpSchema.Tool toMcpTool(ToolSchema toolSchema) {
+        return McpSchema.Tool.builder()
+                .name(toolSchema.getName())
+                .description(toolSchema.getDescription())
+                .inputSchema(toJsonSchema(toolSchema.getParameters()))
+                .outputSchema(toolSchema.getOutputSchema())
+                .build();
+    }
+
+    McpSchema.JsonSchema toJsonSchema(Map<String, Object> parameters) {
         Map<String, Object> schema =
                 parameters == null ? Collections.emptyMap() : parameters;
         return new McpSchema.JsonSchema(

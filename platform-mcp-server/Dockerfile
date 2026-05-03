@@ -17,7 +17,7 @@
 # Using a multi-arch compatible base image (supports amd64 and arm64)
 FROM eclipse-temurin:17-jre
 
-ARG VERSION=1.0.11
+ARG VERSION=1.0.12
 
 # Set metadata labels
 LABEL maintainer="AgentScope Team"

@@ -43,7 +43,7 @@ RUN npm run build-only
 # Stage 2: Final image (Java + static files)
 FROM eclipse-temurin:17-jre
 
-ARG VERSION=1.0.11
+ARG VERSION=1.0.12
 
 LABEL maintainer="AgentScope Team"
 LABEL description="Supervisor Agent + Frontend - Multi-Agent Demo"

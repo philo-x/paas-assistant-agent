@@ -46,7 +46,11 @@ const normalizeHeaderCells = (headerCells: string[], targetLength: number, first
 }
 
 const normalizeMalformedPipeTables = (content: string) => {
-  const lines = content.split('\n')
+  // Fix: If header and separator rows are stuck on the same line (common issue with some tool outputs or serialization)
+  // Example: | H1 | H2 ||---|---| -> | H1 | H2 |\n|---|---|
+  let normalized = content.replace(/^([ \t]*\|.*\|)([ \t]*\|[-:| \t]+\|[ \t]*)$/gm, '$1\n$2')
+
+  const lines = normalized.split('\n')
   const normalizedLines: string[] = []
   let inFence = false
 

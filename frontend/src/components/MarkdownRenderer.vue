@@ -78,6 +78,12 @@ const performRender = async () => {
     // Auto-fix tables that lack a preceding blank line (a common LLM formatting mistake that breaks marked.js)
     content = content.replace(/([^\n])\n([ \t]*\|.*\|[ \t]*\n[ \t]*\|[-:| \t]+\|)/g, '$1\n\n$2')
 
+    // Fix: Code blocks that lack a preceding blank line
+    content = content.replace(/([^\n])\n([ \t]*```)/g, '$1\n\n$2')
+
+    // Fix: Lists that lack a preceding blank line
+    content = content.replace(/([^\n])\n([ \t]*[*+-] |\d+\. )/g, '$1\n\n$2')
+
     // Fix: --- on its own line immediately after text is interpreted by marked as a setext h2 heading.
     // Insert blank lines around it so it becomes an <hr> instead.
     content = content.replace(/([^\n])\n(-{3,})\s*\n/g, '$1\n\n$2\n\n')
@@ -85,11 +91,12 @@ const performRender = async () => {
     content = content.replace(/([^\n])\n(-{3,})\s*$/, '$1\n\n$2')
 
     // Fix: ATX headings (# ## ###) that immediately follow a non-blank line need a blank line before them
-    // so marked parses them as block-level headings, not inline continuation of a paragraph.
-    // Case 1: single \n before heading (text\n## → text\n\n##)
-    content = content.replace(/([^\n])\n(#{1,6}\s)/g, '$1\n\n$2')
-    // Case 2: no \n before heading at all (text## → text\n\n##) — LLM sometimes omits the line break
-    content = content.replace(/([^\n#`])(#{1,6} )/g, '$1\n\n$2')
+    content = content.replace(/([^\n])\n(#{1,6}[ \t\S])/g, '$1\n\n$2')
+    // Case 2: no \n before heading at all (text## → text\n\n##)
+    content = content.replace(/([^\n#`])(#{1,6}[ \t\S])/g, '$1\n\n$2')
+
+    // Fix: ATX headings missing a space after # (e.g., ##📊 -> ## 📊)
+    content = content.replace(/^(#{1,6})([^ \t\n#])/gm, '$1 $2')
 
     // Trust the GFM content. Remove destructive regex hacks.
     const rawHtml = await marked(content)

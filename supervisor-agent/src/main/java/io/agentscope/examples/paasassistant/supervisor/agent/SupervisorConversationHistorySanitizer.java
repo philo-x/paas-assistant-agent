@@ -121,7 +121,7 @@ public class SupervisorConversationHistorySanitizer {
                 return parseHistoryReference(text);
             }
         }
-        if (text.isBlank() || isSyntheticToolResult(text)) {
+        if (text.isBlank()) {
             return List.of();
         }
 
@@ -165,9 +165,6 @@ public class SupervisorConversationHistorySanitizer {
                 .trim();
     }
 
-    private boolean isSyntheticToolResult(String text) {
-        return text != null && text.stripLeading().startsWith("[SYNTHETIC_TOOL_RESULT]");
-    }
 
     private List<VisibleMessage> parseHistoryReference(String text) {
         List<VisibleMessage> parsed = new ArrayList<>();

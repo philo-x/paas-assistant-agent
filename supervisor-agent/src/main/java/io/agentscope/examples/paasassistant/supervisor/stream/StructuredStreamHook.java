@@ -42,7 +42,7 @@ public class StructuredStreamHook implements Hook {
     public <T extends HookEvent> Mono<T> onEvent(T event) {
         if (event instanceof ReasoningChunkEvent reasoningChunk) {
             String text = ToolNarrator.extractThinkingChunk(extractThinking(reasoningChunk.getIncrementalChunk()));
-            if (!text.isBlank()) {
+            if (!text.isEmpty()) {
                 emitter.emitReasoningDelta(agentName, text);
             }
         } else if (event instanceof PreActingEvent preActing) {
@@ -101,7 +101,18 @@ public class StructuredStreamHook implements Hook {
         if (value == null) {
             return "";
         }
-        String normalized = value.toString().replace("\r\n", "\n").replace('\r', '\n').trim();
+        String normalized;
+        if (value instanceof java.util.Map) {
+            try {
+                normalized = io.agentscope.core.util.JsonUtils.getJsonCodec().toJson(value);
+            } catch (Exception e) {
+                normalized = value.toString();
+            }
+        } else {
+            normalized = value.toString();
+        }
+        
+        normalized = normalized.replace("\r\n", "\n").replace('\r', '\n').trim();
         if (normalized.length() <= 2000) {
             return normalized;
         }

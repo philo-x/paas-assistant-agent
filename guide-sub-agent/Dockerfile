@@ -16,7 +16,7 @@
 # Using pre-built JAR from local Maven build
 FROM eclipse-temurin:17-jre
 
-ARG VERSION=1.0.11
+ARG VERSION=1.0.12
 
 # Set metadata labels
 LABEL maintainer="AgentScope Team"

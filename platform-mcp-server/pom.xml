@@ -22,7 +22,7 @@
     <parent>
         <groupId>io.agentscope.examples</groupId>
         <artifactId>paas-assistant-agent</artifactId>
-        <version>1.0.11</version>
+        <version>1.0.12</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -79,6 +79,12 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- actuator -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
         <!-- Spring JDBC for DatabaseInitializer -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -94,6 +100,11 @@
             <groupId>io.fabric8</groupId>
             <artifactId>kubernetes-client</artifactId>
             <version>6.8.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

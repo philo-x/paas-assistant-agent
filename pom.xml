@@ -21,7 +21,7 @@
 
     <groupId>io.agentscope.examples</groupId>
     <artifactId>paas-assistant-agent</artifactId>
-    <version>1.0.11</version>
+    <version>1.0.12</version>
     <packaging>pom</packaging>
     <name>PaaS Agent Assistant</name>
     <description>PaaS platform multi-agent assistant for Kubernetes diagnosis and guided operations</description>
@@ -34,7 +34,7 @@
     </modules>
 
     <properties>
-        <revision>1.0.11</revision>
+        <revision>1.0.12</revision>
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -47,7 +47,8 @@
         <maven.deploy.skip>true</maven.deploy.skip>
 
         <!-- Spring Boot -->
-        <spring-boot.version>4.0.3</spring-boot.version>
+        <spring-boot.version>4.0.4</spring-boot.version>
+        <spring-framework.version>7.0.7</spring-framework.version>
         <!-- AgentScope -->
         <agentscope.version>${revision}</agentscope.version>
 
@@ -80,6 +81,11 @@
                 <version>${agentscope.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.nacos</groupId>
+                <artifactId>nacos-client</artifactId>
+                <version>3.2.1-2026.04.03</version>
             </dependency>
             <dependency>
                 <groupId>org.mybatis.spring.boot</groupId>

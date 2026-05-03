@@ -17,7 +17,6 @@
 package io.agentscope.examples.paasassistant.diagnosis.config;
 
 import io.agentscope.core.formatter.dashscope.DashScopeChatFormatter;
-import io.agentscope.core.formatter.openai.OpenAIChatFormatter;
 import io.agentscope.core.model.DashScopeChatModel;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.OpenAIChatModel;
@@ -73,7 +72,7 @@ public class AgentScopeModelConfig {
                             .apiKey(openaiApiKey)
                             .modelName(openaiModelName)
                             .stream(true)
-                            .formatter(new OpenAIChatFormatter());
+                            .formatter(new SafeOpenAIChatFormatter());
             if (openaiBaseUrl != null && !openaiBaseUrl.isEmpty() && !openaiBaseUrl.equals("-")) {
                 builder.baseUrl(openaiBaseUrl);
             }

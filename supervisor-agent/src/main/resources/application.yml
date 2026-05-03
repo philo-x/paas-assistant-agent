@@ -20,6 +20,8 @@ agentscope:
       password: ${NACOS_PASSWORD:nacos}
 
 spring:
+  config:
+    import: "optional:classpath:tool-narrations.yml"
   application:
     name: supervisor-agent
   main:
