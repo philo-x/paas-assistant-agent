@@ -300,21 +300,19 @@ public class A2aAgentTools {
             }
 
             // Also emit thinking content if present (common in REASONING events)
-            String thinking = event.getMessage().getContentBlocks(ThinkingBlock.class).stream()
-                    .map(ThinkingBlock::getThinking)
-                    .reduce("", String::concat);
-            thinking = ToolNarrator.extractThinkingChunk(thinking);
-            if (!thinking.isEmpty()) {
-                if (emitter != null) {
-                    emitter.emitReasoningDelta(childAgentName, thinking);
+            for (ThinkingBlock block : event.getMessage().getContentBlocks(ThinkingBlock.class)) {
+                String thinking = ToolNarrator.extractThinkingChunk(block.getThinking());
+                if (!thinking.isEmpty()) {
+                    if (emitter != null) {
+                        emitter.emitReasoningDelta(childAgentName, thinking);
+                    }
+                    state.markStepEmitted();
                 }
-                state.markStepEmitted();
-            } else if (!emittedToolStep) {
-                // Fallback to text blocks if no specific thinking block was found
-                String text = event.getMessage().getContentBlocks(TextBlock.class).stream()
-                        .map(TextBlock::getText)
-                        .reduce("", String::concat);
-                text = ToolNarrator.extractThinkingChunk(text);
+            }
+
+            // Fallback to text blocks if no thinking block was found or in addition to it
+            for (TextBlock block : event.getMessage().getContentBlocks(TextBlock.class)) {
+                String text = ToolNarrator.extractThinkingChunk(block.getText());
                 if (!text.isEmpty()) {
                     if (emitter != null) {
                         emitter.emitReasoningDelta(childAgentName, text);
@@ -348,6 +346,7 @@ public class A2aAgentTools {
                     state.markAnswerEmitted();
                 }
             }
+            return;
         }
     }
 
@@ -361,8 +360,17 @@ public class A2aAgentTools {
 
         // Process tool calls (starts)
         for (ToolUseBlock block : message.getContentBlocks(ToolUseBlock.class)) {
-            String toolName = block.getName();
-            Object inputObj = block.getInput();
+            // Assemble to handle potential fragmentation in tool calls
+            ContentBlock assembled = state.getAssembler().assemble(block.getId(), block);
+            if (!(assembled instanceof ToolUseBlock finalBlock)) {
+                continue;
+            }
+
+            String toolName = finalBlock.getName();
+            // Avoid re-emitting the same tool start if we've already emitted it for this block ID
+            // (Note: In a real scenario, we might want to check if name/input changed significantly)
+            
+            Object inputObj = finalBlock.getInput();
             String inputSummary = "";
             if (inputObj != null) {
                 try {
@@ -370,8 +378,8 @@ public class A2aAgentTools {
                 } catch (Exception e) {
                     inputSummary = inputObj.toString();
                 }
-            } else if (block.getContent() != null) {
-                inputSummary = block.getContent();
+            } else if (finalBlock.getContent() != null) {
+                inputSummary = finalBlock.getContent();
             }
             emitter.emitToolStart(childAgentName, toolName, inputSummary);
             emitted = true;

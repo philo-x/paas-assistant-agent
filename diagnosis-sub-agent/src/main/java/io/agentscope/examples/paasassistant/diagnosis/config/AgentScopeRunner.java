@@ -93,8 +93,8 @@ public class AgentScopeRunner {
                                 EventType.AGENT_RESULT)
                         .incremental(true)
                         .includeReasoningChunk(true)
-                        .includeReasoningResult(true)
-                        .includeActingChunk(false)
+                        .includeReasoningResult(false)
+                        .includeActingChunk(true)
                         .includeSummaryChunk(false)
                         .includeSummaryResult(false)
                         .build();

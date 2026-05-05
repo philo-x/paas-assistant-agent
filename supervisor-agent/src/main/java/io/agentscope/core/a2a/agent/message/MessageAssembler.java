@@ -18,7 +18,9 @@ package io.agentscope.core.a2a.agent.message;
 
 import io.agentscope.core.message.ContentBlock;
 import io.agentscope.core.message.TextBlock;
+import io.agentscope.core.message.ThinkingBlock;
 import io.agentscope.core.message.ToolResultBlock;
+import io.agentscope.core.message.ToolUseBlock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,7 +56,11 @@ public class MessageAssembler {
                     }
 
                     if (existing instanceof ToolResultBlock eb && delta instanceof ToolResultBlock db) {
-                        return mergeToolResult(eb, db);
+                        return mergeToolResult(id, eb, db);
+                    } else if (existing instanceof ToolUseBlock eb && delta instanceof ToolUseBlock db) {
+                        return mergeToolUse(id, eb, db);
+                    } else if (existing instanceof ThinkingBlock et && delta instanceof ThinkingBlock dt) {
+                        return ThinkingBlock.builder().thinking(et.getThinking() + dt.getThinking()).build();
                     } else if (existing instanceof TextBlock et && delta instanceof TextBlock dt) {
                         return TextBlock.builder().text(et.getText() + dt.getText()).build();
                     }
@@ -63,7 +69,33 @@ public class MessageAssembler {
                 });
     }
 
-    private ToolResultBlock mergeToolResult(ToolResultBlock existing, ToolResultBlock delta) {
+    @SuppressWarnings("unchecked")
+    private ToolUseBlock mergeToolUse(String id, ToolUseBlock existing, ToolUseBlock delta) {
+        String name = delta.getName() != null ? delta.getName() : existing.getName();
+        Object input = delta.getInput() != null ? delta.getInput() : existing.getInput();
+        String content = delta.getContent() != null ? delta.getContent() : existing.getContent();
+        
+        // If content is text and both have it, concatenate? 
+        // Usually ToolUseBlock.content is used for the raw tool call string.
+        if (existing.getContent() != null && delta.getContent() != null) {
+            content = existing.getContent() + delta.getContent();
+        }
+
+        Map<String, Object> deltaMeta = (Map<String, Object>) delta.getMetadata();
+        Map<String, Object> existingMeta = (Map<String, Object>) existing.getMetadata();
+        Map<String, Object> mergedMeta = (deltaMeta != null && !deltaMeta.isEmpty()) ? deltaMeta : existingMeta;
+
+        return ToolUseBlock.builder()
+                .id(id)
+                .name(name)
+                .input((Map<String, Object>) input)
+                .content(content)
+                .metadata(mergedMeta)
+                .build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private ToolResultBlock mergeToolResult(String id, ToolResultBlock existing, ToolResultBlock delta) {
         List<ContentBlock> existingOutput = new ArrayList<>(existing.getOutput());
         List<ContentBlock> deltaOutput = delta.getOutput();
 
@@ -93,11 +125,15 @@ public class MessageAssembler {
             existingOutput.addAll(deltaOutput);
         }
 
+        Map<String, Object> deltaMeta = (Map<String, Object>) delta.getMetadata();
+        Map<String, Object> existingMeta = (Map<String, Object>) existing.getMetadata();
+        Map<String, Object> mergedMeta = (deltaMeta != null && !deltaMeta.isEmpty()) ? deltaMeta : existingMeta;
+
         // Return a new builder result with the merged output
         return ToolResultBlock.builder()
-                .id(existing.getId())
-                .name(existing.getName())
-                .metadata(existing.getMetadata())
+                .id(id)
+                .name(delta.getName() != null ? delta.getName() : existing.getName())
+                .metadata(mergedMeta)
                 .output(existingOutput)
                 .build();
     }
