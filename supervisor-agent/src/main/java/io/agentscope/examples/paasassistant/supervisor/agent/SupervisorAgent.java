@@ -26,7 +26,7 @@ import io.agentscope.core.model.ExecutionConfig;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.examples.paasassistant.supervisor.tools.A2aAgentTools;
-import io.agentscope.examples.paasassistant.supervisor.utils.MonitoringHook;
+import io.agentscope.examples.paasassistant.supervisor.hook.MonitoringHook;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;

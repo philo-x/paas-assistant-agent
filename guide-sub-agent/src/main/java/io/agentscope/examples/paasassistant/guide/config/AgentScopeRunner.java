@@ -18,7 +18,7 @@ import io.agentscope.core.rag.RAGMode;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.examples.paasassistant.guide.memory.CompatibleMem0LongTermMemory;
 import io.agentscope.examples.paasassistant.guide.tools.GuideTools;
-import io.agentscope.examples.paasassistant.guide.utils.MonitoringHook;
+import io.agentscope.examples.paasassistant.guide.hooks.MonitoringHook;
 import io.agentscope.extensions.nacos.mcp.tool.NacosToolkit;
 import java.util.List;
 import java.util.Map;

@@ -18,7 +18,7 @@ import io.agentscope.core.tool.Toolkit;
 import io.agentscope.examples.paasassistant.diagnosis.memory.CompatibleMem0LongTermMemory;
 import io.agentscope.core.tool.mcp.McpClientBuilder;
 import io.agentscope.core.tool.mcp.McpClientWrapper;
-import io.agentscope.examples.paasassistant.diagnosis.utils.MonitoringHook;
+import io.agentscope.examples.paasassistant.diagnosis.hooks.MonitoringHook;
 import io.agentscope.extensions.nacos.mcp.NacosMcpServerManager;
 import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientBuilder;
 import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientWrapper;
