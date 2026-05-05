@@ -18,7 +18,6 @@ import io.agentscope.core.tool.Toolkit;
 import io.agentscope.examples.paasassistant.diagnosis.memory.CompatibleMem0LongTermMemory;
 import io.agentscope.core.tool.mcp.McpClientBuilder;
 import io.agentscope.core.tool.mcp.McpClientWrapper;
-import io.agentscope.examples.paasassistant.diagnosis.hooks.A2aStreamingHook;
 import io.agentscope.examples.paasassistant.diagnosis.utils.MonitoringHook;
 import io.agentscope.extensions.nacos.mcp.NacosMcpServerManager;
 import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientBuilder;
@@ -66,19 +65,13 @@ public class AgentScopeRunner {
                 AutoContextConfig.builder().tokenRatio(0.4).lastKeep(10).build();
         AutoContextMemory memory = new AutoContextMemory(autoContextConfig, model);
 
-        ReActAgent.Builder builder =
-                ReActAgent.builder()
-                        .name("diagnosis_agent")
-                        .sysPrompt(promptConfig.getDiagnosisAgentInstruction())
-                        .memory(memory)
-                        .hooks(List.of(new MonitoringHook()))
-                        .model(model)
-                        .toolkit(toolkit);
-
         return new CustomAgentRunner(
-                builder,
+                "diagnosis_agent",
+                promptConfig.getDiagnosisAgentInstruction(),
+                model,
                 aiService,
                 toolkit,
+                memory,
                 mem0ApiKey,
                 mem0BaseUrl,
                 mem0ApiType,
@@ -100,7 +93,7 @@ public class AgentScopeRunner {
                                 EventType.AGENT_RESULT)
                         .incremental(true)
                         .includeReasoningChunk(true)
-                        .includeReasoningResult(false)
+                        .includeReasoningResult(true)
                         .includeActingChunk(false)
                         .includeSummaryChunk(false)
                         .includeSummaryResult(false)
@@ -109,9 +102,12 @@ public class AgentScopeRunner {
         private static final Pattern USER_ID_PATTERN =
                 Pattern.compile("<userId>(.+?)</userId>");
 
-        private final ReActAgent.Builder agentBuilder;
+        private final String agentName;
+        private final String sysPrompt;
+        private final Model model;
         private final AiService aiService;
         private final Toolkit toolkit;
+        private final AutoContextMemory memory;
         private final Map<String, ReActAgent> agentCache;
         private final String mem0ApiKey;
         private final String mem0BaseUrl;
@@ -121,17 +117,23 @@ public class AgentScopeRunner {
         private volatile boolean mcpInitialized = false;
 
         private CustomAgentRunner(
-                ReActAgent.Builder agentBuilder,
+                String agentName,
+                String sysPrompt,
+                Model model,
                 AiService aiService,
                 Toolkit toolkit,
+                AutoContextMemory memory,
                 String mem0ApiKey,
                 String mem0BaseUrl,
                 String mem0ApiType,
                 boolean mem0InferEnabled,
                 String k8sgptMcpUrl) {
-            this.agentBuilder = agentBuilder;
+            this.agentName = agentName;
+            this.sysPrompt = sysPrompt;
+            this.model = model;
             this.aiService = aiService;
             this.toolkit = toolkit;
+            this.memory = memory;
             this.agentCache = new ConcurrentHashMap<>();
             this.mem0ApiKey = mem0ApiKey;
             this.mem0BaseUrl = mem0BaseUrl;
@@ -140,11 +142,7 @@ public class AgentScopeRunner {
             this.k8sgptMcpUrl = k8sgptMcpUrl;
         }
 
-        private ReActAgent buildReActAgent() {
-            return agentBuilder.build();
-        }
-
-        private ReActAgent buildReActAgent(String userId, A2aStreamingHook streamingHook) {
+        private ReActAgent buildReActAgent(String userId) {
             initializeMcpOnce();
             Mem0ApiType apiType = resolveMem0ApiType(mem0BaseUrl, mem0ApiType);
             CompatibleMem0LongTermMemory longTermMemory =
@@ -158,12 +156,19 @@ public class AgentScopeRunner {
                             apiType,
                             Duration.ofSeconds(30),
                             resolveInferEnabled(apiType, mem0InferEnabled));
-            synchronized (this) {
-                return agentBuilder
-                        .longTermMemory(longTermMemory)
-                        .hooks(List.of(new MonitoringHook(), streamingHook))
-                        .build();
-            }
+
+            // Create a fresh builder and agent instance for each request to ensure
+            // complete isolation and avoid "Agent is still running" errors caused
+            // by shared builder/state.
+            return ReActAgent.builder()
+                    .name(agentName)
+                    .sysPrompt(sysPrompt)
+                    .model(model)
+                    .memory(memory)
+                    .toolkit(toolkit)
+                    .longTermMemory(longTermMemory)
+                    .hooks(List.of(new MonitoringHook()))
+                    .build();
         }
 
         private void initializeMcpOnce() {
@@ -177,15 +182,15 @@ public class AgentScopeRunner {
                             NacosMcpClientWrapper mcpClientWrapper =
                                     NacosMcpClientBuilder.create(
                                                     "platform-mcp-server", mcpServerManager)
-                                            .build();
+                                              .build();
                             toolkit.registerMcpClient(mcpClientWrapper).block();
 
                             // Register K8sGPT (diagnosis tools) via direct HTTP
                             McpClientWrapper k8sgptClient =
                                     McpClientBuilder.create("k8s-mcp-server")
-                                            .streamableHttpTransport(k8sgptMcpUrl)
-                                            .timeout(Duration.ofSeconds(60))
-                                            .buildSync();
+                                              .streamableHttpTransport(k8sgptMcpUrl)
+                                              .timeout(Duration.ofSeconds(60))
+                                              .buildSync();
                             toolkit.registerMcpClient(k8sgptClient).block();
 
                             mcpInitialized = true;
@@ -224,12 +229,12 @@ public class AgentScopeRunner {
 
         @Override
         public String getAgentName() {
-            return buildReActAgent().getName();
+            return agentName;
         }
 
         @Override
         public String getAgentDescription() {
-            return buildReActAgent().getDescription();
+            return "Diagnosis agent for PaaS Assistant";
         }
 
         @Override
@@ -239,10 +244,10 @@ public class AgentScopeRunner {
                         "Agent already exists for taskId: " + options.getTaskId());
             }
             String userId = parseUserIdFromMessages(requestMessages);
-            // Per-request Hook: captures tool events into a buffer queue
-            A2aStreamingHook streamingHook = new A2aStreamingHook();
-            ReActAgent agent = buildReActAgent(userId, streamingHook);
+            // Per-request isolation: create a fresh agent instance
+            ReActAgent agent = buildReActAgent(userId);
             agentCache.put(options.getTaskId(), agent);
+
             agent.getMemory()
                     .addMessage(
                             Msg.builder()
@@ -252,13 +257,8 @@ public class AgentScopeRunner {
                                                     .text("<userId>" + userId + "</userId>")
                                                     .build())
                                     .build());
-            // Merge the agent's natural stream with the synthetic events from the Hook.
-            // Run the hook flux eagerly alongside the native one.
-            Flux<Event> naturalStream = agent.stream(requestMessages, FULL_STREAM_OPTIONS)
-                    .filter(event -> event.getType() != EventType.TOOL_RESULT)
-                    .doFinally(signal -> streamingHook.complete());
-
-            return reactor.core.publisher.Flux.merge(naturalStream, streamingHook.asFlux())
+            
+            return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
                     .doFinally(signal -> {
                         agentCache.remove(options.getTaskId());
                     });

@@ -57,12 +57,13 @@ final class ToolNarrationCatalog implements InitializingBean {
     }
 
     static ToolNarrationDefinition definitionFor(String tool) {
-        ToolNarrationDefinition definition = definitions.get(tool);
+        String baseTool = ToolNarrator.normalizeToolName(tool);
+        ToolNarrationDefinition definition = definitions.get(baseTool);
         if (definition != null) {
             return definition;
         }
         return new ToolNarrationDefinition(
-                "执行 " + tool,
+                "执行 " + baseTool,
                 false,
                 false);
     }

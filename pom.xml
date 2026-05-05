@@ -106,34 +106,6 @@
         </dependency>
     </dependencies>
 
-    <repositories>
-        <repository>
-            <id>central</id>
-            <name>Local Offline Central</name>
-            <url>file://${maven.multiModuleProjectDirectory}/offline-deps/maven-repository</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>central</id>
-            <name>Local Offline Central</name>
-            <url>file://${maven.multiModuleProjectDirectory}/offline-deps/maven-repository</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </pluginRepository>
-    </pluginRepositories>
-
     <build>
         <extensions>
             <extension>

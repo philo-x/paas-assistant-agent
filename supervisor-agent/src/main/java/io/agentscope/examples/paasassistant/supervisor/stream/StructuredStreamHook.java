@@ -51,18 +51,13 @@ public class StructuredStreamHook implements Hook {
                     preActing.getToolUse().getName(),
                     summarize(preActing.getToolUse().getInput()));
         } else if (event instanceof PostActingEvent postActing) {
-            ToolResultBlock result = postActing.getToolResult();
-            String summary =
-                    result == null || result.getOutput() == null || result.getOutput().isEmpty()
-                            ? ""
-                            : ToolNarrator.summarizeToolResult(
-                                    agentName,
-                                    postActing.getToolUse().getName(),
-                                    summarize(result.getOutput().get(0)),
-                                    summarize(postActing.getToolUse().getInput()));
+            String toolName = postActing.getToolUse().getName();
+            String title = ToolNarrator.titleForTool(toolName);
+            String summary = "已完成" + title + "。";
+
             emitter.emitToolResult(
                     agentName,
-                    postActing.getToolUse().getName(),
+                    toolName,
                     "success",
                     summary,
                     summarize(postActing.getToolUse().getInput()));
@@ -81,8 +76,6 @@ public class StructuredStreamHook implements Hook {
                         builder.append(thinkingBlock.getThinking());
                     }
                 });
-        // Fallback to TextBlock when the model does not produce ThinkingBlock
-        // (aligned with A2aAgentTools.handleChildEvent logic for consistency)
         if (builder.isEmpty()) {
             msg.getContent().forEach(
                     block -> {
@@ -98,20 +91,7 @@ public class StructuredStreamHook implements Hook {
     }
 
     private String summarize(Object value) {
-        if (value == null) {
-            return "";
-        }
-        String normalized;
-        if (value instanceof java.util.Map) {
-            try {
-                normalized = io.agentscope.core.util.JsonUtils.getJsonCodec().toJson(value);
-            } catch (Exception e) {
-                normalized = value.toString();
-            }
-        } else {
-            normalized = value.toString();
-        }
-        
+        String normalized = ToolNarrator.extractText(value);
         normalized = normalized.replace("\r\n", "\n").replace('\r', '\n').trim();
         if (normalized.length() <= 2000) {
             return normalized;

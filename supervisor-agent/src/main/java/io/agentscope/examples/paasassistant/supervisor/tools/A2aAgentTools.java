@@ -20,6 +20,8 @@ import io.agentscope.core.a2a.agent.A2aAgent;
 import io.agentscope.core.agent.Event;
 import io.agentscope.core.agent.EventType;
 import io.agentscope.core.agent.StreamOptions;
+import io.agentscope.core.a2a.agent.message.MessageAssembler;
+import io.agentscope.core.message.ContentBlock;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.message.ThinkingBlock;
@@ -68,7 +70,7 @@ public class A2aAgentTools {
                     .incremental(true)
                     .includeReasoningChunk(true)
                     .includeReasoningResult(false)
-                    .includeActingChunk(false)
+                    .includeActingChunk(true)
                     .includeSummaryChunk(false)
                     .includeSummaryResult(false)
                     .build();
@@ -145,7 +147,7 @@ public class A2aAgentTools {
                                                                      emitter,
                                                                      finalAnswer,
                                                                      state))
-                                             .then(Mono.fromSupplier(() -> finalAnswer.toString().trim()));
+                                             .then(Mono.fromSupplier(() -> finalAnswer.toString().trim())).doFinally(sig -> state.getAssembler().clear());
                                 })
                         .timeout(childAgentTimeout);
 
@@ -288,11 +290,16 @@ public class A2aAgentTools {
             return;
         }
 
-        if (event.getType() == EventType.REASONING) {
+        EventType type = event.getType();
+
+        // Process reasoning (model thinking, text, and tool calls)
+        if (type == EventType.REASONING) {
             boolean emittedToolStep = emitToolSteps(childAgentName, event.getMessage(), emitter, state);
             if (emittedToolStep) {
                 state.markStepEmitted();
             }
+
+            // Also emit thinking content if present (common in REASONING events)
             String thinking = event.getMessage().getContentBlocks(ThinkingBlock.class).stream()
                     .map(ThinkingBlock::getThinking)
                     .reduce("", String::concat);
@@ -302,10 +309,8 @@ public class A2aAgentTools {
                     emitter.emitReasoningDelta(childAgentName, thinking);
                 }
                 state.markStepEmitted();
-                return;
-            }
-
-            if (!emittedToolStep) {
+            } else if (!emittedToolStep) {
+                // Fallback to text blocks if no specific thinking block was found
                 String text = event.getMessage().getContentBlocks(TextBlock.class).stream()
                         .map(TextBlock::getText)
                         .reduce("", String::concat);
@@ -320,22 +325,27 @@ public class A2aAgentTools {
             return;
         }
 
-        if (event.getType() == EventType.TOOL_RESULT) {
-            if (emitToolSteps(childAgentName, event.getMessage(), emitter, state)) {
+        // Process tool execution results
+        if (type == EventType.TOOL_RESULT) {
+            boolean emittedToolStep = emitToolSteps(childAgentName, event.getMessage(), emitter, state);
+            if (emittedToolStep) {
                 state.markStepEmitted();
             }
             return;
         }
 
-        if (event.getType() == EventType.AGENT_RESULT) {
+        // Process final agent answer
+        if (type == EventType.AGENT_RESULT) {
             event.getMessage().getContentBlocks(TextBlock.class).forEach(block -> finalAnswer.append(block.getText()));
-            if (!state.hasStepEmitted()) {
+            // Always emit final answer if not already done, even if intermediate tool steps were emitted.
+            // The child agent's conclusion is always valuable context for the user.
+            if (!state.hasAnswerEmitted()) {
                 String summary = ToolNarrator.extractThinkingText(finalAnswer.toString());
                 if (!summary.isEmpty()) {
                     if (emitter != null) {
                         emitter.emitReasoningDelta(childAgentName, summary);
                     }
-                    state.markStepEmitted();
+                    state.markAnswerEmitted();
                 }
             }
         }
@@ -369,22 +379,26 @@ public class A2aAgentTools {
 
         // Process tool results (completions)
         for (ToolResultBlock block : message.getContentBlocks(ToolResultBlock.class)) {
+            // Assemble the tool result from potentially fragmented stream
+            ContentBlock assembled = state.getAssembler().assemble(block.getId(), block);
+            if (!(assembled instanceof ToolResultBlock finalBlock)) {
+                continue;
+            }
+
             String toolName =
-                    (block.getName() == null || block.getName().isBlank())
+                    (finalBlock.getName() == null || finalBlock.getName().isBlank())
                             ? "unknown_tool"
-                            : block.getName();
-            String outputSummary = block.getOutput().stream()
-                    .filter(TextBlock.class::isInstance)
-                    .map(TextBlock.class::cast)
-                    .map(TextBlock::getText)
-                    .collect(java.util.stream.Collectors.joining("\n"));
+                            : finalBlock.getName();
+
+            // Simple summary without using ToolResultSummarizer
+            String title = ToolNarrator.titleForTool(toolName);
+            String summary = "已完成" + title + "。";
 
             emitter.emitToolResult(
                     childAgentName,
                     toolName,
                     "success",
-                    ToolNarrator.summarizeToolResult(
-                            childAgentName, toolName, outputSummary, ""),
+                    summary,
                     "");
             emitted = true;
         }
@@ -414,6 +428,12 @@ public class A2aAgentTools {
 
     private static final class ChildStreamState {
         private boolean stepEmitted;
+        private boolean answerEmitted;
+        private final MessageAssembler assembler = new MessageAssembler();
+
+        public MessageAssembler getAssembler() {
+            return assembler;
+        }
 
         private void markStepEmitted() {
             this.stepEmitted = true;
@@ -421,6 +441,14 @@ public class A2aAgentTools {
 
         private boolean hasStepEmitted() {
             return stepEmitted;
+        }
+
+        private void markAnswerEmitted() {
+            this.answerEmitted = true;
+        }
+
+        private boolean hasAnswerEmitted() {
+            return answerEmitted;
         }
     }
 }

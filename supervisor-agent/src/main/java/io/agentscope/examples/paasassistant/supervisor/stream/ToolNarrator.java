@@ -16,6 +16,9 @@
 
 package io.agentscope.examples.paasassistant.supervisor.stream;
 
+import io.agentscope.core.message.TextBlock;
+import io.agentscope.core.util.JsonUtils;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,31 +28,61 @@ public final class ToolNarrator {
 
     private ToolNarrator() {}
 
+    static String normalizeToolName(String tool) {
+        if (tool == null) {
+            return null;
+        }
+        int index = tool.lastIndexOf("__");
+        return index != -1 ? tool.substring(index + 2) : tool;
+    }
+
+    public static String extractText(Object obj) {
+        if (obj == null) {
+            return "";
+        }
+        if (obj instanceof TextBlock textBlock) {
+            return textBlock.getText();
+        }
+        if (obj instanceof String s) {
+            return s;
+        }
+        if (obj instanceof Map) {
+            Map<?, ?> map = (Map<?, ?>) obj;
+            Object text = map.get("text");
+            if (text != null) {
+                return text.toString();
+            }
+            try {
+                return JsonUtils.getJsonCodec().toJson(obj);
+            } catch (Exception e) {
+                return obj.toString();
+            }
+        }
+        return obj.toString();
+    }
+
     public static String summarizeToolStart(String agentName, String tool, String inputSummary) {
-        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(tool);
+        String baseTool = normalizeToolName(tool);
+        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(baseTool);
         String title = definition.title();
         if (definition.appendToolNameToTitle()) {
-            title += " (" + tool + ")";
+            title += " (" + baseTool + ")";
         }
         return "正在" + title + "。";
     }
 
-    public static String summarizeToolResult(String agentName, String tool, String outputSummary, String inputSummary) {
-        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(tool);
-        return ToolResultSummarizer.summarize(tool, outputSummary, definition);
-    }
-
     public static String titleForTool(String tool) {
-        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(tool);
+        String baseTool = normalizeToolName(tool);
+        ToolNarrationDefinition definition = ToolNarrationCatalog.definitionFor(baseTool);
         String title = definition.title();
         if (definition.appendToolNameToTitle()) {
-            title += " (" + tool + ")";
+            title += " (" + baseTool + ")";
         }
         return title;
     }
 
     public static boolean isDelegationTool(String tool) {
-        return ToolNarrationCatalog.definitionFor(tool).delegation();
+        return ToolNarrationCatalog.definitionFor(normalizeToolName(tool)).delegation();
     }
 
     public static String extractThinkingChunk(String chunk) {
