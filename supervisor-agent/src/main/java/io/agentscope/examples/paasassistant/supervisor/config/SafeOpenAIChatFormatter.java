@@ -18,34 +18,43 @@ package io.agentscope.examples.paasassistant.supervisor.config;
 
 import io.agentscope.core.formatter.openai.OpenAIChatFormatter;
 import io.agentscope.core.formatter.openai.dto.OpenAIMessage;
+import io.agentscope.core.message.ContentBlock;
 import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.MsgRole;
+import io.agentscope.core.message.TextBlock;
+import io.agentscope.core.message.ToolResultBlock;
+import io.agentscope.core.message.ToolUseBlock;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Workaround for agentscope-core 1.0.12 regression in
- * {@code OpenAIMessageConverter.convertAssistantMessage()}.
+ * Workaround for agentscope-core 1.0.12 regression and OpenAI protocol constraints.
  *
- * <p>In 1.0.12, when an assistant message has no text content (e.g. only
+ * <p>1. Regression in {@code OpenAIMessageConverter.convertAssistantMessage()}:
+ * In 1.0.12, when an assistant message has no text content (e.g. only
  * tool_calls), the converter explicitly sets {@code content = ""} instead
- * of leaving it {@code null} (as 1.0.11 did). Because {@code OpenAIMessage}
- * is annotated with {@code @JsonInclude(NON_NULL)}, the empty string is
- * serialized as {@code "content": ""}, which strict OpenAI-compatible APIs
- * (such as code-relay.com) reject with:
- * <pre>
- *   "messages: text content blocks must be non-empty"
- * </pre>
+ * of leaving it {@code null}. This causes serialization errors with strict APIs.
+ *
+ * <p>2. OpenAI Protocol Constraint:
+ * OpenAI does not support {@link ToolUseBlock} or {@link ToolResultBlock} in messages
+ * with {@code role="user"}. This formatter sanitizes such messages by converting
+ * these blocks into plain {@link TextBlock} representations before formatting.
  *
  * <p>This formatter post-processes the formatted messages and replaces any
  * empty-string content on assistant messages with {@code null} so that the
  * field is omitted during JSON serialization.
- *
- * <p><b>Remove this class once the framework fixes the issue.</b>
  */
 public class SafeOpenAIChatFormatter extends OpenAIChatFormatter {
 
     @Override
     protected List<OpenAIMessage> doFormat(List<Msg> messages) {
-        List<OpenAIMessage> formatted = super.doFormat(messages);
+        // Sanitize messages to avoid "ToolUseBlock/ToolResultBlock is not supported in user messages" warnings
+        List<Msg> sanitized = new ArrayList<>(messages.size());
+        for (Msg msg : messages) {
+            sanitized.add(sanitizeMsg(msg));
+        }
+
+        List<OpenAIMessage> formatted = super.doFormat(sanitized);
         for (OpenAIMessage msg : formatted) {
             if ("assistant".equals(msg.getRole()) && isEmptyStringContent(msg.getContent())) {
                 msg.setContent(null);
@@ -54,7 +63,48 @@ public class SafeOpenAIChatFormatter extends OpenAIChatFormatter {
         return formatted;
     }
 
+    /**
+     * Sanitizes a message by converting Tool blocks to Text blocks if the role is USER.
+     */
+    private Msg sanitizeMsg(Msg msg) {
+        if (msg.getRole() != MsgRole.USER || msg.getContent() == null) {
+            return msg;
+        }
+
+        boolean hasUnsupportedBlocks = msg.getContent().stream()
+                .anyMatch(block -> block instanceof ToolUseBlock || block instanceof ToolResultBlock);
+
+        if (!hasUnsupportedBlocks) {
+            return msg;
+        }
+
+        List<ContentBlock> newContent = new ArrayList<>();
+        for (ContentBlock block : msg.getContent()) {
+            if (block instanceof ToolUseBlock tub) {
+                newContent.add(TextBlock.builder()
+                        .text(String.format("[Tool Call: %s, Input: %s]", tub.getName(), tub.getInput()))
+                        .build());
+            } else if (block instanceof ToolResultBlock trb) {
+                newContent.add(TextBlock.builder()
+                        .text(String.format("[Tool Result: %s]", trb.getOutput()))
+                        .build());
+            } else {
+                newContent.add(block);
+            }
+        }
+
+        return Msg.builder()
+                .id(msg.getId())
+                .name(msg.getName())
+                .role(msg.getRole())
+                .content(newContent)
+                .timestamp(msg.getTimestamp())
+                .metadata(msg.getMetadata())
+                .build();
+    }
+
     private static boolean isEmptyStringContent(Object content) {
         return content instanceof String s && s.isEmpty();
     }
 }
+

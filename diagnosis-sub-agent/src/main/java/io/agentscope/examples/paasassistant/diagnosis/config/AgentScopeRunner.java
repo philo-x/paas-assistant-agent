@@ -157,9 +157,6 @@ public class AgentScopeRunner {
                             Duration.ofSeconds(30),
                             resolveInferEnabled(apiType, mem0InferEnabled));
 
-            // Create a fresh builder and agent instance for each request to ensure
-            // complete isolation and avoid "Agent is still running" errors caused
-            // by shared builder/state.
             return ReActAgent.builder()
                     .name(agentName)
                     .sysPrompt(sysPrompt)
