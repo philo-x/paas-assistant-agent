@@ -19,13 +19,16 @@ package io.agentscope.examples.paasassistant.supervisor.config;
 import com.alibaba.nacos.api.ai.AiService;
 import io.agentscope.core.a2a.agent.A2aAgent;
 import io.agentscope.core.nacos.a2a.discovery.NacosAgentCardResolver;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 
 @Configuration
 public class A2aAgentConfiguration {
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public A2aAgent guideAgent(AiService a2aService) {
         return A2aAgent.builder()
                 .name("guide_agent")
@@ -34,6 +37,7 @@ public class A2aAgentConfiguration {
     }
 
     @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public A2aAgent diagnosisAgent(AiService a2aService) {
         return A2aAgent.builder()
                 .name("diagnosis_agent")

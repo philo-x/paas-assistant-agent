@@ -61,9 +61,7 @@ public class AgentScopeRunner {
             AgentPromptConfig promptConfig, AiService aiService, Model model) {
 
         Toolkit toolkit = new NacosToolkit();
-        AutoContextConfig autoContextConfig =
-                AutoContextConfig.builder().tokenRatio(0.4).lastKeep(10).build();
-        AutoContextMemory memory = new AutoContextMemory(autoContextConfig, model);
+        AutoContextConfig autoContextConfig = AutoContextConfig.builder().tokenRatio(0.4).lastKeep(10).build();
 
         return new CustomAgentRunner(
                 "diagnosis_agent",
@@ -71,7 +69,7 @@ public class AgentScopeRunner {
                 model,
                 aiService,
                 toolkit,
-                memory,
+                autoContextConfig,
                 mem0ApiKey,
                 mem0BaseUrl,
                 mem0ApiType,
@@ -85,29 +83,27 @@ public class AgentScopeRunner {
          * StreamOptions that request REASONING, TOOL_RESULT, and AGENT_RESULT events
          * so that the A2A transport can relay tool-level detail back to the supervisor.
          */
-        private static final StreamOptions FULL_STREAM_OPTIONS =
-                StreamOptions.builder()
-                        .eventTypes(
-                                EventType.REASONING,
-                                EventType.TOOL_RESULT,
-                                EventType.AGENT_RESULT)
-                        .incremental(true)
-                        .includeReasoningChunk(true)
-                        .includeReasoningResult(false)
-                        .includeActingChunk(true)
-                        .includeSummaryChunk(false)
-                        .includeSummaryResult(false)
-                        .build();
+        private static final StreamOptions FULL_STREAM_OPTIONS = StreamOptions.builder()
+                .eventTypes(
+                        EventType.REASONING,
+                        EventType.TOOL_RESULT,
+                        EventType.AGENT_RESULT)
+                .incremental(true)
+                .includeReasoningChunk(true)
+                .includeReasoningResult(false)
+                .includeActingChunk(true)
+                .includeSummaryChunk(false)
+                .includeSummaryResult(false)
+                .build();
 
-        private static final Pattern USER_ID_PATTERN =
-                Pattern.compile("<userId>(.+?)</userId>");
+        private static final Pattern USER_ID_PATTERN = Pattern.compile("<userId>(.+?)</userId>");
 
         private final String agentName;
         private final String sysPrompt;
         private final Model model;
         private final AiService aiService;
         private final Toolkit toolkit;
-        private final AutoContextMemory memory;
+        private final AutoContextConfig autoContextConfig;
         private final Map<String, ReActAgent> agentCache;
         private final String mem0ApiKey;
         private final String mem0BaseUrl;
@@ -122,7 +118,7 @@ public class AgentScopeRunner {
                 Model model,
                 AiService aiService,
                 Toolkit toolkit,
-                AutoContextMemory memory,
+                AutoContextConfig autoContextConfig,
                 String mem0ApiKey,
                 String mem0BaseUrl,
                 String mem0ApiType,
@@ -133,7 +129,7 @@ public class AgentScopeRunner {
             this.model = model;
             this.aiService = aiService;
             this.toolkit = toolkit;
-            this.memory = memory;
+            this.autoContextConfig = autoContextConfig;
             this.agentCache = new ConcurrentHashMap<>();
             this.mem0ApiKey = mem0ApiKey;
             this.mem0BaseUrl = mem0BaseUrl;
@@ -145,23 +141,22 @@ public class AgentScopeRunner {
         private ReActAgent buildReActAgent(String userId) {
             initializeMcpOnce();
             Mem0ApiType apiType = resolveMem0ApiType(mem0BaseUrl, mem0ApiType);
-            CompatibleMem0LongTermMemory longTermMemory =
-                    new CompatibleMem0LongTermMemory(
-                            "DiagnosisAgent",
-                            userId,
-                            null,
-                            Map.of(),
-                            mem0BaseUrl,
-                            mem0ApiKey,
-                            apiType,
-                            Duration.ofSeconds(30),
-                            resolveInferEnabled(apiType, mem0InferEnabled));
+            CompatibleMem0LongTermMemory longTermMemory = new CompatibleMem0LongTermMemory(
+                    "DiagnosisAgent",
+                    userId,
+                    null,
+                    Map.of(),
+                    mem0BaseUrl,
+                    mem0ApiKey,
+                    apiType,
+                    Duration.ofSeconds(30),
+                    resolveInferEnabled(apiType, mem0InferEnabled));
 
             return ReActAgent.builder()
                     .name(agentName)
                     .sysPrompt(sysPrompt)
                     .model(model)
-                    .memory(memory)
+                    .memory(new AutoContextMemory(autoContextConfig, model))
                     .toolkit(toolkit)
                     .longTermMemory(longTermMemory)
                     .hooks(List.of(new MonitoringHook()))
@@ -174,20 +169,17 @@ public class AgentScopeRunner {
                     if (!mcpInitialized) {
                         try {
                             // Register platform-mcp-server (mutation tools) via Nacos
-                            NacosMcpServerManager mcpServerManager =
-                                    new NacosMcpServerManager(aiService);
-                            NacosMcpClientWrapper mcpClientWrapper =
-                                    NacosMcpClientBuilder.create(
-                                                    "platform-mcp-server", mcpServerManager)
-                                              .build();
+                            NacosMcpServerManager mcpServerManager = new NacosMcpServerManager(aiService);
+                            NacosMcpClientWrapper mcpClientWrapper = NacosMcpClientBuilder.create(
+                                    "platform-mcp-server", mcpServerManager)
+                                    .build();
                             toolkit.registerMcpClient(mcpClientWrapper).block();
 
                             // Register K8sGPT (diagnosis tools) via direct HTTP
-                            McpClientWrapper k8sgptClient =
-                                    McpClientBuilder.create("k8s-mcp-server")
-                                              .streamableHttpTransport(k8sgptMcpUrl)
-                                              .timeout(Duration.ofSeconds(60))
-                                              .buildSync();
+                            McpClientWrapper k8sgptClient = McpClientBuilder.create("k8s-mcp-server")
+                                    .streamableHttpTransport(k8sgptMcpUrl)
+                                    .timeout(Duration.ofSeconds(60))
+                                    .buildSync();
                             toolkit.registerMcpClient(k8sgptClient).block();
 
                             mcpInitialized = true;
@@ -254,7 +246,7 @@ public class AgentScopeRunner {
                                                     .text("<userId>" + userId + "</userId>")
                                                     .build())
                                     .build());
-            
+
             return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
                     .doFinally(signal -> {
                         agentCache.remove(options.getTaskId());

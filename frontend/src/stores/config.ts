@@ -46,8 +46,7 @@ export const useConfigStore = defineStore('config', () => {
   const persist = () => {
     localStorage.setItem('paas-agent-config', JSON.stringify({
       baseUrl: baseUrl.value,
-      userId: userId.value,
-      chatId: chatId.value
+      userId: userId.value
     }))
   }
 
@@ -73,17 +72,14 @@ export const useConfigStore = defineStore('config', () => {
         const config = JSON.parse(saved)
         baseUrl.value = config.baseUrl || 'http://localhost:10008'
         userId.value = config.userId || ''
-        // Load saved chatId if exists
-        chatId.value = config.chatId || ''
       } catch (error) {
         console.error('Failed to load config:', error)
       }
     }
+  }
 
-    // Only generate new chatId when there is none
-    if (!chatId.value) {
-      generateNewChatId()
-    }
+  function setChatId(id: string) {
+    chatId.value = id
   }
 
   function generateNewChatId() {
@@ -104,6 +100,7 @@ export const useConfigStore = defineStore('config', () => {
     structuredApiUrl,
     updateConfig,
     loadConfig,
+    setChatId,
     generateNewChatId,
     initializeChatId
   }

@@ -25,7 +25,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.springframework.beans.factory.annotation.Value;import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.publisher.Flux;
 
@@ -54,16 +55,14 @@ public class AgentScopeRunner {
         Toolkit toolkit = new NacosToolkit();
         toolkit.registerTool(guideTools);
 
-        AutoContextConfig autoContextConfig =
-                AutoContextConfig.builder().tokenRatio(0.4).lastKeep(10).build();
-        AutoContextMemory memory = new AutoContextMemory(autoContextConfig, model);
+        AutoContextConfig autoContextConfig = AutoContextConfig.builder().tokenRatio(0.4).lastKeep(10).build();
 
         return new CustomAgentRunner(
                 "guide_agent",
                 promptConfig.getGuideAgentInstruction(),
                 model,
                 toolkit,
-                memory,
+                autoContextConfig,
                 knowledge,
                 mem0ApiKey,
                 mem0BaseUrl,
@@ -77,28 +76,26 @@ public class AgentScopeRunner {
          * StreamOptions that request REASONING, TOOL_RESULT, and AGENT_RESULT events
          * so that the A2A transport can relay tool-level detail back to the supervisor.
          */
-        private static final StreamOptions FULL_STREAM_OPTIONS =
-                StreamOptions.builder()
-                        .eventTypes(
-                                EventType.REASONING,
-                                EventType.TOOL_RESULT,
-                                EventType.AGENT_RESULT)
-                        .incremental(true)
-                        .includeReasoningChunk(true)
-                        .includeReasoningResult(false)
-                        .includeActingChunk(true)
-                        .includeSummaryChunk(false)
-                        .includeSummaryResult(false)
-                        .build();
+        private static final StreamOptions FULL_STREAM_OPTIONS = StreamOptions.builder()
+                .eventTypes(
+                        EventType.REASONING,
+                        EventType.TOOL_RESULT,
+                        EventType.AGENT_RESULT)
+                .incremental(true)
+                .includeReasoningChunk(true)
+                .includeReasoningResult(false)
+                .includeActingChunk(true)
+                .includeSummaryChunk(false)
+                .includeSummaryResult(false)
+                .build();
 
-        private static final Pattern USER_ID_PATTERN =
-                Pattern.compile("<userId>(.+?)</userId>");
+        private static final Pattern USER_ID_PATTERN = Pattern.compile("<userId>(.+?)</userId>");
 
         private final String agentName;
         private final String sysPrompt;
         private final Model model;
         private final Toolkit toolkit;
-        private final AutoContextMemory memory;
+        private final AutoContextConfig autoContextConfig;
         private final Knowledge knowledge;
         private final Map<String, ReActAgent> agentCache;
         private final String mem0ApiKey;
@@ -111,7 +108,7 @@ public class AgentScopeRunner {
                 String sysPrompt,
                 Model model,
                 Toolkit toolkit,
-                AutoContextMemory memory,
+                AutoContextConfig autoContextConfig,
                 Knowledge knowledge,
                 String mem0ApiKey,
                 String mem0BaseUrl,
@@ -121,7 +118,7 @@ public class AgentScopeRunner {
             this.sysPrompt = sysPrompt;
             this.model = model;
             this.toolkit = toolkit;
-            this.memory = memory;
+            this.autoContextConfig = autoContextConfig;
             this.knowledge = knowledge;
             this.agentCache = new ConcurrentHashMap<>();
             this.mem0ApiKey = mem0ApiKey;
@@ -132,23 +129,22 @@ public class AgentScopeRunner {
 
         private ReActAgent buildReActAgent(String userId) {
             Mem0ApiType apiType = resolveMem0ApiType(mem0BaseUrl, mem0ApiType);
-            CompatibleMem0LongTermMemory longTermMemory =
-                    new CompatibleMem0LongTermMemory(
-                            "GuideAgent",
-                            userId,
-                            null,
-                            Map.of(),
-                            mem0BaseUrl,
-                            mem0ApiKey,
-                            apiType,
-                            java.time.Duration.ofSeconds(30),
-                            resolveInferEnabled(apiType, mem0InferEnabled));
+            CompatibleMem0LongTermMemory longTermMemory = new CompatibleMem0LongTermMemory(
+                    "GuideAgent",
+                    userId,
+                    null,
+                    Map.of(),
+                    mem0BaseUrl,
+                    mem0ApiKey,
+                    apiType,
+                    java.time.Duration.ofSeconds(30),
+                    resolveInferEnabled(apiType, mem0InferEnabled));
 
             return ReActAgent.builder()
                     .name(agentName)
                     .sysPrompt(sysPrompt)
                     .model(model)
-                    .memory(memory)
+                    .memory(new AutoContextMemory(autoContextConfig, model))
                     .toolkit(toolkit)
                     .knowledge(knowledge)
                     .ragMode(RAGMode.AGENTIC)
@@ -210,7 +206,7 @@ public class AgentScopeRunner {
                                                     .text("<userId>" + userId + "</userId>")
                                                     .build())
                                     .build());
-            
+
             return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
                     .doFinally(signal -> {
                         agentCache.remove(options.getTaskId());

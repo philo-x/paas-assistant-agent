@@ -15,9 +15,9 @@
 -->
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   Avatar,
   Button,
@@ -56,6 +56,7 @@ import type {
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 const chatStore = useChatStore()
 const configStore = useConfigStore()
 
@@ -142,10 +143,23 @@ const handleExampleClick = (example: string) => {
 }
 
 const clearChat = () => {
-  chatStore.clearMessages()
+  const newSessionId = Date.now().toString()
+  router.push(`/chat/${newSessionId}`)
   message.success(t('chat.chatCleared'))
-  focusChatInputTextArea()
 }
+
+watch(() => route.params.sessionId, (newSessionId) => {
+  if (newSessionId && newSessionId !== configStore.chatId) {
+    configStore.setChatId(newSessionId as string)
+    chatStore.clearMessages()
+    chatStore.addAssistantMessage({
+      answer: t('chat.welcome')
+    })
+    nextTick(() => {
+      focusChatInputTextArea()
+    })
+  }
+})
 
 const thoughtsTimelineLabels = computed(() => createThoughtsTimelineLabels(t))
 
@@ -212,6 +226,15 @@ const sendMessage = async () => {
 
 onMounted(() => {
   configStore.loadConfig()
+
+  const sessionId = route.params.sessionId as string
+  if (!sessionId) {
+    const newSessionId = Date.now().toString()
+    router.replace(`/chat/${newSessionId}`)
+    configStore.setChatId(newSessionId)
+  } else {
+    configStore.setChatId(sessionId)
+  }
 
   if (chatStore.messages.length === 0) {
     chatStore.addAssistantMessage({
