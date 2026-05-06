@@ -346,12 +346,15 @@ const stepCardClass = (step: ThinkingTimelineStep) => {
   color: #4b5563;
   font-size: 14px;
   line-height: 1.6;
+  overflow-x: auto; /* Enable horizontal scroll for long tables/code */
+  width: 100%;
 }
 
 .timeline-step-description :deep(.markdown-content) {
   color: #4b5563;
   font-size: 14px;
   line-height: 1.6;
+  width: 100%;
 }
 
 .timeline-step-description :deep(h1),
@@ -384,6 +387,9 @@ const stepCardClass = (step: ThinkingTimelineStep) => {
   box-shadow: none;
   border: 1px solid #e2e8f0;
   border-radius: 6px;
+  width: 100%;        /* Match text width */
+  table-layout: auto; /* Allow columns to adjust but keep total width 100% */
+  display: table;     /* Restore standard table behavior */
 }
 
 .timeline-step-description :deep(th),

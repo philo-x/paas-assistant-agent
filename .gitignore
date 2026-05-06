@@ -9,6 +9,9 @@ target/
 
 # Logs
 *.log
+*.tar.gz
+*.tar
+*.iso
 
 # OS files
 .DS_Store

@@ -56,8 +56,9 @@ public class DataPartParser implements PartParser<DataPart> {
     }
 
     private ContentBlock parseToTextBlock(DataPart part) {
-        String dataJsonString = Utils.toJsonString(part.getData());
-        return TextBlock.builder().text(dataJsonString).build();
+        Object data = part.getData();
+        String text = (data instanceof String str) ? str : Utils.toJsonString(data);
+        return TextBlock.builder().text(text).build();
     }
 
     private ContentBlock parseToToolBlock(DataPart part) {
