@@ -170,7 +170,7 @@ export default {
       baseUrlHelp: 'Enter the Supervisor backend URL, for example: http://localhost:10008',
       userIdHelp: 'Used to identify the platform operator and link approvals with audit records',
       chatIdHelp: 'Used to identify the current chat session, leave empty for auto-generation',
-      apiHelp: 'The chat page calls {url}/api/assistant/chat/structured, while the legacy /api/assistant/chat stays available for external callers'
+      apiHelp: 'The chat page calls {url}/api/assistant/chat/structured'
     }
   }
 }

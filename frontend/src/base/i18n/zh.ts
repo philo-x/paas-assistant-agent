@@ -170,7 +170,7 @@ export default {
       baseUrlHelp: '请输入 Supervisor 后端服务地址，例如：http://localhost:10008',
       userIdHelp: '用于标识平台操作者，并关联审批与执行审计',
       chatIdHelp: '用于标识当前会话，留空将自动生成',
-      apiHelp: '聊天页将调用 {url}/api/assistant/chat/structured，旧 /api/assistant/chat 仍可兼容外部调用'
+      apiHelp: '聊天页将调用 {url}/api/assistant/chat/structured'
     }
   }
 }

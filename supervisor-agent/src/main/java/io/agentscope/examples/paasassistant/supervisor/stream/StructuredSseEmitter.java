@@ -30,6 +30,13 @@ public class StructuredSseEmitter {
 
     private static final Logger logger = LoggerFactory.getLogger(StructuredSseEmitter.class);
 
+    /**
+     * Reactor Context key that carries the per-request emitter through the supervisor's reactive
+     * pipeline into tool invocations. Each HTTP request has its own subscription context, so
+     * lookup by this key is automatically isolated across concurrent users.
+     */
+    public static final String CONTEXT_KEY = "structuredSseEmitter";
+
     private final Sinks.Many<ServerSentEvent<String>> sink;
 
     private final ObjectMapper objectMapper;

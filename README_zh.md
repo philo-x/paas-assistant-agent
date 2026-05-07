@@ -25,9 +25,9 @@ PaaS Agent Assistant 将原有示例重构为面向平台场景的 Kubernetes �
 4. 显式确认后执行
 5. 将审批与执行审计落到 MySQL
 
-对外聊天入口保持不变：
+对外聊天入口是结构化的 Server-Sent Events 流：
 
-`GET /api/assistant/chat?chat_id&user_id&user_query`
+`POST /api/assistant/chat/structured`，请求体 JSON `{chat_id, user_id, user_query}`
 
 ## 功能架构
 
@@ -220,12 +220,15 @@ docker compose up -d
 默认由 `supervisor-agent` 提供前端与聊天接口：
 
 - UI：`http://localhost:10008`
-- SSE 聊天接口：`http://localhost:10008/api/assistant/chat`
+- SSE 聊天接口：`POST http://localhost:10008/api/assistant/chat/structured`
 
 示例：
 
-```text
-GET /api/assistant/chat?chat_id=demo-chat&user_id=ops-user&user_query=某个 Pod CrashLoopBackOff，帮我定位原因
+```bash
+curl -N -X POST http://localhost:10008/api/assistant/chat/structured \
+     -H 'Content-Type: application/json' \
+     -H 'Accept: text/event-stream' \
+     -d '{"chat_id":"demo-chat","user_id":"ops-user","user_query":"某个 Pod CrashLoopBackOff，帮我定位原因"}'
 ```
 
 ## V1 范围

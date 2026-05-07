@@ -17,22 +17,25 @@
 package io.agentscope.examples.paasassistant.supervisor.stream;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Component;
 
+/**
+ * Maps a structured chat traceId to the per-request SSE emitter.
+ *
+ * <p>Lookup is exact-match only. There is no "latest" fallback: under concurrent multi-user load,
+ * a fallback would route one user's child-agent events to another user's SSE connection. Callers
+ * must handle a {@code null} return from {@link #get(String)} as "no emitter available, drop or
+ * log only".
+ */
 @Component
 public class StructuredTraceRegistry {
 
     private final Map<String, StructuredSseEmitter> emitters = new ConcurrentHashMap<>();
 
-    private final ConcurrentLinkedDeque<String> activeTraceIds = new ConcurrentLinkedDeque<>();
-
     public void register(String traceId, StructuredSseEmitter emitter) {
         if (traceId != null && !traceId.isBlank() && emitter != null) {
             emitters.put(traceId, emitter);
-            activeTraceIds.remove(traceId);
-            activeTraceIds.addLast(traceId);
         }
     }
 
@@ -43,28 +46,9 @@ public class StructuredTraceRegistry {
         return emitters.get(traceId);
     }
 
-    public StructuredSseEmitter getLatest() {
-        while (!activeTraceIds.isEmpty()) {
-            String latestTraceId = activeTraceIds.peekLast();
-            if (latestTraceId == null || latestTraceId.isBlank()) {
-                activeTraceIds.pollLast();
-                continue;
-            }
-
-            StructuredSseEmitter emitter = emitters.get(latestTraceId);
-            if (emitter != null) {
-                return emitter;
-            }
-
-            activeTraceIds.pollLast();
-        }
-        return null;
-    }
-
     public void unregister(String traceId) {
         if (traceId != null && !traceId.isBlank()) {
             emitters.remove(traceId);
-            activeTraceIds.remove(traceId);
         }
     }
 }

@@ -75,6 +75,17 @@ public class AgentScopeRunner {
         /**
          * StreamOptions that request REASONING, TOOL_RESULT, and AGENT_RESULT events
          * so that the A2A transport can relay tool-level detail back to the supervisor.
+         *
+         * <p>MUST stay byte-for-byte in sync with:
+         * <ul>
+         *   <li>{@code diagnosis-sub-agent}'s {@code FULL_STREAM_OPTIONS}
+         *   <li>{@code supervisor-agent}'s {@code A2aAgentTools.CHILD_AGENT_STREAM_OPTIONS}
+         * </ul>
+         *
+         * <p>{@code includeActingChunk(false)}: we don't need streaming partial tool input/output;
+         * the structured timeline only renders "tool started" / "tool completed" markers, and
+         * fragmented acting chunks would force the supervisor to dedup repeated TOOL_RESULT
+         * events. Disable here so the framework only emits one complete TOOL_RESULT per call.
          */
         private static final StreamOptions FULL_STREAM_OPTIONS = StreamOptions.builder()
                 .eventTypes(
@@ -84,7 +95,7 @@ public class AgentScopeRunner {
                 .incremental(true)
                 .includeReasoningChunk(true)
                 .includeReasoningResult(false)
-                .includeActingChunk(true)
+                .includeActingChunk(false)
                 .includeSummaryChunk(false)
                 .includeSummaryResult(false)
                 .build();

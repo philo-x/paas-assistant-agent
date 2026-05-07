@@ -33,9 +33,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
@@ -59,43 +57,6 @@ public class SupervisorAgentController {
         this.supervisorAgent = supervisorAgent;
         this.objectMapper = objectMapper;
         this.traceRegistry = traceRegistry;
-    }
-
-    @GetMapping(path = "/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> chat(
-            @RequestParam(name = "chat_id") String chatID,
-            @RequestParam(name = "user_query") String userQuery,
-            @RequestParam(name = "user_id") String userID) {
-        logger.info("Received user query: {}", userQuery);
-
-        try {
-
-            String userInput = userQuery + "<userId>" + userID + "</userId>";
-            Sinks.Many<ServerSentEvent<String>> sink =
-                    Sinks.many().unicast().onBackpressureBuffer();
-            Msg msg =
-                    Msg.builder()
-                            .role(MsgRole.USER)
-                            .content(TextBlock.builder().text(userInput).build())
-                            .build();
-
-            processStream(supervisorAgent.stream(msg, chatID, userID), sink);
-
-            return sink.asFlux()
-                    .doOnCancel(
-                            () -> {
-                                logger.info("Client disconnected from stream");
-                            })
-                    .doOnError(
-                            e -> {
-                                logger.error("Error occurred during streaming", e);
-                            });
-        } catch (Exception e) {
-            logger.error("Failed to process user query: {}", userQuery, e);
-            return Flux.just(
-                    ServerSentEvent.builder("System processing error, please try again later.")
-                            .build());
-        }
     }
 
     @PostMapping(
@@ -137,11 +98,13 @@ public class SupervisorAgentController {
                             .build();
 
             processStructuredStream(
-                    supervisorAgent.stream(
-                            msg,
-                            chatId,
-                            userId,
-                            new StructuredStreamHook("supervisor_agent", emitter)),
+                    supervisorAgent
+                            .stream(
+                                    msg,
+                                    chatId,
+                                    userId,
+                                    new StructuredStreamHook("supervisor_agent", emitter))
+                            .contextWrite(ctx -> ctx.put(StructuredSseEmitter.CONTEXT_KEY, emitter)),
                     sink,
                     emitter);
 
@@ -158,46 +121,6 @@ public class SupervisorAgentController {
                                     "{\"message\":\"System processing error, please try again later.\",\"stage\":\"request\"}")
                             .build());
         }
-    }
-
-    public void processStream(Flux<Event> generator, Sinks.Many<ServerSentEvent<String>> sink) {
-        generator
-                .doOnNext(output -> logger.info("output = {}", output))
-                .filter(event -> !event.isLast())
-                .map(
-                        event -> {
-                            Msg msg = event.getMessage();
-                            return msg.getContent().stream()
-                                    .filter(block -> block instanceof TextBlock)
-                                    .map(block -> ((TextBlock) block).getText())
-                                    .toList();
-                        })
-                .flatMap(Flux::fromIterable)
-                .map(content -> ServerSentEvent.builder(content).build())
-                .doOnNext(sink::tryEmitNext)
-                .doOnError(
-                        e -> {
-                            logger.error(
-                                    "Unexpected error in stream processing: {}", e.getMessage(), e);
-                            sink.tryEmitNext(
-                                    ServerSentEvent.builder(
-                                                    "System processing error, please try again"
-                                                            + " later.")
-                                            .build());
-                        })
-                .doOnComplete(
-                        () -> {
-                            logger.info("Stream processing completed successfully");
-                            sink.tryEmitComplete();
-                        })
-                .subscribe(
-                        // onNext - already handled in doOnNext
-                        null,
-                        // onError
-                        e -> {
-                            logger.error("Stream processing failed: {}", e.getMessage(), e);
-                            sink.tryEmitError(e);
-                        });
     }
 
     public void processStructuredStream(

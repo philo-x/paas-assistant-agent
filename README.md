@@ -25,9 +25,9 @@ The current V1 keeps the existing `Supervisor -> Sub Agent -> MCP -> Storage` sk
 4. Execute only after explicit confirmation
 5. Persist approvals and execution audit records in MySQL
 
-The public chat entry remains unchanged:
+The public chat entry is a structured Server-Sent Events stream:
 
-`GET /api/assistant/chat?chat_id&user_id&user_query`
+`POST /api/assistant/chat/structured` with JSON body `{chat_id, user_id, user_query}`
 
 ## Functional Architecture
 
@@ -225,12 +225,15 @@ This deployment includes:
 By default the chat UI is served by `supervisor-agent`:
 
 - UI: `http://localhost:10008`
-- Chat SSE: `http://localhost:10008/api/assistant/chat`
+- Chat SSE: `POST http://localhost:10008/api/assistant/chat/structured`
 
 Example:
 
-```text
-GET /api/assistant/chat?chat_id=demo-chat&user_id=ops-user&user_query=Pod%20foo%20CrashLoopBackOff%2C%20help%20me%20diagnose
+```bash
+curl -N -X POST http://localhost:10008/api/assistant/chat/structured \
+     -H 'Content-Type: application/json' \
+     -H 'Accept: text/event-stream' \
+     -d '{"chat_id":"demo-chat","user_id":"ops-user","user_query":"Pod foo CrashLoopBackOff, help me diagnose"}'
 ```
 
 ## V1 Scope

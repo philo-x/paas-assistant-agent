@@ -18,6 +18,8 @@ package io.agentscope.examples.paasassistant.supervisor.agent;
 
 import io.agentscope.core.ReActAgent;
 import io.agentscope.core.agent.Event;
+import io.agentscope.core.agent.EventType;
+import io.agentscope.core.agent.StreamOptions;
 import io.agentscope.core.hook.Hook;
 import io.agentscope.core.memory.Memory;
 import io.agentscope.core.memory.autocontext.AutoContextMemory;
@@ -26,7 +28,6 @@ import io.agentscope.core.model.ExecutionConfig;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.examples.paasassistant.supervisor.tools.A2aAgentTools;
-import io.agentscope.examples.paasassistant.supervisor.hook.MonitoringHook;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -43,6 +44,29 @@ import reactor.core.publisher.Flux;
 public class SupervisorAgent {
 
     private static final Logger logger = LoggerFactory.getLogger(SupervisorAgent.class);
+
+    /**
+     * StreamOptions for the supervisor's own ReActAgent.
+     *
+     * <p>The supervisor only needs to surface its FINAL routed/composed answer to the
+     * frontend's {@code answer_delta} channel. Intermediate REASONING / TOOL_RESULT events
+     * are still observable through the supervisor-side {@link io.agentscope.examples.paasassistant.supervisor.stream.StructuredStreamHook}
+     * (which fires on the agent's lifecycle hooks and is independent of StreamOptions).
+     *
+     * <p>Restricting the public Flux to {@code AGENT_RESULT} prevents the controller's
+     * {@code processStructuredStream} text extractor from leaking the supervisor's internal
+     * reasoning text (e.g. "I should route this to diagnosis_agent because...") into the
+     * user-facing answer stream.
+     */
+    private static final StreamOptions SUPERVISOR_STREAM_OPTIONS = StreamOptions.builder()
+            .eventTypes(EventType.AGENT_RESULT)
+            .incremental(true)
+            .includeReasoningChunk(false)
+            .includeReasoningResult(false)
+            .includeActingChunk(false)
+            .includeSummaryChunk(false)
+            .includeSummaryResult(false)
+            .build();
 
     private final Model model;
 
@@ -91,12 +115,11 @@ public class SupervisorAgent {
      * Stream method that handles user messages by creating a new agent for each request.
      *
      * @param msg    the user message
+     * @param hook   the hook to attach to the supervisor's ReActAgent (e.g.
+     *               {@link io.agentscope.examples.paasassistant.supervisor.stream.StructuredStreamHook}
+     *               for the structured SSE channel)
      * @return Flux of Events from the agent
      */
-    public Flux<Event> stream(Msg msg, String sessionId, String userId) {
-        return stream(msg, sessionId, userId, new MonitoringHook());
-    }
-
     public Flux<Event> stream(Msg msg, String sessionId, String userId, Hook hook) {
         Toolkit toolkit = new Toolkit();
         toolkit.registerTool(tools);
@@ -105,7 +128,7 @@ public class SupervisorAgent {
         historySanitizer.toHistoryReferenceMessage(visibleHistory).ifPresent(memory::addMessage);
 
         ReActAgent agent = createAgent(toolkit, memory, hook);
-        return agent.stream(msg)
+        return agent.stream(msg, SUPERVISOR_STREAM_OPTIONS)
                 .doFinally(
                         signalType -> {
                             logger.info(

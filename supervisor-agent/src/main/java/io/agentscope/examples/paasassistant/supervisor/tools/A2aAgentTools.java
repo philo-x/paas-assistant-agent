@@ -49,6 +49,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
+import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
 
 @Component
@@ -64,13 +65,26 @@ public class A2aAgentTools {
     private static final String CHILD_AGENT_TIMEOUT_MESSAGE =
             "子 Agent 执行超时，已取消本次 A2A 任务。请稍后重试，或缩小诊断范围后再次发起。";
 
+    /**
+     * StreamOptions the supervisor requests from each child A2A agent.
+     *
+     * <p>MUST stay byte-for-byte in sync with each sub-agent's {@code FULL_STREAM_OPTIONS} in
+     * {@code diagnosis-sub-agent} and {@code guide-sub-agent}. Drift here causes either silent
+     * event loss (sub-agent sends events the supervisor doesn't expect) or missing UI updates
+     * (supervisor requests events the sub-agent isn't configured to emit).
+     *
+     * <p>{@code includeActingChunk(false)}: streaming partial tool input/output is unused by the
+     * structured timeline, and fragmented chunks would force per-blockId dedup. The dedup
+     * defense in {@code emitToolSteps} is kept as belt-and-suspenders, but with this flag off
+     * the framework should already be sending one TOOL_RESULT per tool call.
+     */
     private static final StreamOptions CHILD_AGENT_STREAM_OPTIONS =
             StreamOptions.builder()
                     .eventTypes(EventType.REASONING, EventType.TOOL_RESULT, EventType.AGENT_RESULT)
                     .incremental(true)
                     .includeReasoningChunk(true)
                     .includeReasoningResult(false)
-                    .includeActingChunk(true)
+                    .includeActingChunk(false)
                     .includeSummaryChunk(false)
                     .includeSummaryResult(false)
                     .build();
@@ -131,11 +145,12 @@ public class A2aAgentTools {
     private Mono<String> callChildAgent(
             A2aAgent agent, String childAgentName, Msg msg, String contextWithTags) {
         String traceId = extractTraceId(contextWithTags);
-        StructuredSseEmitter emitter = resolveEmitter(contextWithTags);
 
         Mono<String> childCall =
-                Mono.defer(
-                                () -> {
+                Mono.deferContextual(
+                                ctxView -> {
+                                    StructuredSseEmitter emitter =
+                                            resolveEmitter(traceId, ctxView);
                                     StringBuilder finalAnswer = new StringBuilder();
                                     ChildStreamState state = new ChildStreamState();
                                     return agent.stream(msg, CHILD_AGENT_STREAM_OPTIONS)
@@ -147,15 +162,27 @@ public class A2aAgentTools {
                                                                      emitter,
                                                                      finalAnswer,
                                                                      state))
-                                             .then(Mono.fromSupplier(() -> finalAnswer.toString().trim())).doFinally(sig -> state.getAssembler().clear());
+                                             .then(Mono.fromSupplier(() -> {
+                                                 String complete = finalAnswer.toString().trim();
+                                                 emitFinalAnswerOnce(
+                                                         childAgentName, complete, emitter, state);
+                                                 return complete;
+                                             }))
+                                             .doFinally(sig -> state.getAssembler().clear());
                                 })
                         .timeout(childAgentTimeout);
 
         return applyTransientRetry(childCall, childAgentName, traceId)
                 .onErrorResume(
                         throwable ->
-                                handleChildAgentFailure(
-                                        throwable, agent, childAgentName, traceId, emitter));
+                                Mono.deferContextual(
+                                        ctxView ->
+                                                handleChildAgentFailure(
+                                                        throwable,
+                                                        agent,
+                                                        childAgentName,
+                                                        traceId,
+                                                        resolveEmitter(traceId, ctxView))));
     }
 
     private Mono<String> applyTransientRetry(
@@ -332,22 +359,40 @@ public class A2aAgentTools {
             return;
         }
 
-        // Process final agent answer
+        // Process final agent answer.
+        // We DO NOT emit here, because AGENT_RESULT can fire multiple times under
+        // incremental(true): emitting on the first event would lock `answerEmitted` and
+        // ship only the first fragment to the user. Accumulate the text now and let the
+        // stream-end hook in callChildAgent emit the fully-assembled answer exactly once.
         if (type == EventType.AGENT_RESULT) {
-            event.getMessage().getContentBlocks(TextBlock.class).forEach(block -> finalAnswer.append(block.getText()));
-            // Always emit final answer if not already done, even if intermediate tool steps were emitted.
-            // The child agent's conclusion is always valuable context for the user.
-            if (!state.hasAnswerEmitted()) {
-                String summary = ToolNarrator.extractThinkingText(finalAnswer.toString());
-                if (!summary.isEmpty()) {
-                    if (emitter != null) {
-                        emitter.emitReasoningDelta(childAgentName, summary);
-                    }
-                    state.markAnswerEmitted();
-                }
-            }
+            event.getMessage()
+                    .getContentBlocks(TextBlock.class)
+                    .forEach(block -> finalAnswer.append(block.getText()));
             return;
         }
+    }
+
+    /**
+     * Emits the child agent's complete final answer to the structured SSE stream exactly once,
+     * after the upstream Flux has finished accumulating it. Earlier in this file the AGENT_RESULT
+     * branch only appends to {@code finalAnswer}; this method is the sole point that pushes the
+     * assembled text out to the user, so we never ship a truncated first-fragment to the UI.
+     */
+    private void emitFinalAnswerOnce(
+            String childAgentName,
+            String completeAnswer,
+            StructuredSseEmitter emitter,
+            ChildStreamState state) {
+        if (emitter == null || state.hasAnswerEmitted() || completeAnswer == null
+                || completeAnswer.isEmpty()) {
+            return;
+        }
+        String summary = ToolNarrator.extractThinkingText(completeAnswer);
+        if (summary.isEmpty()) {
+            return;
+        }
+        emitter.emitReasoningDelta(childAgentName, summary);
+        state.markAnswerEmitted();
     }
 
     private boolean emitToolSteps(
@@ -358,18 +403,19 @@ public class A2aAgentTools {
 
         boolean emitted = false;
 
-        // Process tool calls (starts)
+        // Process tool calls (starts).
+        // The framework streams ToolUseBlocks in fragments (assembled by MessageAssembler);
+        // we only want to fire `tool_start` once per logical tool call.
         for (ToolUseBlock block : message.getContentBlocks(ToolUseBlock.class)) {
-            // Assemble to handle potential fragmentation in tool calls
             ContentBlock assembled = state.getAssembler().assemble(block.getId(), block);
             if (!(assembled instanceof ToolUseBlock finalBlock)) {
                 continue;
             }
+            if (!state.tryMarkToolStartEmitted(finalBlock.getId())) {
+                continue;
+            }
 
             String toolName = finalBlock.getName();
-            // Avoid re-emitting the same tool start if we've already emitted it for this block ID
-            // (Note: In a real scenario, we might want to check if name/input changed significantly)
-            
             Object inputObj = finalBlock.getInput();
             String inputSummary = "";
             if (inputObj != null) {
@@ -385,11 +431,13 @@ public class A2aAgentTools {
             emitted = true;
         }
 
-        // Process tool results (completions)
+        // Process tool results (completions). Same dedup pattern as ToolUseBlock above.
         for (ToolResultBlock block : message.getContentBlocks(ToolResultBlock.class)) {
-            // Assemble the tool result from potentially fragmented stream
             ContentBlock assembled = state.getAssembler().assemble(block.getId(), block);
             if (!(assembled instanceof ToolResultBlock finalBlock)) {
+                continue;
+            }
+            if (!state.tryMarkToolResultEmitted(finalBlock.getId())) {
                 continue;
             }
 
@@ -398,7 +446,6 @@ public class A2aAgentTools {
                             ? "unknown_tool"
                             : finalBlock.getName();
 
-            // Simple summary without using ToolResultSummarizer
             String title = ToolNarrator.titleForTool(toolName);
             String summary = "已完成" + title + "。";
 
@@ -414,13 +461,38 @@ public class A2aAgentTools {
         return emitted;
     }
 
-    private StructuredSseEmitter resolveEmitter(String contextWithTags) {
-        String traceId = extractTraceId(contextWithTags);
-        StructuredSseEmitter emitter = traceRegistry.get(traceId);
-        if (emitter != null) {
-            return emitter;
+    /**
+     * Resolves the per-request structured SSE emitter without ever falling back across users.
+     *
+     * <p>Lookup order:
+     *
+     * <ol>
+     *   <li>Reactor Context — populated by {@code SupervisorAgentController} for every structured
+     *       request. This is automatically isolated per HTTP subscription.
+     *   <li>Exact traceId match in the registry — used when Reactor Context did not propagate
+     *       through the framework's tool-dispatch boundary but the LLM kept the {@code <traceId>}
+     *       tag intact.
+     *   <li>{@code null} — child-agent events will be dropped from the SSE stream rather than
+     *       leaked to another user's connection.
+     * </ol>
+     */
+    StructuredSseEmitter resolveEmitter(String traceId, ContextView ctxView) {
+        if (ctxView != null && ctxView.hasKey(StructuredSseEmitter.CONTEXT_KEY)) {
+            StructuredSseEmitter fromContext = ctxView.get(StructuredSseEmitter.CONTEXT_KEY);
+            if (fromContext != null) {
+                return fromContext;
+            }
         }
-        return traceRegistry.getLatest();
+
+        StructuredSseEmitter fromRegistry = traceRegistry.get(traceId);
+        if (fromRegistry != null) {
+            return fromRegistry;
+        }
+
+        log.warn(
+                "No structured SSE emitter for traceId={}; child-agent events will be dropped to avoid cross-user leakage.",
+                traceId);
+        return null;
     }
 
     private String extractTraceId(String context) {
@@ -438,9 +510,31 @@ public class A2aAgentTools {
         private boolean stepEmitted;
         private boolean answerEmitted;
         private final MessageAssembler assembler = new MessageAssembler();
+        private final java.util.Set<String> emittedToolStartIds = new java.util.HashSet<>();
+        private final java.util.Set<String> emittedToolResultIds = new java.util.HashSet<>();
 
         public MessageAssembler getAssembler() {
             return assembler;
+        }
+
+        /**
+         * Returns true the first time a ToolUseBlock with this id is observed; subsequent
+         * fragments of the same logical block return false so the SSE timeline only fires
+         * one tool_start per tool call.
+         */
+        private boolean tryMarkToolStartEmitted(String blockId) {
+            if (blockId == null || blockId.isBlank()) {
+                return true;
+            }
+            return emittedToolStartIds.add(blockId);
+        }
+
+        /** Same idea as {@link #tryMarkToolStartEmitted} but for ToolResultBlock. */
+        private boolean tryMarkToolResultEmitted(String blockId) {
+            if (blockId == null || blockId.isBlank()) {
+                return true;
+            }
+            return emittedToolResultIds.add(blockId);
         }
 
         private void markStepEmitted() {

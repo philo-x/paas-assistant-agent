@@ -76,58 +76,9 @@ export const parseStructuredEvent = (chunk: string): StructuredSseEvent | null =
   }
 }
 
-export interface ChatRequest {
-  chat_id: string
-  user_id: string
-  user_query: string
-}
-
-export interface ChatResponse {
-  success: boolean
-  data?: string
-  error?: string
-}
-
 export class ChatApiService {
   private get configStore() {
     return useConfigStore()
-  }
-
-  async sendMessage(query: string): Promise<ReadableStream<Uint8Array> | null> {
-    try {
-      // Build URL parameters, ensure proper encoding
-      const params = new URLSearchParams({
-        chat_id: this.configStore.chatId,
-        user_id: this.configStore.userId,
-        user_query: query
-      })
-
-      const url = `${this.configStore.apiUrl}?${params}`
-
-      const response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        credentials: 'omit',
-        headers: {
-          'Accept': 'text/event-stream',
-        }
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('API Error Response:', errorText)
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`)
-      }
-
-      if (!response.body) {
-        throw new Error('No response body')
-      }
-
-      return response.body
-    } catch (error) {
-      console.error('Chat API error:', error)
-      throw error
-    }
   }
 
   async testConnection(): Promise<boolean> {

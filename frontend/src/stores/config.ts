@@ -40,7 +40,6 @@ export const useConfigStore = defineStore('config', () => {
   const chatId = ref('')
 
   // Getters
-  const apiUrl = computed(() => `${baseUrl.value}/api/assistant/chat`)
   const structuredApiUrl = computed(() => `${baseUrl.value}/api/assistant/chat/structured`)
 
   const persist = () => {
@@ -96,7 +95,6 @@ export const useConfigStore = defineStore('config', () => {
     baseUrl,
     userId,
     chatId,
-    apiUrl,
     structuredApiUrl,
     updateConfig,
     loadConfig,
