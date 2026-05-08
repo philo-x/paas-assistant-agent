@@ -24,6 +24,7 @@ import 'ant-design-vue/dist/reset.css'
 import { i18n } from '@/base/i18n'
 
 import 'nprogress/nprogress.css'
+import '@/assets/styles/fonts.css'
 
 const app = createApp(App)
 const pinia = createPinia()

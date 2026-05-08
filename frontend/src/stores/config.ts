@@ -30,8 +30,12 @@ export const useConfigStore = defineStore('config', () => {
     if (windowConfig && windowConfig.API_BASE_URL && windowConfig.API_BASE_URL !== '__API_BASE_URL__') {
       return windowConfig.API_BASE_URL
     }
-    // Default to localhost:10008 for local development
-    return 'http://localhost:10008'
+
+    // Smart default:
+    // 1. If we're on port 9999 (standard for this project's Vite), assume local dev and use :10008
+    // 2. Otherwise, assume we're served by the backend or a proxy, and use the current origin
+    const isLocalVite = window.location.port === '9999' || window.location.port === '5173'
+    return isLocalVite ? 'http://localhost:10008' : window.location.origin
   }
 
   // State
@@ -69,7 +73,20 @@ export const useConfigStore = defineStore('config', () => {
     if (saved) {
       try {
         const config = JSON.parse(saved)
-        baseUrl.value = config.baseUrl || 'http://localhost:10008'
+        let savedBaseUrl = config.baseUrl
+
+        // Protection: If the saved URL is 'localhost' but the user is accessing via IP/Domain,
+        // it means the saved config is likely from a different environment. Reset it.
+        if (
+          savedBaseUrl &&
+          savedBaseUrl.includes('localhost') &&
+          !window.location.hostname.includes('localhost') &&
+          !window.location.hostname.includes('127.0.0.1')
+        ) {
+          savedBaseUrl = getInitialBaseUrl()
+        }
+
+        baseUrl.value = savedBaseUrl || getInitialBaseUrl()
         userId.value = config.userId || ''
       } catch (error) {
         console.error('Failed to load config:', error)
