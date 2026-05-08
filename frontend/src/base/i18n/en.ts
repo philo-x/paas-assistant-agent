@@ -99,7 +99,7 @@ export default {
     hideReasoning: 'Hide',
     showThinking: 'Show',
     hideThinking: 'Hide',
-    thoughtsCollapsedHint: 'Expand to view model thoughts',
+    thoughtsCollapsedHint: 'Thinking',
     toolInput: 'Input: ',
     toolResult: 'Result: ',
     toolFallback: 'Completed {tool}.',

@@ -16,11 +16,7 @@
 
 package io.agentscope.examples.paasassistant.supervisor.stream;
 
-import io.agentscope.core.hook.Hook;
-import io.agentscope.core.hook.HookEvent;
-import io.agentscope.core.hook.PostActingEvent;
-import io.agentscope.core.hook.PreActingEvent;
-import io.agentscope.core.hook.ReasoningChunkEvent;
+import io.agentscope.core.hook.*;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.message.ThinkingBlock;
@@ -61,6 +57,9 @@ public class StructuredStreamHook implements Hook {
                     "success",
                     summary,
                     summarize(postActing.getToolUse().getInput()));
+        } else if (event instanceof PostCallEvent postCall) {
+            emitter.emitAnswerDelta(postCall.getFinalMessage().getTextContent());
+
         }
         return Mono.just(event);
     }

@@ -18,7 +18,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button, Tag } from 'ant-design-vue'
-import { BulbFilled, DownOutlined, UpOutlined } from '@ant-design/icons-vue'
+import { BulbFilled, DownOutlined, UpOutlined, AlertOutlined } from '@ant-design/icons-vue'
 import MarkdownRenderer from './MarkdownRenderer.vue'
 import { useChatStore } from '@/stores/chat'
 import type { AssistantMessage, ThinkingTimelineStep } from '@/types'
@@ -94,71 +94,72 @@ const stepCardClass = (step: ThinkingTimelineStep) => {
 
 <template>
   <div class="assistant-card">
+    <!-- Thoughts Module (Restored Original Style) -->
     <section v-if="shouldRenderThoughts" class="thoughts-card">
       <div class="thoughts-header">
-        <div class="thoughts-title">
-          <BulbFilled class="thoughts-icon" />
-          <span>{{ t('chat.sections.thoughts') }}</span>
-        </div>
-        <Button
-          v-if="message.thoughtsExpanded"
-          type="text"
-          size="small"
-          class="thoughts-header-toggle"
+        <button
+          type="button"
+          class="thoughts-toggle-btn"
           @click="toggleThoughts"
         >
-          <template #icon><UpOutlined /></template>
-        </Button>
+          <div class="thoughts-toggle-content">
+            <span class="thoughts-hint">{{ t('chat.thoughtsCollapsedHint') }}</span>
+            <component :is="message.thoughtsExpanded ? UpOutlined : DownOutlined" class="toggle-icon" />
+          </div>
+        </button>
       </div>
 
-      <button
-        v-if="!message.thoughtsExpanded"
-        type="button"
-        class="thoughts-collapsed-bar"
-        @click="toggleThoughts"
-      >
-        <span>{{ t('chat.thoughtsCollapsedHint') }}</span>
-        <DownOutlined />
-      </button>
+      <Transition name="fade-slide">
+        <div v-if="message.thoughtsExpanded" class="thoughts-body">
+          <div v-if="!visibleSteps.length" class="thoughts-empty">
+            {{ t('chat.thinking') }}
+          </div>
 
-      <div v-else class="thoughts-body">
-        <div v-if="!visibleSteps.length" class="thoughts-empty">
-          {{ t('chat.thinking') }}
-        </div>
-
-        <div v-else class="timeline">
-          <div
-            v-for="step in visibleSteps"
-            :key="step.id"
-            class="timeline-step"
-            :class="[stepCardClass(step), { 'timeline-step-indented': step.agent !== 'supervisor_agent' }]"
-          >
-            <div class="timeline-rail">
-              <div class="timeline-dot" :class="timelineDotClass(step)" />
-            </div>
-            <div class="timeline-content">
-              <Tag class="timeline-agent-tag" :bordered="false">{{ step.agentLabel }}</Tag>
-              <div class="timeline-step-title">{{ step.title }}</div>
-              <div class="timeline-step-description">
-                <MarkdownRenderer
-                  :content="normalizeEscapedText(step.description)"
-                  :is-streaming="Boolean(message.isStreaming && step.isOpen)"
-                />
+          <div v-else class="timeline">
+            <div
+              v-for="step in visibleSteps"
+              :key="step.id"
+              class="timeline-step"
+              :class="[stepCardClass(step), { 'timeline-step-indented': step.agent !== 'supervisor_agent' }]"
+            >
+              <div class="timeline-rail">
+                <div class="timeline-dot" :class="timelineDotClass(step)" />
+              </div>
+              <div class="timeline-content">
+                <Tag class="timeline-agent-tag" :bordered="false">{{ step.agentLabel }}</Tag>
+                <div class="timeline-step-title">{{ step.title }}</div>
+                <div class="timeline-step-description">
+                  <MarkdownRenderer
+                    :content="normalizeEscapedText(step.description)"
+                    :is-streaming="Boolean(message.isStreaming && step.isOpen)"
+                  />
+                </div>
               </div>
             </div>
           </div>
         </div>
+      </Transition>
+    </section>
+
+    <!-- Result Module (New Separate Module) -->
+    <section v-if="message.answer" class="result-module">
+      <div class="result-header">
+        <div class="result-label-wrapper">
+          <span class="result-label">{{ t('chat.sections.result') }}</span>
+        </div>
+      </div>
+      <div class="result-content">
+        <MarkdownRenderer :content="message.answer" :is-streaming="message.isStreaming || false" />
       </div>
     </section>
 
-    <section v-if="message.answer" class="result-section">
-      <div class="result-title">{{ t('chat.sections.result') }}</div>
-      <MarkdownRenderer :content="message.answer" :is-streaming="message.isStreaming || false" />
-    </section>
-
-    <section v-if="message.error" class="assistant-error">
-      <div class="result-title">{{ t('common.error') }}</div>
-      <div class="assistant-error-text">{{ message.error }}</div>
+    <!-- Error Module -->
+    <section v-if="message.error" class="error-module">
+      <div class="error-header">
+        <AlertOutlined class="error-icon" />
+        <span class="error-label">{{ t('common.error') }}</span>
+      </div>
+      <div class="error-text">{{ message.error }}</div>
     </section>
   </div>
 </template>
@@ -167,77 +168,54 @@ const stepCardClass = (step: ThinkingTimelineStep) => {
 .assistant-card {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   width: 100%;
 }
 
+/* --- Thoughts Module (Restored Timeline Style) --- */
 .thoughts-card {
-  overflow: hidden;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
-  transition: box-shadow 0.3s ease;
-}
-
-.thoughts-card:hover {
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08), inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
 }
 
 .thoughts-header {
+  margin-bottom: 8px;
+}
+
+.thoughts-toggle-btn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 20px 24px;
-  border-bottom: 1px solid #eef2f7;
-}
-
-.thoughts-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #111827;
-}
-
-.thoughts-icon {
-  font-size: 16px;
-  color: #5b7cff;
-}
-
-.thoughts-header-toggle {
-  color: #475569;
-}
-
-.thoughts-collapsed-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 18px 24px;
-  border: 0;
+  padding: 6px 12px;
+  border: 1px solid #e5ebf2;
+  border-radius: 20px;
   background: #ffffff;
-  color: #1f2937;
-  font-size: 15px;
-  text-align: left;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.thoughts-collapsed-bar:hover {
+.thoughts-toggle-btn:hover {
   background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.thoughts-toggle-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-icon {
+  font-size: 10px;
 }
 
 .thoughts-body {
-  padding: 24px;
-}
-
-.thoughts-empty {
-  color: #64748b;
-  font-size: 14px;
+  padding: 12px 16px;
+  background: rgba(248, 250, 252, 0.5);
+  border-radius: 12px;
+  margin-bottom: 8px;
 }
 
 .timeline {
@@ -290,200 +268,110 @@ const stepCardClass = (step: ThinkingTimelineStep) => {
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
-.timeline-dot-success {
-  background: #10b981;
-}
-
-.timeline-dot-reasoning {
-  background: #0284c7;
-}
-
-.timeline-dot-tool {
-  background: #d97706;
-}
-
-.timeline-dot-handoff {
-  background: #7c3aed;
-  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
-}
-
-.timeline-dot-error {
-  background: #dc2626;
-  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
-}
-
-.timeline-content {
-  min-width: 0;
-}
+.timeline-dot-success { background: #10b981; }
+.timeline-dot-reasoning { background: #0284c7; }
+.timeline-dot-tool { background: #d97706; }
+.timeline-dot-handoff { background: #7c3aed; }
+.timeline-dot-error { background: #dc2626; }
 
 .timeline-agent-tag {
-  margin-bottom: 10px;
-  padding: 3px 10px;
-  border-radius: 999px;
+  margin-bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 4px;
   background: #eef2ff;
   color: #4338ca;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .timeline-step-title {
-  margin-bottom: 8px;
-  font-size: 15px;
+  margin-bottom: 4px;
+  font-size: 14px;
   font-weight: 700;
-  color: #111827;
-  line-height: 1.5;
+  color: #1e293b;
 }
 
 .timeline-step-description {
-  color: #4b5563;
+  color: #475569;
   font-size: 14px;
   line-height: 1.6;
-  overflow-x: auto; /* Enable horizontal scroll for long tables/code */
-  width: 100%;
-}
-
-.timeline-step-description :deep(.markdown-content) {
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.6;
-  width: 100%;
-}
-
-.timeline-step-description :deep(h1),
-.timeline-step-description :deep(h2),
-.timeline-step-description :deep(h3),
-.timeline-step-description :deep(h4),
-.timeline-step-description :deep(h5),
-.timeline-step-description :deep(h6) {
-  font-size: 0.95em;
-  font-weight: 600;
-  border-bottom: none;
-  padding-bottom: 0;
-  margin: 0.4em 0 0.2em 0;
-  color: #374151;
-}
-
-.timeline-step-description :deep(p) {
-  margin: 0.2em 0;
-}
-
-.timeline-step-reasoning .timeline-step-description,
-.timeline-step-reasoning .timeline-step-description :deep(.markdown-content) {
-  color: #6b7280;
-}
-
-/* Compact table within the thoughts panel so it doesn't overwhelm the step card */
-.timeline-step-description :deep(table) {
-  margin: 0.5em 0;
-  font-size: 13px;
-  box-shadow: none;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  width: 100%;        /* Match text width */
-  table-layout: auto; /* Allow columns to adjust but keep total width 100% */
-  display: table;     /* Restore standard table behavior */
-}
-
-.timeline-step-description :deep(th),
-.timeline-step-description :deep(td) {
-  padding: 5px 10px;
-}
-
-.timeline-step-description :deep(pre) {
-  margin: 0.5em 0;
-  padding: 10px 12px;
-  font-size: 12px;
-}
-
-.timeline-step-description :deep(hr) {
-  height: 1px;
-  margin: 0.4em 0;
-}
-
-.timeline-step-plain-text {
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
 .timeline-step-indented {
   margin-left: 20px;
 }
 
-.timeline-step-reasoning .timeline-agent-tag {
-  background: #e0f2fe;
-  color: #0284c7;
+/* --- Result Module --- */
+.result-module {
+  margin-top: 4px;
+  padding: 0;
 }
 
-.timeline-step-tool .timeline-agent-tag {
-  background: #fef3c7;
-  color: #d97706;
-}
-
-.timeline-step-handoff .timeline-agent-tag {
-  background: #ede9fe;
-  color: #7c3aed;
-}
-
-.timeline-step-error .timeline-agent-tag {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.result-section {
+.result-header {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
-.result-section :deep(.markdown-content) {
-  font-size: 15px;
-  line-height: 1.7;
-  color: #1f2937;
-}
-
-.result-title {
+.result-label {
   font-size: 12px;
   font-weight: 700;
   color: #94a3b8;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.assistant-error {
-  padding: 14px 16px;
-  border: 1px solid #fecaca;
-  border-radius: 12px;
-  background: #fff7f7;
+.result-content :deep(.markdown-content) {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #0f172a;
 }
 
-.assistant-error-text {
-  color: #b91c1c;
-  font-size: 13px;
-  line-height: 1.6;
+/* --- Error Module --- */
+.error-module {
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 1px solid #fee2e2;
+  border-radius: 12px;
+  background: #fef2f2;
+}
+
+.error-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.error-icon { color: #dc2626; }
+.error-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #991b1b;
+  text-transform: uppercase;
+}
+.error-text { color: #b91c1c; font-size: 13px; }
+
+/* --- Transitions --- */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+  max-height: 2000px;
+  opacity: 1;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
-  .thoughts-header,
-  .thoughts-body,
-  .thoughts-collapsed-bar {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .timeline-step {
-    gap: 12px;
-  }
-
-  .timeline-step-title {
-    font-size: 15px;
-  }
+  .timeline-step { gap: 12px; }
 }
 </style>

@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
@@ -42,140 +43,125 @@ import reactor.core.publisher.Sinks;
 @RestController
 public class SupervisorAgentController {
 
-    private static final Logger logger = LoggerFactory.getLogger(SupervisorAgentController.class);
+        private static final Logger logger = LoggerFactory.getLogger(SupervisorAgentController.class);
 
-    private final SupervisorAgent supervisorAgent;
+        private final SupervisorAgent supervisorAgent;
 
-    private final ObjectMapper objectMapper;
+        private final ObjectMapper objectMapper;
 
-    private final StructuredTraceRegistry traceRegistry;
+        private final StructuredTraceRegistry traceRegistry;
 
-    public SupervisorAgentController(
-            SupervisorAgent supervisorAgent,
-            ObjectMapper objectMapper,
-            StructuredTraceRegistry traceRegistry) {
-        this.supervisorAgent = supervisorAgent;
-        this.objectMapper = objectMapper;
-        this.traceRegistry = traceRegistry;
-    }
-
-    @PostMapping(
-            path = "/chat/structured",
-            consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> structuredChat(@RequestBody StructuredChatRequest request) {
-        String chatId = safe(request.chat_id());
-        String userId = safe(request.user_id());
-        String userQuery = safe(request.user_query());
-
-        logger.info("Received structured user query: {}", userQuery);
-
-        if (chatId.isBlank() || userId.isBlank() || userQuery.isBlank()) {
-            return Flux.just(
-                    ServerSentEvent.<String>builder()
-                            .event("error")
-                            .data(
-                                    "{\"message\":\"chat_id, user_id and user_query are required\",\"stage\":\"validation\"}")
-                            .build());
+        public SupervisorAgentController(
+                        SupervisorAgent supervisorAgent,
+                        ObjectMapper objectMapper,
+                        StructuredTraceRegistry traceRegistry) {
+                this.supervisorAgent = supervisorAgent;
+                this.objectMapper = objectMapper;
+                this.traceRegistry = traceRegistry;
         }
 
-        try {
-            Sinks.Many<ServerSentEvent<String>> sink =
-                    Sinks.many().unicast().onBackpressureBuffer();
-            StructuredSseEmitter emitter = new StructuredSseEmitter(sink, objectMapper);
-            String traceId = UUID.randomUUID().toString();
-            traceRegistry.register(traceId, emitter);
+        @PostMapping(path = "/chat/structured", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+        public Flux<ServerSentEvent<String>> structuredChat(@RequestBody StructuredChatRequest request) {
+                String chatId = safe(request.chat_id());
+                String userId = safe(request.user_id());
+                String userQuery = safe(request.user_query());
 
-            Msg msg =
-                    Msg.builder()
-                            .role(MsgRole.USER)
-                            .content(
-                                    TextBlock.builder()
-                                            .text(
-                                                    formatStructuredUserInput(
-                                                            userQuery, userId, traceId))
-                                            .build())
-                            .build();
+                logger.info("Received structured user query: {}", userQuery);
 
-            processStructuredStream(
-                    supervisorAgent
-                            .stream(
-                                    msg,
-                                    chatId,
-                                    userId,
-                                    new StructuredStreamHook("supervisor_agent", emitter))
-                            .contextWrite(ctx -> ctx.put(StructuredSseEmitter.CONTEXT_KEY, emitter)),
-                    sink,
-                    emitter);
+                if (chatId.isBlank() || userId.isBlank() || userQuery.isBlank()) {
+                        return Flux.just(
+                                        ServerSentEvent.<String>builder()
+                                                        .event("error")
+                                                        .data(
+                                                                        "{\"message\":\"chat_id, user_id and user_query are required\",\"stage\":\"validation\"}")
+                                                        .build());
+                }
 
-            return sink.asFlux()
-                    .doOnCancel(() -> logger.info("Client disconnected from structured stream"))
-                    .doOnError(e -> logger.error("Error occurred during structured streaming", e))
-                    .doFinally(signalType -> traceRegistry.unregister(traceId));
-        } catch (Exception e) {
-            logger.error("Failed to process structured user query: {}", userQuery, e);
-            return Flux.just(
-                    ServerSentEvent.<String>builder()
-                            .event("error")
-                            .data(
-                                    "{\"message\":\"System processing error, please try again later.\",\"stage\":\"request\"}")
-                            .build());
+                try {
+                        Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
+                        StructuredSseEmitter emitter = new StructuredSseEmitter(sink, objectMapper);
+                        String traceId = UUID.randomUUID().toString();
+                        traceRegistry.register(traceId, emitter);
+
+                        Msg msg = Msg.builder()
+                                        .role(MsgRole.USER)
+                                        .content(TextBlock.builder()
+                                                        .text(formatStructuredUserInput(userQuery, userId, traceId))
+                                                        .build())
+                                        .build();
+
+                        Disposable disposable = processStructuredStream(
+                                        supervisorAgent
+                                                        .stream(
+                                                                        msg,
+                                                                        chatId,
+                                                                        userId,
+                                                                        new StructuredStreamHook("supervisor_agent",
+                                                                                        emitter))
+                                                        .contextWrite(ctx -> ctx.put(StructuredSseEmitter.CONTEXT_KEY,
+                                                                        emitter)),
+                                        sink,
+                                        emitter);
+
+                        return sink.asFlux()
+                                        .doOnCancel(() -> {
+                                                logger.info("Client disconnected from structured stream, cancelling task.");
+                                                disposable.dispose();
+                                        })
+                                        .doOnError(e -> {
+                                                logger.error("Error occurred during structured streaming", e);
+                                                disposable.dispose();
+                                        })
+                                        .doFinally(signalType -> {
+                                                disposable.dispose();
+                                                traceRegistry.unregister(traceId);
+                                        });
+                } catch (Exception e) {
+                        logger.error("Failed to process structured user query: {}", userQuery, e);
+                        return Flux.just(
+                                        ServerSentEvent.<String>builder()
+                                                        .event("error")
+                                                        .data(
+                                                                        "{\"message\":\"System processing error, please try again later.\",\"stage\":\"request\"}")
+                                                        .build());
+                }
         }
-    }
 
-    public void processStructuredStream(
-            Flux<Event> generator,
-            Sinks.Many<ServerSentEvent<String>> sink,
-            StructuredSseEmitter emitter) {
-        generator
-                .filter(event -> !event.isLast())
-                .map(
-                        event ->
-                                event.getMessage().getContent().stream()
-                                        .filter(block -> block instanceof TextBlock)
-                                        .map(block -> ((TextBlock) block).getText())
-                                        .toList())
-                .flatMap(Flux::fromIterable)
-                .filter(content -> content != null && !content.isBlank())
-                .doOnNext(emitter::emitAnswerDelta)
-                .doOnError(
-                        e -> {
-                            logger.error(
-                                    "Unexpected error in structured stream processing: {}",
-                                    e.getMessage(),
-                                    e);
-                            emitter.emitError(
-                                    "System processing error, please try again later.",
-                                    "stream");
-                        })
-                .doOnComplete(
-                        () -> {
-                            logger.info("Structured stream processing completed successfully");
-                            emitter.emitDone();
-                            sink.tryEmitComplete();
-                        })
-                .subscribe(
-                        null,
-                        e -> {
-                            logger.error(
-                                    "Structured stream processing failed: {}", e.getMessage(), e);
-                            emitter.emitError(
-                                    "System processing error, please try again later.",
-                                    "stream");
-                            sink.tryEmitComplete();
-                        });
-    }
+        public Disposable processStructuredStream(
+                        Flux<Event> generator,
+                        Sinks.Many<ServerSentEvent<String>> sink,
+                        StructuredSseEmitter emitter) {
+                return generator
+                                .doOnError(
+                                                e -> {
+                                                        logger.error(
+                                                                        "Unexpected error in structured stream processing: {}",
+                                                                        e.getMessage(),
+                                                                        e);
+                                                        emitter.emitError(
+                                                                        "System processing error, please try again later.",
+                                                                        "stream");
+                                                        sink.tryEmitComplete();
+                                                })
+                                .doOnComplete(
+                                                () -> {
+                                                        logger.info("Structured stream processing completed successfully");
+                                                        emitter.emitDone();
+                                                        sink.tryEmitComplete();
+                                                })
+                                .subscribe();
+        }
 
-    private String formatStructuredUserInput(String userQuery, String userId, String traceId) {
-        StringBuilder builder = new StringBuilder();
-        builder.append("本轮请求是唯一需要路由和处理的用户请求；历史记录只能作为参考，不能替换本轮问题。\n\n");
-        builder.append("本轮用户问题:\n").append(userQuery).append('\n');
-        builder.append("<traceId>").append(traceId).append("</traceId>\n");
-        builder.append("<userId>").append(userId).append("</userId>");
-        return builder.toString();
-    }
+        private String formatStructuredUserInput(String userQuery, String userId, String traceId) {
+                StringBuilder builder = new StringBuilder();
+                builder.append("本轮请求是唯一需要路由和处理的用户请求；历史记录只能作为参考，不能替换本轮问题。\n\n");
+                builder.append("本轮用户问题:\n").append(userQuery).append('\n');
+                builder.append("<traceId>").append(traceId).append("</traceId>\n");
+                builder.append("<userId>").append(userId).append("</userId>");
+                return builder.toString();
+        }
 
-    private String safe(String value) {
-        return value == null ? "" : value.trim();
-    }
+        private String safe(String value) {
+                return value == null ? "" : value.trim();
+        }
 }

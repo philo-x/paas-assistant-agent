@@ -99,7 +99,7 @@ export default {
     hideReasoning: '收起',
     showThinking: '展开',
     hideThinking: '收起',
-    thoughtsCollapsedHint: '展开查看模型思考过程',
+    thoughtsCollapsedHint: '展现思考',
     toolInput: '输入：',
     toolResult: '结果：',
     toolFallback: '已完成 {tool}。',
