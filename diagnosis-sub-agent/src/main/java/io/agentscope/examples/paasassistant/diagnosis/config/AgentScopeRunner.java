@@ -19,9 +19,11 @@ import io.agentscope.examples.paasassistant.diagnosis.memory.CompatibleMem0LongT
 import io.agentscope.core.tool.mcp.McpClientBuilder;
 import io.agentscope.core.tool.mcp.McpClientWrapper;
 import io.agentscope.examples.paasassistant.diagnosis.hooks.MonitoringHook;
+import io.agentscope.examples.paasassistant.diagnosis.hooks.TruncationHook;
 import io.agentscope.extensions.nacos.mcp.NacosMcpServerManager;
 import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientBuilder;
 import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientWrapper;
+import io.agentscope.examples.paasassistant.diagnosis.utils.SanitizingMcpClient;
 import io.agentscope.extensions.nacos.mcp.tool.NacosToolkit;
 import java.time.Duration;
 import java.util.List;
@@ -170,7 +172,7 @@ public class AgentScopeRunner {
                     .memory(new AutoContextMemory(autoContextConfig, model))
                     .toolkit(toolkit)
                     .longTermMemory(longTermMemory)
-                    .hooks(List.of(new MonitoringHook()))
+                    .hooks(List.of(new MonitoringHook(), new TruncationHook()))
                     .build();
         }
 
@@ -191,7 +193,7 @@ public class AgentScopeRunner {
                                     .streamableHttpTransport(k8sgptMcpUrl)
                                     .timeout(Duration.ofSeconds(60))
                                     .buildSync();
-                            toolkit.registerMcpClient(k8sgptClient).block();
+                            toolkit.registerMcpClient(new SanitizingMcpClient(k8sgptClient)).block();
 
                             mcpInitialized = true;
                         } catch (Exception exception) {
@@ -259,6 +261,16 @@ public class AgentScopeRunner {
                                     .build());
 
             return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
+                    .onErrorResume(e -> {
+                        logger.error("Error during agent stream for taskId {}: ", options.getTaskId(), e);
+                        Msg errorMsg = Msg.builder()
+                                .role(MsgRole.ASSISTANT)
+                                .content(TextBlock.builder()
+                                        .text("\n\n> [!CAUTION]\n> **代理执行异常**\n> \n> 抱歉，诊断过程中遇到了技术故障：\n> `" + e.getMessage() + "`\n> \n> 请尝试精简您的问题，或者稍后重试。")
+                                        .build())
+                                .build();
+                        return Flux.just(new Event(EventType.AGENT_RESULT, errorMsg, false));
+                    })
                     .doFinally(signal -> {
                         agentCache.remove(options.getTaskId());
                     });

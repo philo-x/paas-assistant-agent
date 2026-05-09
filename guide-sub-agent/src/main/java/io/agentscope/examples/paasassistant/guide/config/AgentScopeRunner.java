@@ -19,12 +19,15 @@ import io.agentscope.core.tool.Toolkit;
 import io.agentscope.examples.paasassistant.guide.memory.CompatibleMem0LongTermMemory;
 import io.agentscope.examples.paasassistant.guide.tools.GuideTools;
 import io.agentscope.examples.paasassistant.guide.hooks.MonitoringHook;
+import io.agentscope.examples.paasassistant.guide.hooks.TruncationHook;
 import io.agentscope.extensions.nacos.mcp.tool.NacosToolkit;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +35,7 @@ import reactor.core.publisher.Flux;
 
 @Configuration
 public class AgentScopeRunner {
+    private static final Logger logger = LoggerFactory.getLogger(AgentScopeRunner.class);
 
     @Value("${agentscope.mem0.api-key:}")
     String mem0ApiKey;
@@ -55,7 +59,7 @@ public class AgentScopeRunner {
         Toolkit toolkit = new NacosToolkit();
         toolkit.registerTool(guideTools);
 
-        AutoContextConfig autoContextConfig = AutoContextConfig.builder().tokenRatio(0.4).lastKeep(10).build();
+        AutoContextConfig autoContextConfig = AutoContextConfig.builder().tokenRatio(0.2).lastKeep(10).build();
 
         return new CustomAgentRunner(
                 "guide_agent",
@@ -160,7 +164,7 @@ public class AgentScopeRunner {
                     .knowledge(knowledge)
                     .ragMode(RAGMode.AGENTIC)
                     .longTermMemory(longTermMemory)
-                    .hooks(List.of(new MonitoringHook()))
+                    .hooks(List.of(new MonitoringHook(), new TruncationHook()))
                     .build();
         }
 
@@ -219,6 +223,16 @@ public class AgentScopeRunner {
                                     .build());
 
             return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
+                    .onErrorResume(e -> {
+                        logger.error("Error during agent stream for taskId {}: ", options.getTaskId(), e);
+                        Msg errorMsg = Msg.builder()
+                                .role(MsgRole.ASSISTANT)
+                                .content(TextBlock.builder()
+                                        .text("\n\n> [!CAUTION]\n> **代理执行异常**\n> \n> 抱歉，助手在处理您的请求时遇到了技术故障：\n> `" + e.getMessage() + "`\n> \n> 请尝试精简您的问题，或者稍后重试。")
+                                        .build())
+                                .build();
+                        return Flux.just(new Event(EventType.AGENT_RESULT, errorMsg, false));
+                    })
                     .doFinally(signal -> {
                         agentCache.remove(options.getTaskId());
                     });

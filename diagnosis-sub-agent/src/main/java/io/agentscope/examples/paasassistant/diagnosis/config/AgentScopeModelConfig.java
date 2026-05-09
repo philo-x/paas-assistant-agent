@@ -18,6 +18,7 @@ package io.agentscope.examples.paasassistant.diagnosis.config;
 
 import io.agentscope.core.formatter.dashscope.DashScopeChatFormatter;
 import io.agentscope.core.model.DashScopeChatModel;
+import io.agentscope.core.model.GenerateOptions;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.OpenAIChatModel;
 import java.util.Locale;
