@@ -37,8 +37,21 @@ public class SanitizingMcpClient extends McpClientWrapper {
 
     @Override
     public Mono<McpSchema.CallToolResult> callTool(String name, Map<String, Object> arguments) {
-        return delegate.callTool(name, arguments)
-                .map(result -> sanitizeResult(name, result));
+        String signature = name + ":" + (arguments != null ? arguments.toString() : "{}");
+        return Mono.deferContextual(ctx -> {
+            Map<String, McpSchema.CallToolResult> cache = ctx.getOrDefault("tool_cache", null);
+            if (cache != null && cache.containsKey(signature)) {
+                logger.info("Skipping duplicate tool call for '{}' (returning cached result)", name);
+                return Mono.just(cache.get(signature));
+            }
+            return delegate.callTool(name, arguments)
+                    .map(result -> sanitizeResult(name, result))
+                    .doOnNext(res -> {
+                        if (cache != null) {
+                            cache.put(signature, res);
+                        }
+                    });
+        });
     }
 
     @Override

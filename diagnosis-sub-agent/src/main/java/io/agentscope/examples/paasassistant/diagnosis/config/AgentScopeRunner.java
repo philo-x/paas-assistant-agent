@@ -25,6 +25,7 @@ import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientBuilder;
 import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientWrapper;
 import io.agentscope.examples.paasassistant.diagnosis.utils.SanitizingMcpClient;
 import io.agentscope.extensions.nacos.mcp.tool.NacosToolkit;
+import io.modelcontextprotocol.spec.McpSchema;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -261,6 +262,7 @@ public class AgentScopeRunner {
                                     .build());
 
             return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
+                    .contextWrite(ctx -> ctx.put("tool_cache", new ConcurrentHashMap<String, McpSchema.CallToolResult>()))
                     .onErrorResume(e -> {
                         logger.error("Error during agent stream for taskId {}: ", options.getTaskId(), e);
                         Msg errorMsg = Msg.builder()

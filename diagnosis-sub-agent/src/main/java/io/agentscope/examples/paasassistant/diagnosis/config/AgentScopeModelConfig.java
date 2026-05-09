@@ -73,7 +73,10 @@ public class AgentScopeModelConfig {
                             .apiKey(openaiApiKey)
                             .modelName(openaiModelName)
                             .stream(true)
-                            .formatter(new SafeOpenAIChatFormatter());
+                            .formatter(new SafeOpenAIChatFormatter())
+                            .generateOptions(GenerateOptions.builder()
+                                    .additionalBodyParam("parallel_tool_calls", false)
+                                    .build());
             if (openaiBaseUrl != null && !openaiBaseUrl.isEmpty() && !openaiBaseUrl.equals("-")) {
                 builder.baseUrl(openaiBaseUrl);
             }
@@ -88,7 +91,10 @@ public class AgentScopeModelConfig {
                     DashScopeChatModel.builder()
                             .apiKey(dashscopeApiKey)
                             .modelName(dashscopeModelName)
-                            .formatter(new DashScopeChatFormatter());
+                            .formatter(new DashScopeChatFormatter())
+                            .defaultOptions(GenerateOptions.builder()
+                                    .additionalBodyParam("parallel_tool_calls", false)
+                                    .build());
             if (dashscopeBaseUrl != null
                     && !dashscopeBaseUrl.isEmpty()
                     && !dashscopeBaseUrl.equals("-")) {

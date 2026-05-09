@@ -43,9 +43,9 @@ public class MsgUtils {
                 .map(
                         block -> {
                             if (block instanceof TextBlock) {
-                                return "Text: " + ((TextBlock) block).getText();
+                                return ((TextBlock) block).getText();
                             } else if (block instanceof ThinkingBlock) {
-                                return "Thinking: " + ((ThinkingBlock) block).getThinking();
+                                return ((ThinkingBlock) block).getThinking();
                             }
                             return "";
                         })
