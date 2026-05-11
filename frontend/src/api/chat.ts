@@ -100,6 +100,7 @@ export class ChatApiService {
     const payload: StructuredChatRequest = {
       chat_id: this.configStore.chatId,
       user_id: this.configStore.userId,
+      cluster_id: this.configStore.clusterId,
       user_query: query
     }
 

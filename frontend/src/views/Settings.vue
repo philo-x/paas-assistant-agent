@@ -48,6 +48,7 @@ const testing = ref(false)
 const formData = ref({
   baseUrl: '',
   userId: '',
+  clusterId: '',
   chatId: ''
 })
 
@@ -83,6 +84,7 @@ const loadConfig = () => {
   formData.value = {
     baseUrl: configStore.baseUrl,
     userId: configStore.userId,
+    clusterId: configStore.clusterId,
     chatId: configStore.chatId
   }
 }
@@ -126,6 +128,7 @@ const saveConfig = async () => {
     configStore.updateConfig({
       baseUrl: formData.value.baseUrl,
       userId: formData.value.userId,
+      clusterId: formData.value.clusterId,
       chatId: formData.value.chatId || configStore.chatId
     })
 
@@ -252,13 +255,24 @@ onMounted(() => {
               layout="vertical"
             >
               <Form.Item
-                :label="t('settings.userConfig.userId')"
+                :label="t('chat.userId')"
                 name="userId"
                 :extra="t('settings.userConfig.userIdPlaceholder')"
               >
                 <Input
                   v-model:value="formData.userId"
                   :placeholder="t('settings.userConfig.userIdPlaceholder')"
+                />
+              </Form.Item>
+
+              <Form.Item
+                :label="t('chat.clusterId')"
+                name="clusterId"
+                extra="请输入目标 Kubernetes 集群 ID"
+              >
+                <Input
+                  v-model:value="formData.clusterId"
+                  placeholder="例如：cls-main-01"
                 />
               </Form.Item>
 

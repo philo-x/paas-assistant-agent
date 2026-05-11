@@ -35,16 +35,38 @@ public class SanitizingMcpClient extends McpClientWrapper {
         return delegate.listTools();
     }
 
+    private static final List<String> DESTRUCTIVE_PREFIXES = List.of(
+            "delete_", "restart_", "scale_", "stop_", "update_", "apply_", 
+            "cordon_", "drain_", "taint_", "uncordon_", "untaint_", "patch_", "restore_", "undo_", "run_command_"
+    );
+
     @Override
     public Mono<McpSchema.CallToolResult> callTool(String name, Map<String, Object> arguments) {
-        String signature = name + ":" + (arguments != null ? arguments.toString() : "{}");
         return Mono.deferContextual(ctx -> {
+            String clusterId = ctx.getOrDefault("cluster_id", "");
+            Map<String, Object> finalArgs = arguments;
+            if (clusterId != null && !clusterId.isEmpty()) {
+                finalArgs = new java.util.HashMap<>(arguments != null ? arguments : java.util.Map.of());
+                finalArgs.put("cluster", clusterId);
+            }
+            
+            String signature = name + ":" + finalArgs.toString();
+            
             Map<String, McpSchema.CallToolResult> cache = ctx.getOrDefault("tool_cache", null);
             if (cache != null && cache.containsKey(signature)) {
                 logger.info("Skipping duplicate tool call for '{}' (returning cached result)", name);
                 return Mono.just(cache.get(signature));
             }
-            return delegate.callTool(name, arguments)
+            
+            java.util.Set<String> approvedTools = ctx.getOrDefault("approved_tools", java.util.Collections.emptySet());
+            if (isDestructive(name) && !approvedTools.contains(name)) {
+                logger.warn("Intercepted unapproved destructive tool call: {}", name);
+                return Mono.error(new io.agentscope.core.tool.ToolSuspendException(
+                        "⚠️ 智能体申请执行高危操作：" + name + "，请人工确认。"
+                ));
+            }
+
+            return delegate.callTool(name, finalArgs)
                     .map(result -> sanitizeResult(name, result))
                     .doOnNext(res -> {
                         if (cache != null) {
@@ -57,6 +79,13 @@ public class SanitizingMcpClient extends McpClientWrapper {
     @Override
     public void close() {
         delegate.close();
+    }
+
+    private boolean isDestructive(String toolName) {
+        if (toolName == null) return false;
+        String baseName = toolName.contains("__") ? 
+                toolName.substring(toolName.lastIndexOf("__") + 2) : toolName;
+        return DESTRUCTIVE_PREFIXES.stream().anyMatch(baseName::startsWith);
     }
 
     /**

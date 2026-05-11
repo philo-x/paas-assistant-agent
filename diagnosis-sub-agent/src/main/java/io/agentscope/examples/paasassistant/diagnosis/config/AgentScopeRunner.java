@@ -18,12 +18,9 @@ import io.agentscope.core.tool.Toolkit;
 import io.agentscope.examples.paasassistant.diagnosis.memory.CompatibleMem0LongTermMemory;
 import io.agentscope.core.tool.mcp.McpClientBuilder;
 import io.agentscope.core.tool.mcp.McpClientWrapper;
+import io.agentscope.examples.paasassistant.diagnosis.utils.SanitizingMcpClient;
 import io.agentscope.examples.paasassistant.diagnosis.hooks.MonitoringHook;
 import io.agentscope.examples.paasassistant.diagnosis.hooks.TruncationHook;
-import io.agentscope.extensions.nacos.mcp.NacosMcpServerManager;
-import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientBuilder;
-import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientWrapper;
-import io.agentscope.examples.paasassistant.diagnosis.utils.SanitizingMcpClient;
 import io.agentscope.extensions.nacos.mcp.tool.NacosToolkit;
 import io.modelcontextprotocol.spec.McpSchema;
 import java.time.Duration;
@@ -59,6 +56,9 @@ public class AgentScopeRunner {
     @Value("${agentscope.k8sgpt.mcp-url:http://k8sgpt-server:8089/mcp}")
     String k8sgptMcpUrl;
 
+    @Value("${agentscope.mcp.k8s-mcp-url:http://localhost:9096/mcp}")
+    String k8sMcpUrl;
+
     @Bean
     public AgentRunner agentRunner(
             AgentPromptConfig promptConfig, AiService aiService, Model model) {
@@ -77,7 +77,8 @@ public class AgentScopeRunner {
                 mem0BaseUrl,
                 mem0ApiType,
                 mem0InferEnabled,
-                k8sgptMcpUrl);
+                k8sgptMcpUrl,
+                k8sMcpUrl);
     }
 
     private static class CustomAgentRunner implements AgentRunner {
@@ -111,6 +112,7 @@ public class AgentScopeRunner {
                 .build();
 
         private static final Pattern USER_ID_PATTERN = Pattern.compile("<userId>(.+?)</userId>");
+        private static final Pattern CLUSTER_ID_PATTERN = Pattern.compile("<clusterId>(.+?)</clusterId>");
 
         private final String agentName;
         private final String sysPrompt;
@@ -124,6 +126,7 @@ public class AgentScopeRunner {
         private final String mem0ApiType;
         private final boolean mem0InferEnabled;
         private final String k8sgptMcpUrl;
+        private final String k8sMcpUrl;
         private volatile boolean mcpInitialized = false;
 
         private CustomAgentRunner(
@@ -137,7 +140,8 @@ public class AgentScopeRunner {
                 String mem0BaseUrl,
                 String mem0ApiType,
                 boolean mem0InferEnabled,
-                String k8sgptMcpUrl) {
+                String k8sgptMcpUrl,
+                String k8sMcpUrl) {
             this.agentName = agentName;
             this.sysPrompt = sysPrompt;
             this.model = model;
@@ -150,6 +154,7 @@ public class AgentScopeRunner {
             this.mem0ApiType = mem0ApiType;
             this.mem0InferEnabled = mem0InferEnabled;
             this.k8sgptMcpUrl = k8sgptMcpUrl;
+            this.k8sMcpUrl = k8sMcpUrl;
         }
 
         private ReActAgent buildReActAgent(String userId) {
@@ -182,19 +187,101 @@ public class AgentScopeRunner {
                 synchronized (this) {
                     if (!mcpInitialized) {
                         try {
-                            // Register platform-mcp-server (mutation tools) via Nacos
-                            NacosMcpServerManager mcpServerManager = new NacosMcpServerManager(aiService);
-                            NacosMcpClientWrapper mcpClientWrapper = NacosMcpClientBuilder.create(
-                                    "platform-mcp-server", mcpServerManager)
-                                    .build();
-                            toolkit.registerMcpClient(mcpClientWrapper).block();
-
-                            // Register K8sGPT (diagnosis tools) via direct HTTP
-                            McpClientWrapper k8sgptClient = McpClientBuilder.create("k8s-mcp-server")
-                                    .streamableHttpTransport(k8sgptMcpUrl)
+                            // Register standard local MCP service via SSE
+                            McpClientWrapper rawMcpClient = McpClientBuilder.create("k8s-mcp-server")
+                                    .streamableHttpTransport(k8sMcpUrl)
                                     .timeout(Duration.ofSeconds(60))
                                     .buildSync();
-                            toolkit.registerMcpClient(new SanitizingMcpClient(k8sgptClient)).block();
+                                    
+                            McpClientWrapper localMcpClient = new SanitizingMcpClient(rawMcpClient);
+
+                            // 1. 集群管理 (Cluster Management)
+                            toolkit.createToolGroup("cluster_management", "Kubernetes集群的注册与列表管理", true);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of("list_k8s_clusters", "register_k8s_cluster", "unregister_k8s_cluster"))
+                                    .group("cluster_management").apply();
+
+                            // 2. DaemonSet管理
+                            toolkit.createToolGroup("daemonset_management", "DaemonSet重启与管理", false);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of("restart_k8s_daemonset"))
+                                    .group("daemonset_management").apply();
+
+                            // 3. 部署管理 (Deployment)
+                            toolkit.createToolGroup("deployment_management", "Deployment的伸缩、重启、回滚与状态管理", false);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of(
+                                            "get_k8s_deployment_hpa_list", "get_k8s_deployment_rollout_history",
+                                            "get_k8s_deployment_rollout_status", "list_k8s_deploy_event",
+                                            "pause_k8s_deployment_rollout", "restart_k8s_deployment",
+                                            "restore_k8s_deployment", "resume_k8s_deployment_rollout",
+                                            "scale_k8s_deployment", "stop_k8s_deployment",
+                                            "undo_k8s_deployment_rollout", "update_k8s_deployment_image_tag"))
+                                    .group("deployment_management").apply();
+
+                            // 4. 动态资源管理 (Dynamic Resource/CRD)
+                            toolkit.createToolGroup("dynamic_resource_management", "Kubernetes任意资源(含CRD)的动态增删改查", false);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of(
+                                            "annotate_k8s_resource", "delete_k8s_resource",
+                                            "describe_k8s_resource", "get_k8s_resource",
+                                            "label_k8s_resource", "list_k8s_resource",
+                                            "patch_k8s_resource", "list_k8s_namespace"))
+                                    .group("dynamic_resource_management").apply();
+
+                            // 5. 节点管理 (Node)
+                            toolkit.createToolGroup("node_management", "节点状态、资源占用及调度管理", false);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of(
+                                            "cordon_k8s_node", "drain_k8s_node",
+                                            "get_k8s_node_ip_usage", "get_k8s_node_resource_usage",
+                                            "get_k8s_pod_count_running_on_node", "get_k8s_top_node",
+                                            "list_k8s_node", "taint_k8s_node",
+                                            "uncordon_k8s_node", "untaint_k8s_node"))
+                                    .group("node_management").apply();
+
+                            // 6. 事件管理 (Event)
+                            toolkit.createToolGroup("event_management", "Kubernetes集群事件查询", true);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of("list_k8s_event"))
+                                    .group("event_management").apply();
+
+                            // 7. Ingress管理
+                            toolkit.createToolGroup("ingress_management", "Ingress路由与配置管理", false);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of("get_pod_linked_ingresses", "set_default_k8s_ingressclass"))
+                                    .group("ingress_management").apply();
+
+                            // 8. Pod管理
+                            toolkit.createToolGroup("pod_management", "Pod的生命周期、日志、执行与关联资源管理", true);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of(
+                                            "delete_k8s_pod", "delete_pod_file", "describe_k8s_pod",
+                                            "get_k8s_pod_linked_env", "get_k8s_pod_linked_services",
+                                            "get_k8s_pod_logs", "get_k8s_pod_resource_usage",
+                                            "get_k8s_top_pod", "get_pod_linked_endpoints",
+                                            "get_pod_linked_env_from_yaml", "list_files_in_k8s_pod",
+                                            "list_k8s_pod", "list_k8s_pod_event", "list_pod_all_files",
+                                            "run_command_in_k8s_pod", "upload_file_to_k8s_pod"))
+                                    .group("pod_management").apply();
+
+                            // 9. 存储管理 (Storage)
+                            toolkit.createToolGroup("storage_management", "PV、PVC与StorageClass管理", false);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of(
+                                            "get_k8s_pod_linked_pv", "get_k8s_pod_linked_pvc",
+                                            "get_k8s_storageclass_pv_count", "get_k8s_storageclass_pvc_count",
+                                            "set_k8s_default_storageclass"))
+                                    .group("storage_management").apply();
+
+                            // 10. YAML管理
+                            toolkit.createToolGroup("yaml_management", "通过YAML文件部署或删除资源", false);
+                            toolkit.registration().mcpClient(localMcpClient)
+                                    .enableTools(List.of("apply_k8s_yaml", "delete_k8s_yaml"))
+                                    .group("yaml_management").apply();
+
+                            // 注册 Meta Tool，允许 LLM 在运行时动态激活或停用上述工具组
+                            toolkit.registerMetaTool();
 
                             mcpInitialized = true;
                         } catch (Exception exception) {
@@ -247,6 +334,8 @@ public class AgentScopeRunner {
                         "Agent already exists for taskId: " + options.getTaskId());
             }
             String userId = parseUserIdFromMessages(requestMessages);
+            String clusterId = parseClusterIdFromMessages(requestMessages);
+            java.util.Set<String> approvedTools = parseApprovedTools(requestMessages);
             // Per-request isolation: create a fresh agent instance
             ReActAgent agent = buildReActAgent(userId);
             agentCache.put(options.getTaskId(), agent);
@@ -262,7 +351,9 @@ public class AgentScopeRunner {
                                     .build());
 
             return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
-                    .contextWrite(ctx -> ctx.put("tool_cache", new ConcurrentHashMap<String, McpSchema.CallToolResult>()))
+                    .contextWrite(ctx -> ctx.put("tool_cache", new ConcurrentHashMap<String, McpSchema.CallToolResult>())
+                                            .put("approved_tools", approvedTools)
+                                            .put("cluster_id", clusterId))
                     .onErrorResume(e -> {
                         logger.error("Error during agent stream for taskId {}: ", options.getTaskId(), e);
                         Msg errorMsg = Msg.builder()
@@ -296,6 +387,46 @@ public class AgentScopeRunner {
                 }
             }
             return "default_userId";
+        }
+
+        private String parseClusterIdFromMessages(List<Msg> requestMessages) {
+            for (Msg msg : requestMessages) {
+                if (msg.getContent() == null) {
+                    continue;
+                }
+                for (var block : msg.getContent()) {
+                    if (block instanceof TextBlock textBlock) {
+                        String text = textBlock.getText();
+                        if (text != null) {
+                            Matcher matcher = CLUSTER_ID_PATTERN.matcher(text);
+                            if (matcher.find()) {
+                                return matcher.group(1).trim();
+                            }
+                        }
+                    }
+                }
+            }
+            return "";
+        }
+
+        private java.util.Set<String> parseApprovedTools(List<Msg> requestMessages) {
+            java.util.Set<String> approved = new java.util.HashSet<>();
+            for (Msg msg : requestMessages) {
+                if (msg.getContent() != null) {
+                    for (var block : msg.getContent()) {
+                        if (block instanceof TextBlock textBlock) {
+                            String text = textBlock.getText();
+                            if (text != null) {
+                                Matcher m = java.util.regex.Pattern.compile("\\[APPROVE\\]\\s+([a-zA-Z0-9_\\-]+)").matcher(text);
+                                while (m.find()) {
+                                    approved.add(m.group(1));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return approved;
         }
 
         @Override

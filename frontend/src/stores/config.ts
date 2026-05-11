@@ -21,6 +21,7 @@ export interface ConfigState {
   baseUrl: string
   userId: string
   chatId: string
+  clusterId: string
 }
 
 export const useConfigStore = defineStore('config', () => {
@@ -42,6 +43,7 @@ export const useConfigStore = defineStore('config', () => {
   const baseUrl = ref(getInitialBaseUrl())
   const userId = ref('')
   const chatId = ref('')
+  const clusterId = ref('')
 
   // Getters
   const structuredApiUrl = computed(() => `${baseUrl.value}/api/assistant/chat/structured`)
@@ -49,7 +51,8 @@ export const useConfigStore = defineStore('config', () => {
   const persist = () => {
     localStorage.setItem('paas-agent-config', JSON.stringify({
       baseUrl: baseUrl.value,
-      userId: userId.value
+      userId: userId.value,
+      clusterId: clusterId.value
     }))
   }
 
@@ -63,6 +66,9 @@ export const useConfigStore = defineStore('config', () => {
     }
     if (newConfig.chatId !== undefined) {
       chatId.value = newConfig.chatId
+    }
+    if (newConfig.clusterId !== undefined) {
+      clusterId.value = newConfig.clusterId
     }
 
     persist()
@@ -88,6 +94,7 @@ export const useConfigStore = defineStore('config', () => {
 
         baseUrl.value = savedBaseUrl || getInitialBaseUrl()
         userId.value = config.userId || ''
+        clusterId.value = config.clusterId || ''
       } catch (error) {
         console.error('Failed to load config:', error)
       }
@@ -112,6 +119,7 @@ export const useConfigStore = defineStore('config', () => {
     baseUrl,
     userId,
     chatId,
+    clusterId,
     structuredApiUrl,
     updateConfig,
     loadConfig,

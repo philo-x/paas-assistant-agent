@@ -18,6 +18,7 @@ package io.agentscope.examples.paasassistant.supervisor.stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.agentscope.examples.paasassistant.supervisor.utils.AgentConstants;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,7 +36,7 @@ public class StructuredSseEmitter {
      * pipeline into tool invocations. Each HTTP request has its own subscription context, so
      * lookup by this key is automatically isolated across concurrent users.
      */
-    public static final String CONTEXT_KEY = "structuredSseEmitter";
+    public static final String CONTEXT_KEY = AgentConstants.CTX_SSE_EMITTER;
 
     private final Sinks.Many<ServerSentEvent<String>> sink;
 

@@ -20,6 +20,7 @@ import io.agentscope.core.formatter.dashscope.DashScopeChatFormatter;
 import io.agentscope.core.model.DashScopeChatModel;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.OpenAIChatModel;
+import io.agentscope.examples.paasassistant.supervisor.utils.AgentConstants;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +35,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class AgentScopeModelConfig {
     private static final Logger logger = LoggerFactory.getLogger(AgentScopeModelConfig.class);
-
-    private static final String PROVIDER_DASHSCOPE = "dashscope";
-    private static final String PROVIDER_OPENAI = "openai";
 
     @Value("${agentscope.model.provider}")
     private String modelProvider;
@@ -62,7 +60,7 @@ public class AgentScopeModelConfig {
     @Bean
     public Model model() {
         String provider = normalizeProvider(modelProvider);
-        if (PROVIDER_OPENAI.equals(provider)) {
+        if (AgentConstants.PROVIDER_OPENAI.equals(provider)) {
             logger.info(
                     "Creating OpenAI Model with model: {}, baseUrl: {}",
                     openaiModelName,
@@ -78,7 +76,7 @@ public class AgentScopeModelConfig {
             }
             return builder.build();
         }
-        if (PROVIDER_DASHSCOPE.equals(provider)) {
+        if (AgentConstants.PROVIDER_DASHSCOPE.equals(provider)) {
             logger.info(
                     "Creating DashScope Model with model: {}, baseUrl: {}",
                     dashscopeModelName,
@@ -98,7 +96,7 @@ public class AgentScopeModelConfig {
         throw new IllegalArgumentException(
                 "Unsupported agentscope model provider: "
                         + modelProvider
-                        + ". Supported providers: dashscope, openai");
+                        + ". Supported providers: " + AgentConstants.PROVIDER_DASHSCOPE + ", " + AgentConstants.PROVIDER_OPENAI);
     }
 
     private String normalizeProvider(String provider) {

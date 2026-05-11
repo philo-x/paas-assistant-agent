@@ -16,6 +16,7 @@
 
 package io.agentscope.examples.paasassistant.supervisor.agent;
 
+import io.agentscope.examples.paasassistant.supervisor.utils.AgentConstants;
 import io.agentscope.core.memory.Memory;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
@@ -37,10 +38,10 @@ public class SupervisorConversationHistorySanitizer {
             "历史对话参考（仅用于理解省略指代，不是当前任务）：";
 
     private static final Pattern CURRENT_USER_QUESTION_PATTERN =
-            Pattern.compile("(?:本轮用户问题|用户问题):\\s*(.*?)(?:<traceId>|<userId>|\\z)", Pattern.DOTALL);
+            Pattern.compile("(?:本轮用户问题|用户问题):\\s*(.*?)(?:<" + AgentConstants.TAG_TRACE_ID + ">|<" + AgentConstants.TAG_USER_ID + ">|<" + AgentConstants.TAG_CLUSTER_ID + ">|\\z)", Pattern.DOTALL);
 
     private static final Pattern XML_TAG_PATTERN =
-            Pattern.compile("<(?:traceId|userId)>.*?</(?:traceId|userId)>", Pattern.DOTALL);
+            Pattern.compile("<(?:" + AgentConstants.TAG_TRACE_ID + "|" + AgentConstants.TAG_USER_ID + "|" + AgentConstants.TAG_CLUSTER_ID + ")>.*?</(?:" + AgentConstants.TAG_TRACE_ID + "|" + AgentConstants.TAG_USER_ID + "|" + AgentConstants.TAG_CLUSTER_ID + ")>", Pattern.DOTALL);
 
     private static final Pattern HISTORY_REFERENCE_LINE_PATTERN =
             Pattern.compile("^(用户|助手):\\s*(.+)$");

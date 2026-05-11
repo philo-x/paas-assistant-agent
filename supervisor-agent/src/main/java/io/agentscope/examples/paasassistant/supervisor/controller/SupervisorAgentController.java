@@ -26,6 +26,7 @@ import io.agentscope.examples.paasassistant.supervisor.controller.dto.Structured
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredSseEmitter;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredStreamHook;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredTraceRegistry;
+import io.agentscope.examples.paasassistant.supervisor.utils.AgentConstants;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,8 +40,8 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
-@RequestMapping("/api/assistant/")
 @RestController
+@RequestMapping("/api/assistant")
 public class SupervisorAgentController {
 
         private static final Logger logger = LoggerFactory.getLogger(SupervisorAgentController.class);
@@ -52,30 +53,17 @@ public class SupervisorAgentController {
         private final StructuredTraceRegistry traceRegistry;
 
         public SupervisorAgentController(
-                        SupervisorAgent supervisorAgent,
-                        ObjectMapper objectMapper,
-                        StructuredTraceRegistry traceRegistry) {
+                        SupervisorAgent supervisorAgent, ObjectMapper objectMapper, StructuredTraceRegistry traceRegistry) {
                 this.supervisorAgent = supervisorAgent;
                 this.objectMapper = objectMapper;
                 this.traceRegistry = traceRegistry;
         }
 
-        @PostMapping(path = "/chat/structured", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+        @PostMapping(value = "/chat/structured", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
         public Flux<ServerSentEvent<String>> structuredChat(@RequestBody StructuredChatRequest request) {
-                String chatId = safe(request.chat_id());
-                String userId = safe(request.user_id());
-                String userQuery = safe(request.user_query());
-
-                logger.info("Received structured user query: {}", userQuery);
-
-                if (chatId.isBlank() || userId.isBlank() || userQuery.isBlank()) {
-                        return Flux.just(
-                                        ServerSentEvent.<String>builder()
-                                                        .event("error")
-                                                        .data(
-                                                                        "{\"message\":\"chat_id, user_id and user_query are required\",\"stage\":\"validation\"}")
-                                                        .build());
-                }
+                String userQuery = request.user_query();
+                String userId = request.user_id();
+                String chatId = request.chat_id();
 
                 try {
                         Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
@@ -86,7 +74,7 @@ public class SupervisorAgentController {
                         Msg msg = Msg.builder()
                                         .role(MsgRole.USER)
                                         .content(TextBlock.builder()
-                                                        .text(formatStructuredUserInput(userQuery, userId, traceId))
+                                                        .text(formatStructuredUserInput(userQuery))
                                                         .build())
                                         .build();
 
@@ -95,11 +83,13 @@ public class SupervisorAgentController {
                                                         .stream(
                                                                         msg,
                                                                         chatId,
-                                                                        userId,
-                                                                        new StructuredStreamHook("supervisor_agent",
+                                                                new StructuredStreamHook(AgentConstants.AGENT_NAME_SUPERVISOR,
                                                                                         emitter))
                                                         .contextWrite(ctx -> ctx.put(StructuredSseEmitter.CONTEXT_KEY,
-                                                                        emitter)),
+                                                                        emitter)
+                                                                        .put(AgentConstants.CTX_CLUSTER_ID, safe(request.cluster_id()))
+                                                                        .put(AgentConstants.CTX_USER_ID, userId)
+                                                                        .put(AgentConstants.CTX_TRACE_ID, traceId)),
                                         sink,
                                         emitter);
 
@@ -152,12 +142,10 @@ public class SupervisorAgentController {
                                 .subscribe();
         }
 
-        private String formatStructuredUserInput(String userQuery, String userId, String traceId) {
+        private String formatStructuredUserInput(String userQuery) {
                 StringBuilder builder = new StringBuilder();
                 builder.append("本轮请求是唯一需要路由和处理的用户请求；历史记录只能作为参考，不能替换本轮问题。\n\n");
                 builder.append("本轮用户问题:\n").append(userQuery).append('\n');
-                builder.append("<traceId>").append(traceId).append("</traceId>\n");
-                builder.append("<userId>").append(userId).append("</userId>");
                 return builder.toString();
         }
 

@@ -27,6 +27,7 @@ import io.agentscope.core.message.Msg;
 import io.agentscope.core.model.ExecutionConfig;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.tool.Toolkit;
+import io.agentscope.examples.paasassistant.supervisor.utils.AgentConstants;
 import io.agentscope.examples.paasassistant.supervisor.tools.A2aAgentTools;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -114,13 +115,13 @@ public class SupervisorAgent {
     /**
      * Stream method that handles user messages by creating a new agent for each request.
      *
-     * @param msg    the user message
-     * @param hook   the hook to attach to the supervisor's ReActAgent (e.g.
-     *               {@link io.agentscope.examples.paasassistant.supervisor.stream.StructuredStreamHook}
-     *               for the structured SSE channel)
+     * @param msg  the user message
+     * @param hook the hook to attach to the supervisor's ReActAgent (e.g.
+     *             {@link io.agentscope.examples.paasassistant.supervisor.stream.StructuredStreamHook}
+     *             for the structured SSE channel)
      * @return Flux of Events from the agent
      */
-    public Flux<Event> stream(Msg msg, String sessionId, String userId, Hook hook) {
+    public Flux<Event> stream(Msg msg, String sessionId, Hook hook) {
         Toolkit toolkit = new Toolkit();
         toolkit.registerTool(tools);
         List<Msg> visibleHistory = sessionHistoryStore.loadVisibleHistory(sessionId);
@@ -147,7 +148,7 @@ public class SupervisorAgent {
     private ReActAgent createAgent(Toolkit toolkit, Memory memory, Hook hook) {
         ReActAgent agent =
                 ReActAgent.builder()
-                        .name("supervisor_agent")
+                        .name(AgentConstants.AGENT_NAME_SUPERVISOR)
                         .sysPrompt(sysPrompt)
                         .toolkit(toolkit)
                         .hook(hook)

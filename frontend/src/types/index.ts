@@ -75,6 +75,7 @@ export interface ChatRequest {
   chat_id: string
   user_id: string
   user_query: string
+  cluster_id: string
 }
 
 export type StructuredChatRequest = ChatRequest

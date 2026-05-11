@@ -74,15 +74,22 @@ export default {
     chatCleared: '对话已清空',
     sessionId: '对话ID',
     userId: '用户ID',
+    clusterId: '集群ID',
     setUserId: '设置用户ID',
+    setClusterId: '设置集群ID',
     userIdSetSuccess: '用户ID设置成功',
+    clusterSetSuccess: '集群ID设置成功',
     userIdRequired: '请输入有效的用户ID',
+    clusterRequired: '请输入有效的集群ID',
     userIdPrompt: '请输入您的用户ID，用于记录审批与审计：',
+    clusterPrompt: '请输入目标 Kubernetes 集群ID，否则无法发起诊断：',
     userIdPlaceholder: '请输入平台用户ID',
+    clusterPlaceholder: '例如：cls-main-01',
     tooltip: {
       noBaseUrlAndUserId: '请在右上角的设置页面设置后端地址和用户ID',
       noBaseUrl: '请在右上角的设置页面设置后端地址',
-      noUserId: '请在右上角的设置页面设置用户ID'
+      noUserId: '请在右上角的设置页面设置用户ID',
+      noClusterId: '请先设置集群ID'
     },
     sections: {
       answer: '最终回答',

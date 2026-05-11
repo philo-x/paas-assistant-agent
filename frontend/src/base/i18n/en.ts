@@ -74,15 +74,22 @@ export default {
     chatCleared: 'Chat cleared',
     sessionId: 'Session ID',
     userId: 'User ID',
+    clusterId: 'Cluster ID',
     setUserId: 'Set User ID',
+    setClusterId: 'Set Cluster ID',
     userIdSetSuccess: 'User ID set successfully',
+    clusterSetSuccess: 'Cluster ID set successfully',
     userIdRequired: 'Please enter a valid user ID',
+    clusterRequired: 'Please enter a valid cluster ID',
     userIdPrompt: 'Please enter your user ID for approval and audit tracking:',
+    clusterPrompt: 'Please enter the target Kubernetes cluster ID to proceed:',
     userIdPlaceholder: 'Enter platform user ID',
+    clusterPlaceholder: 'e.g.: cls-main-01',
     tooltip: {
       noBaseUrlAndUserId: 'Please set the backend URL and user ID in settings',
       noBaseUrl: 'Please set the backend URL in settings',
-      noUserId: 'Please set the user ID in settings'
+      noUserId: 'Please set the user ID in settings',
+      noClusterId: 'Please set the cluster ID first'
     },
     sections: {
       answer: 'Final Answer',

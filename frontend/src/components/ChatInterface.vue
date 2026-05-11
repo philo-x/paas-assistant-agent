@@ -64,6 +64,8 @@ const inputValue = ref('')
 const chatContainer = ref<HTMLElement>()
 const userIdInput = ref('')
 const showUserIdInput = ref(false)
+const clusterIdInput = ref('')
+const showClusterIdInput = ref(false)
 
 const currentLocale = computed(() => getLocale())
 
@@ -81,20 +83,21 @@ const chatExamples = computed(() => [
 
 const hasBaseUrl = computed(() => configStore.baseUrl.trim().length > 0)
 const hasUserId = computed(() => configStore.userId.trim().length > 0)
+const hasClusterId = computed(() => configStore.clusterId.trim().length > 0)
 
 const canSend = computed(() => {
-  return inputValue.value.trim().length > 0 && !chatStore.isLoading && hasBaseUrl.value && hasUserId.value
+  return inputValue.value.trim().length > 0 && !chatStore.isLoading && hasBaseUrl.value && hasUserId.value && hasClusterId.value
 })
 
 const sendButtonTooltip = computed(() => {
-  if (!hasBaseUrl.value && !hasUserId.value) {
-    return t('chat.tooltip.noBaseUrlAndUserId')
-  }
   if (!hasBaseUrl.value) {
     return t('chat.tooltip.noBaseUrl')
   }
   if (!hasUserId.value) {
     return t('chat.tooltip.noUserId')
+  }
+  if (!hasClusterId.value) {
+    return t('chat.tooltip.noClusterId')
   }
   return ''
 })
@@ -135,6 +138,22 @@ const setUserId = () => {
 const showUserIdInputDialog = () => {
   showUserIdInput.value = true
   userIdInput.value = configStore.userId
+}
+
+const setClusterId = () => {
+  if (clusterIdInput.value.trim()) {
+    configStore.updateConfig({ clusterId: clusterIdInput.value.trim() })
+    showClusterIdInput.value = false
+    clusterIdInput.value = ''
+    message.success(t('chat.clusterSetSuccess'))
+  } else {
+    message.warning(t('chat.clusterRequired'))
+  }
+}
+
+const showClusterIdInputDialog = () => {
+  showClusterIdInput.value = true
+  clusterIdInput.value = configStore.clusterId
 }
 
 const handleExampleClick = (example: string) => {
@@ -260,6 +279,13 @@ onMounted(() => {
               <span class="label">{{ t('chat.sessionId') }}:</span>
               <span class="session-id">{{ configStore.chatId }}</span>
             </div>
+            <div class="session-item">
+              <span class="label">{{ t('chat.clusterId') }}:</span>
+              <span v-if="hasClusterId" class="session-id">{{ configStore.clusterId }}</span>
+              <Tag v-else color="error" style="cursor: pointer" @click="showClusterIdInputDialog">
+                {{ t('common.set') }}
+              </Tag>
+            </div>
           </div>
         </div>
 
@@ -301,6 +327,13 @@ onMounted(() => {
                   <span class="label">{{ t('chat.userId') }}:</span>
                   <span v-if="hasUserId" class="user-id">{{ configStore.userId }}</span>
                   <Button v-else type="link" size="small" @click="showUserIdInputDialog">
+                    {{ t('common.set') }}
+                  </Button>
+                </div>
+                <div class="user-info-item" style="margin-top: 8px">
+                  <span class="label">{{ t('chat.clusterId') }}:</span>
+                  <span v-if="hasClusterId" class="user-id">{{ configStore.clusterId }}</span>
+                  <Button v-else type="link" size="small" @click="showClusterIdInputDialog">
                     {{ t('common.set') }}
                   </Button>
                 </div>
@@ -398,6 +431,29 @@ onMounted(() => {
               {{ t('common.confirm') }}
             </Button>
             <Button @click="showUserIdInput = false">
+              {{ t('common.cancel') }}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showClusterIdInput" class="user-id-modal">
+      <div class="modal-content">
+        <div class="modal-title">{{ t('chat.setClusterId') }}</div>
+        <div class="modal-body">
+          <p>{{ t('chat.clusterPrompt') }}</p>
+          <Input
+            v-model:value="clusterIdInput"
+            :placeholder="t('chat.clusterPlaceholder')"
+            class="user-id-input"
+            @keydown.enter="setClusterId"
+          />
+          <div class="modal-actions">
+            <Button type="primary" @click="setClusterId" :disabled="!clusterIdInput.trim()">
+              {{ t('common.confirm') }}
+            </Button>
+            <Button @click="showClusterIdInput = false">
               {{ t('common.cancel') }}
             </Button>
           </div>

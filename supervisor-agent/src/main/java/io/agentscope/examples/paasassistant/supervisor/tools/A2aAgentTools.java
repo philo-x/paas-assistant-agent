@@ -33,12 +33,17 @@ import io.agentscope.core.util.JsonUtils;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredSseEmitter;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredTraceRegistry;
 import io.agentscope.examples.paasassistant.supervisor.stream.ToolNarrator;
+import io.agentscope.examples.paasassistant.supervisor.utils.AgentConstants;
+import io.agentscope.examples.paasassistant.supervisor.utils.MsgUtils;
 import java.io.EOFException;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -48,6 +53,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.Exceptions;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.context.ContextView;
 import reactor.util.retry.Retry;
@@ -56,14 +62,6 @@ import reactor.util.retry.Retry;
 public class A2aAgentTools {
 
     private static final Logger log = LoggerFactory.getLogger(A2aAgentTools.class);
-
-    private static final Pattern TRACE_ID_PATTERN = Pattern.compile("<traceId>(.+?)</traceId>");
-
-    private static final String CHILD_AGENT_UNAVAILABLE_MESSAGE =
-            "子 Agent 暂时不可用，A2A 流式响应在读取过程中中断。请稍后重试；如果持续出现，请检查子 Agent 服务状态和网络连接。";
-
-    private static final String CHILD_AGENT_TIMEOUT_MESSAGE =
-            "子 Agent 执行超时，已取消本次 A2A 任务。请稍后重试，或缩小诊断范围后再次发起。";
 
     /**
      * StreamOptions the supervisor requests from each child A2A agent.
@@ -121,12 +119,30 @@ public class A2aAgentTools {
                     "Route read-only Kubernetes explanation requests to the guide agent."
                             + " Pass the full conversational context.")
     public Mono<String> callGuideAgent(
-            @ToolParam(name = "context", description = "Complete context") String context,
-            @ToolParam(name = "userId", description = "User's UserId") String userId) {
-        context = "<userId>" + userId + "</userId>" + context;
-        Msg msg = Msg.builder().content(TextBlock.builder().text(context).build()).build();
-        A2aAgent guideAgent = guideAgentProvider.getObject();
-        return callChildAgent(guideAgent, "guide_agent", msg, context);
+            @ToolParam(name = "context", description = "Complete context") String context) {
+        final String originalContext = context;
+        return Mono.deferContextual(ctx -> {
+            String clusterId = ctx.getOrDefault(AgentConstants.CTX_CLUSTER_ID, "");
+            String userId = ctx.getOrDefault(AgentConstants.CTX_USER_ID, "");
+            String traceId = ctx.getOrDefault(AgentConstants.CTX_TRACE_ID, "");
+
+            StringBuilder builder = new StringBuilder();
+            if (userId != null && !userId.isEmpty()) {
+                builder.append("<").append(AgentConstants.TAG_USER_ID).append(">").append(userId).append("</").append(AgentConstants.TAG_USER_ID).append(">");
+            }
+            if (clusterId != null && !clusterId.isEmpty()) {
+                builder.append("<").append(AgentConstants.TAG_CLUSTER_ID).append(">").append(clusterId).append("</").append(AgentConstants.TAG_CLUSTER_ID).append(">");
+            }
+            if (traceId != null && !traceId.isEmpty()) {
+                builder.append("<").append(AgentConstants.TAG_TRACE_ID).append(">").append(traceId).append("</").append(AgentConstants.TAG_TRACE_ID).append(">");
+            }
+            builder.append(originalContext);
+            
+            String finalContext = builder.toString();
+            Msg msg = Msg.builder().content(TextBlock.builder().text(finalContext).build()).build();
+            A2aAgent guideAgent = guideAgentProvider.getObject();
+            return callChildAgent(guideAgent, AgentConstants.AGENT_NAME_GUIDE, msg, traceId);
+        });
     }
 
     @Tool(
@@ -134,17 +150,34 @@ public class A2aAgentTools {
                     "Route Kubernetes diagnosis, incident and controlled change requests to the diagnosis agent."
                             + " Pass the full conversational context.")
     public Mono<String> callDiagnosisAgent(
-            @ToolParam(name = "context", description = "Complete context") String context,
-            @ToolParam(name = "userId", description = "User's UserId") String userId) {
-        context = "<userId>" + userId + "</userId>" + context;
-        Msg msg = Msg.builder().content(TextBlock.builder().text(context).build()).build();
-        A2aAgent diagnosisAgent = diagnosisAgentProvider.getObject();
-        return callChildAgent(diagnosisAgent, "diagnosis_agent", msg, context);
+            @ToolParam(name = "context", description = "Complete context") String context) {
+        final String originalContext = context;
+        return Mono.deferContextual(ctx -> {
+            String clusterId = ctx.getOrDefault(AgentConstants.CTX_CLUSTER_ID, "");
+            String userId = ctx.getOrDefault(AgentConstants.CTX_USER_ID, "");
+            String traceId = ctx.getOrDefault(AgentConstants.CTX_TRACE_ID, "");
+
+            StringBuilder builder = new StringBuilder();
+            if (userId != null && !userId.isEmpty()) {
+                builder.append("<").append(AgentConstants.TAG_USER_ID).append(">").append(userId).append("</").append(AgentConstants.TAG_USER_ID).append(">");
+            }
+            if (clusterId != null && !clusterId.isEmpty()) {
+                builder.append("<").append(AgentConstants.TAG_CLUSTER_ID).append(">").append(clusterId).append("</").append(AgentConstants.TAG_CLUSTER_ID).append(">");
+            }
+            if (traceId != null && !traceId.isEmpty()) {
+                builder.append("<").append(AgentConstants.TAG_TRACE_ID).append(">").append(traceId).append("</").append(AgentConstants.TAG_TRACE_ID).append(">");
+            }
+            builder.append(originalContext);
+
+            String finalContext = builder.toString();
+            Msg msg = Msg.builder().content(TextBlock.builder().text(finalContext).build()).build();
+            A2aAgent diagnosisAgent = diagnosisAgentProvider.getObject();
+            return callChildAgent(diagnosisAgent, AgentConstants.AGENT_NAME_DIAGNOSIS, msg, traceId);
+        });
     }
 
     private Mono<String> callChildAgent(
-            A2aAgent agent, String childAgentName, Msg msg, String contextWithTags) {
-        String traceId = extractTraceId(contextWithTags);
+            A2aAgent agent, String childAgentName, Msg msg, String traceId) {
 
         Mono<String> childCall =
                 Mono.deferContextual(
@@ -219,8 +252,8 @@ public class A2aAgentTools {
                     traceId,
                     throwable);
             interruptChildAgent(agent, childAgentName, traceId);
-            emitChildAgentError(emitter, childAgentName, CHILD_AGENT_TIMEOUT_MESSAGE);
-            return Mono.just(CHILD_AGENT_TIMEOUT_MESSAGE);
+            emitChildAgentError(emitter, childAgentName, AgentConstants.CHILD_AGENT_TIMEOUT_MESSAGE);
+            return Mono.just(AgentConstants.CHILD_AGENT_TIMEOUT_MESSAGE);
         }
 
         if (isInterruptedFailure(throwable)) {
@@ -229,13 +262,13 @@ public class A2aAgentTools {
                     childAgentName,
                     traceId,
                     throwable);
-            emitChildAgentError(emitter, childAgentName, CHILD_AGENT_UNAVAILABLE_MESSAGE);
-            return Mono.just(CHILD_AGENT_UNAVAILABLE_MESSAGE);
+            emitChildAgentError(emitter, childAgentName, AgentConstants.CHILD_AGENT_UNAVAILABLE_MESSAGE);
+            return Mono.just(AgentConstants.CHILD_AGENT_UNAVAILABLE_MESSAGE);
         }
 
         log.error("A2A streaming call to {} failed. traceId={}", childAgentName, traceId, throwable);
-        emitChildAgentError(emitter, childAgentName, CHILD_AGENT_UNAVAILABLE_MESSAGE);
-        return Mono.just(CHILD_AGENT_UNAVAILABLE_MESSAGE);
+        emitChildAgentError(emitter, childAgentName, AgentConstants.CHILD_AGENT_UNAVAILABLE_MESSAGE);
+        return Mono.just(AgentConstants.CHILD_AGENT_UNAVAILABLE_MESSAGE);
     }
 
     private static void emitChildAgentError(
@@ -495,16 +528,7 @@ public class A2aAgentTools {
         return null;
     }
 
-    private String extractTraceId(String context) {
-        if (context == null || context.isBlank()) {
-            return "";
-        }
-        Matcher matcher = TRACE_ID_PATTERN.matcher(context);
-        if (matcher.find()) {
-            return matcher.group(1).trim();
-        }
-        return "";
-    }
+
 
     private static final class ChildStreamState {
         private boolean stepEmitted;
