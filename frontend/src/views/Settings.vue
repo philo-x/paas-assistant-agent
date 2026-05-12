@@ -30,6 +30,7 @@ import {
   Divider,
   Row,
   Col,
+  Select,
   Dropdown
 } from 'ant-design-vue'
 import { ArrowLeftOutlined, ExperimentOutlined, SaveOutlined, GlobalOutlined } from '@ant-design/icons-vue'
@@ -268,11 +269,16 @@ onMounted(() => {
               <Form.Item
                 :label="t('chat.clusterId')"
                 name="clusterId"
-                extra="请输入目标 Kubernetes 集群 ID"
               >
-                <Input
+                <Select
                   v-model:value="formData.clusterId"
-                  placeholder="例如：cls-main-01"
+                  :placeholder="t('chat.clusterPlaceholder')"
+                  :options="[
+                    { value: 'dev', label: 'dev' },
+                    { value: 'sit', label: 'sit' },
+                    { value: 'uat', label: 'uat' },
+                    { value: 'st', label: 'st' }
+                  ]"
                 />
               </Form.Item>
 

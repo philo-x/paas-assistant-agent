@@ -103,9 +103,9 @@ public class A2aAgentTools {
             @Qualifier("guideAgent") ObjectProvider<A2aAgent> guideAgentProvider,
             @Qualifier("diagnosisAgent") ObjectProvider<A2aAgent> diagnosisAgentProvider,
             StructuredTraceRegistry traceRegistry,
-            @Value("${agent.a2a.child-agent-timeout:PT10M}") Duration childAgentTimeout,
+            @Value("${agent.a2a.child-agent-timeout:PT15M}") Duration childAgentTimeout,
             @Value("${agent.a2a.child-agent-retry-attempts:3}") int childAgentRetryAttempts,
-            @Value("${agent.a2a.child-agent-retry-backoff:PT0.2S}") Duration childAgentRetryBackoff) {
+            @Value("${agent.a2a.child-agent-retry-backoff:PT1S}") Duration childAgentRetryBackoff) {
         this.guideAgentProvider = guideAgentProvider;
         this.diagnosisAgentProvider = diagnosisAgentProvider;
         this.traceRegistry = traceRegistry;
@@ -224,7 +224,8 @@ public class A2aAgentTools {
             return childCall;
         }
         return childCall.retryWhen(
-                Retry.fixedDelay(childAgentRetryAttempts - 1, childAgentRetryBackoff)
+                Retry.backoff(childAgentRetryAttempts - 1, childAgentRetryBackoff)
+                        .maxBackoff(childAgentRetryBackoff.multipliedBy(10))
                         .filter(A2aAgentTools::isTransientA2aTransportFailure)
                         .doBeforeRetry(
                                 signal ->
@@ -476,11 +477,11 @@ public class A2aAgentTools {
 
             String toolName =
                     (finalBlock.getName() == null || finalBlock.getName().isBlank())
-                            ? "unknown_tool"
+                            ? AgentConstants.FALLBACK_TOOL_NAME
                             : finalBlock.getName();
 
             String title = ToolNarrator.titleForTool(toolName);
-            String summary = "已完成" + title + "。";
+            String summary = String.format(AgentConstants.TOOL_RESULT_SUMMARY_FORMAT, title);
 
             emitter.emitToolResult(
                     childAgentName,

@@ -82,9 +82,9 @@ export default {
     userIdRequired: 'Please enter a valid user ID',
     clusterRequired: 'Please enter a valid cluster ID',
     userIdPrompt: 'Please enter your user ID for approval and audit tracking:',
-    clusterPrompt: 'Please enter the target Kubernetes cluster ID to proceed:',
+    clusterPrompt: 'Please select the target Kubernetes cluster environment to proceed:',
     userIdPlaceholder: 'Enter platform user ID',
-    clusterPlaceholder: 'e.g.: cls-main-01',
+    clusterPlaceholder: 'Select cluster environment',
     tooltip: {
       noBaseUrlAndUserId: 'Please set the backend URL and user ID in settings',
       noBaseUrl: 'Please set the backend URL in settings',
@@ -98,7 +98,7 @@ export default {
       thinking: 'Thinking',
       thoughts: 'Thoughts',
       conclusion: 'Final Conclusion',
-      result: 'Result'
+      result: 'Agent'
     },
     showTools: 'Show',
     hideTools: 'Hide',

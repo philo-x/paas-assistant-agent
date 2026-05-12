@@ -25,6 +25,7 @@ import {
   Input,
   message,
   Popover,
+  Select,
   Space,
   Tag,
   Tooltip
@@ -443,11 +444,16 @@ onMounted(() => {
         <div class="modal-title">{{ t('chat.setClusterId') }}</div>
         <div class="modal-body">
           <p>{{ t('chat.clusterPrompt') }}</p>
-          <Input
+          <Select
             v-model:value="clusterIdInput"
             :placeholder="t('chat.clusterPlaceholder')"
             class="user-id-input"
-            @keydown.enter="setClusterId"
+            :options="[
+              { value: 'dev', label: 'dev' },
+              { value: 'sit', label: 'sit' },
+              { value: 'uat', label: 'uat' },
+              { value: 'st', label: 'st' }
+            ]"
           />
           <div class="modal-actions">
             <Button type="primary" @click="setClusterId" :disabled="!clusterIdInput.trim()">

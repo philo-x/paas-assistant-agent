@@ -82,9 +82,9 @@ export default {
     userIdRequired: '请输入有效的用户ID',
     clusterRequired: '请输入有效的集群ID',
     userIdPrompt: '请输入您的用户ID，用于记录审批与审计：',
-    clusterPrompt: '请输入目标 Kubernetes 集群ID，否则无法发起诊断：',
+    clusterPrompt: '请选择目标 Kubernetes 集群环境，否则无法发起诊断：',
     userIdPlaceholder: '请输入平台用户ID',
-    clusterPlaceholder: '例如：cls-main-01',
+    clusterPlaceholder: '请选择集群环境',
     tooltip: {
       noBaseUrlAndUserId: '请在右上角的设置页面设置后端地址和用户ID',
       noBaseUrl: '请在右上角的设置页面设置后端地址',
@@ -98,7 +98,7 @@ export default {
       thinking: 'Thinking',
       thoughts: 'Thoughts',
       conclusion: '最终结论',
-      result: 'Result'
+      result: 'Agent'
     },
     showTools: '展开查看',
     hideTools: '收起',

@@ -54,9 +54,9 @@ agent:
   a2a:
     child-agent-timeout: ${A2A_CHILD_AGENT_TIMEOUT:PT15M}
     child-agent-retry-attempts: ${A2A_CHILD_AGENT_RETRY_ATTEMPTS:3}
-    child-agent-retry-backoff: ${A2A_CHILD_AGENT_RETRY_BACKOFF:PT0.5S}
+    child-agent-retry-backoff: ${A2A_CHILD_AGENT_RETRY_BACKOFF:PT1S}
   supervisor:
-    tool-timeout: ${SUPERVISOR_TOOL_TIMEOUT:PT30M}
+    tool-timeout: ${SUPERVISOR_TOOL_TIMEOUT:PT50M}
   prompts:
     supervisor-agent-instruction: |
       角色与职责:

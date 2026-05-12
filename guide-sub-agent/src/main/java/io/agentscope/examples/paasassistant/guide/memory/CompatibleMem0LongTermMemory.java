@@ -11,6 +11,8 @@ import io.agentscope.core.memory.mem0.Mem0SearchResult;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,13 +79,16 @@ public class CompatibleMem0LongTermMemory implements LongTermMemory {
             return Mono.empty();
         }
 
+        Map<String, Object> enrichedMetadata = new java.util.HashMap<>(metadata);
+        enrichedMetadata.put("timestamp", OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+
         Mem0AddRequest request =
                 Mem0AddRequest.builder()
                         .messages(mem0Messages)
                         .agentId(agentId)
                         .userId(userId)
                         .runId(runId)
-                        .metadata(metadata)
+                        .metadata(enrichedMetadata)
                         .infer(infer)
                         .build();
 

@@ -6,137 +6,143 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 public class K8sDataSanitizer {
 
     private static final ObjectMapper mapper = new ObjectMapper();
-    private static final int MAX_RETURN_LENGTH = 30000;
+    private static final int MAX_CONFIGMAP_DATA_LENGTH = 500; // 安全截断字段级长度
 
     /**
-     * 统一入口：智能判断是List列表还是单个资源，进行对应的JSON精简处理
+     * 统一入口
      */
     public static String processGenericResource(String rawJson) {
         if (rawJson == null || rawJson.trim().isEmpty()) return "";
         try {
             JsonNode root = mapper.readTree(rawJson);
 
-            // 1. 如果是列表对象 (List) -> 重塑为只包含核心字段的轻量级 JSON 列表
             if (root.has("items") && root.get("items").isArray()) {
-                String summarizedJson = convertToSummarizedJsonList(root);
-                return forceTruncate(summarizedJson, "Resource List JSON");
-            } 
-            // 2. 如果是单个对象 -> 进行通用 JSON 极简清洗 (保留 spec，极简 metadata)
-            else if (root.isObject()) {
+                // 1. 列表降维处理 (吸取了你的 List 摘要优点)
+                return convertToSummarizedJsonList(root);
+            } else if (root.isObject()) {
+                // 2. 单体资源深层清洗 (吸取了深层字段过滤的优点)
                 cleanUniversalResourceNode((ObjectNode) root);
-                String cleanedJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
-                return forceTruncate(cleanedJson, "Resource Detail JSON");
+                return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
             }
-
-            return forceTruncate(rawJson, "Unknown JSON");
+            return rawJson;
         } catch (Exception e) {
-            return forceTruncate(rawJson, "Raw Text");
+            return rawJson; // 解析失败原样返回
         }
     }
 
-    /**
-     * ==========================================
-     * 绝招 1：提取类似 get -o wide 的核心字段，重塑为极简 JSON List
-     * ==========================================
-     */
     private static String convertToSummarizedJsonList(JsonNode root) throws Exception {
         ArrayNode items = (ArrayNode) root.get("items");
-        
-        // 创建一个全新的 Root Object 来存放清洗后的结果
         ObjectNode summaryRoot = mapper.createObjectNode();
-        
-        // 保留原有的 kind 和 apiVersion (如果存在)
+
         if (root.has("kind")) summaryRoot.put("kind", root.get("kind").asText());
-        if (root.has("apiVersion")) summaryRoot.put("apiVersion", root.get("apiVersion").asText());
-        
-        // 添加系统提示语，引导大模型进行下一步动作
-        summaryRoot.put("systemNote", "This is a summarized JSON list containing only key fields. To investigate further, use your tools to GET the specific JSON by resource name.");
+
+        // 优秀的 Prompt 注入
+        summaryRoot.put("systemNote", "This is a summarized list. To investigate further, use tools to GET the specific resource by name.");
 
         ArrayNode summarizedItems = mapper.createArrayNode();
+        // 限制列表长度，避免 Items 太多撑爆，而不是使用暴力的字符串截断
+        int limit = Math.min(items.size(), 50);
 
-        for (JsonNode item : items) {
-            // 为每个资源创建一个极简的 JSON Object
+        for (int i = 0; i < limit; i++) {
+            JsonNode item = items.get(i);
             ObjectNode summaryItem = mapper.createObjectNode();
-            
-            // 提取类似 get -o wide 的核心字段
+
             summaryItem.put("namespace", extractText(item, "/metadata/namespace", "default"));
             summaryItem.put("name", extractText(item, "/metadata/name", "unknown"));
             summaryItem.put("readyOrPhase", extractGenericStatus(item));
             summaryItem.put("keyInfo", extractKeyInfo(item));
-            summaryItem.put("creationTimestamp", extractText(item, "/metadata/creationTimestamp", "-"));
-            
-            // 附加原有的 kind (如果 item 本身包含)
-            if (item.has("kind")) {
-                summaryItem.put("kind", item.get("kind").asText());
-            }
 
+            if (item.has("kind")) summaryItem.put("kind", item.get("kind").asText());
             summarizedItems.add(summaryItem);
         }
 
-        summaryRoot.set("items", summarizedItems);
+        if (items.size() > limit) {
+            summaryRoot.put("warning", String.format("Output truncated. Only showing first %d items out of %d.", limit, items.size()));
+        }
 
-        // 返回格式化后的 JSON 字符串
+        summaryRoot.set("items", summarizedItems);
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(summaryRoot);
     }
 
-    /**
-     * ==========================================
-     * 绝招 2：针对所有单体资源(Pod/Node/Deployment/CRD)的无差别极简清洗
-     * ==========================================
-     */
     private static void cleanUniversalResourceNode(ObjectNode node) {
-        // 【最狠的一刀】：直接重置 metadata，只保留大模型最关心的四个字段
+        String kind = node.has("kind") ? node.get("kind").asText() : "Unknown";
+
+        // 1. 极简 Metadata (采用你的白名单机制，最安全)
         if (node.has("metadata") && node.get("metadata").isObject()) {
             ObjectNode metadata = (ObjectNode) node.get("metadata");
-            
             JsonNode name = metadata.get("name");
             JsonNode namespace = metadata.get("namespace");
             JsonNode labels = metadata.get("labels");
-            JsonNode creationTimestamp = metadata.get("creationTimestamp");
 
-            // 清空所有原有杂乱字段 (managedFields, annotations, ownerReferences, uid 等)
-            metadata.removeAll();
+            metadata.removeAll(); // 一刀切
 
-            // 重新塞回有用的字段
             if (name != null) metadata.set("name", name);
             if (namespace != null) metadata.set("namespace", namespace);
-            if (labels != null) metadata.set("labels", labels);
-            if (creationTimestamp != null) metadata.set("creationTimestamp", creationTimestamp);
+            if (labels != null) metadata.set("labels", labels); // 保留 label 用于关联排查
         }
 
-        // 针对已知极大字段进行定点清除
+        // 2. 深层 Status 清洗 (融合深层过滤机制)
         if (node.has("status") && node.get("status").isObject()) {
             ObjectNode status = (ObjectNode) node.get("status");
-            status.remove("images"); // Node 特有垃圾数据
-            // status.remove("conditions"); // 注意：不要删除 conditions，大模型看病主要靠这个
+            status.remove("images");
+
+            // 清理 conditions 中的时间戳噪音
+            if (status.has("conditions") && status.get("conditions").isArray()) {
+                ArrayNode conditions = (ArrayNode) status.get("conditions");
+                for (JsonNode cond : conditions) {
+                    if (cond.isObject()) {
+                        ObjectNode cObj = (ObjectNode) cond;
+                        cObj.remove("lastProbeTime");
+                        cObj.remove("lastTransitionTime"); // 删掉时间戳，保留 type, status, reason, message
+                    }
+                }
+            }
+
+            // 针对 Pod 提炼 containerStatuses，排查 CrashLoopBackOff 必备
+            if ("Pod".equals(kind) && status.has("containerStatuses") && status.get("containerStatuses").isArray()) {
+                ArrayNode cStatuses = (ArrayNode) status.get("containerStatuses");
+                for (JsonNode cs : cStatuses) {
+                    if (cs.isObject()) {
+                        ObjectNode csObj = (ObjectNode) cs;
+                        csObj.remove("containerID");
+                        csObj.remove("imageID");
+                        csObj.remove("image");
+                        // 只保留 name, state, restartCount, ready
+                    }
+                }
+            }
+        }
+
+        // 3. 安全拦截大文本字段 (替代暴力的字符串截断，防止破坏 JSON 结构)
+        if (("ConfigMap".equals(kind) || "Secret".equals(kind)) && node.has("data") && node.get("data").isObject()) {
+            ObjectNode data = (ObjectNode) node.get("data");
+            Iterator<Map.Entry<String, JsonNode>> fields = data.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> field = fields.next();
+                String val = field.getValue().asText();
+                if (val.length() > MAX_CONFIGMAP_DATA_LENGTH) {
+                    data.put(field.getKey(), "<TRUNCATED: Length " + val.length() + ". Use tool to read specifics>");
+                }
+            }
         }
     }
 
-    // --- 辅助提取方法 ---
-
+    // --- 辅助提取方法 (保持你的优秀实现不变) ---
     private static String extractGenericStatus(JsonNode item) {
-        // Pods 通常有 phase
-        if (item.at("/status/phase").isTextual()) {
-            return item.at("/status/phase").asText();
-        }
-        // Deployments/StatefulSets 通常有 readyReplicas / replicas
+        if (item.at("/status/phase").isTextual()) return item.at("/status/phase").asText();
         if (item.at("/status/replicas").isInt()) {
-            int ready = item.at("/status/readyReplicas").asInt(0);
-            int replicas = item.at("/status/replicas").asInt(0);
-            return ready + "/" + replicas;
+            return item.at("/status/readyReplicas").asInt(0) + "/" + item.at("/status/replicas").asInt(0);
         }
-        // Node / 通用资源的 Conditions 汇总
         if (item.at("/status/conditions").isArray()) {
-            ArrayNode conditions = (ArrayNode) item.at("/status/conditions");
-            for (JsonNode cond : conditions) {
-                if ("Ready".equals(cond.path("type").asText())) {
-                    return "Ready=" + cond.path("status").asText();
-                }
+            for (JsonNode cond : item.at("/status/conditions")) {
+                if ("Ready".equals(cond.path("type").asText())) return "Ready=" + cond.path("status").asText();
             }
         }
         return "Unknown";
@@ -144,11 +150,8 @@ public class K8sDataSanitizer {
 
     private static String extractKeyInfo(JsonNode item) {
         List<String> infos = new ArrayList<>();
-        // 尝试提取 IP
         if (item.at("/status/podIP").isTextual()) infos.add("IP: " + item.at("/status/podIP").asText());
-        // 尝试提取所在 Node
         if (item.at("/spec/nodeName").isTextual()) infos.add("Node: " + item.at("/spec/nodeName").asText());
-        // 尝试提取重启次数 (Pod)
         if (item.at("/status/containerStatuses").isArray()) {
             int restarts = 0;
             for (JsonNode cs : item.at("/status/containerStatuses")) {
@@ -162,11 +165,5 @@ public class K8sDataSanitizer {
     private static String extractText(JsonNode node, String jsonPtr, String defaultVal) {
         JsonNode val = node.at(jsonPtr);
         return val.isMissingNode() || val.isNull() ? defaultVal : val.asText();
-    }
-
-    private static String forceTruncate(String content, String dataType) {
-        if (content.length() <= MAX_RETURN_LENGTH) return content;
-        return content.substring(0, MAX_RETURN_LENGTH) + 
-               String.format("\n\n...[SYSTEM WARNING: %s truncated at %d chars. Refine your query.]", dataType, MAX_RETURN_LENGTH);
     }
 }

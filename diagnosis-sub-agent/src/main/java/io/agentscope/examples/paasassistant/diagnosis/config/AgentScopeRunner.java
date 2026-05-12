@@ -15,6 +15,7 @@ import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.tool.Toolkit;
+import io.agentscope.examples.paasassistant.diagnosis.config.AgentConstants;
 import io.agentscope.examples.paasassistant.diagnosis.memory.CompatibleMem0LongTermMemory;
 import io.agentscope.core.tool.mcp.McpClientBuilder;
 import io.agentscope.core.tool.mcp.McpClientWrapper;
@@ -50,7 +51,7 @@ public class AgentScopeRunner {
     @Value("${agentscope.mem0.api-type:auto}")
     String mem0ApiType;
 
-    @Value("${agentscope.mem0.infer-enabled:false}")
+    @Value("${agentscope.mem0.infer-enabled:true}")
     boolean mem0InferEnabled;
 
     @Value("${agentscope.k8sgpt.mcp-url:http://k8sgpt-server:8089/mcp}")
@@ -58,6 +59,9 @@ public class AgentScopeRunner {
 
     @Value("${agentscope.mcp.k8s-mcp-url:http://localhost:9096/mcp}")
     String k8sMcpUrl;
+
+    @Value("${agentscope.mcp.tool-timeout:PT60S}")
+    Duration mcpToolTimeout;
 
     @Bean
     public AgentRunner agentRunner(
@@ -78,7 +82,8 @@ public class AgentScopeRunner {
                 mem0ApiType,
                 mem0InferEnabled,
                 k8sgptMcpUrl,
-                k8sMcpUrl);
+                k8sMcpUrl,
+                mcpToolTimeout);
     }
 
     private static class CustomAgentRunner implements AgentRunner {
@@ -111,8 +116,6 @@ public class AgentScopeRunner {
                 .includeSummaryResult(false)
                 .build();
 
-        private static final Pattern USER_ID_PATTERN = Pattern.compile("<userId>(.+?)</userId>");
-        private static final Pattern CLUSTER_ID_PATTERN = Pattern.compile("<clusterId>(.+?)</clusterId>");
 
         private final String agentName;
         private final String sysPrompt;
@@ -127,6 +130,7 @@ public class AgentScopeRunner {
         private final boolean mem0InferEnabled;
         private final String k8sgptMcpUrl;
         private final String k8sMcpUrl;
+        private final Duration mcpToolTimeout;
         private volatile boolean mcpInitialized = false;
 
         private CustomAgentRunner(
@@ -141,7 +145,8 @@ public class AgentScopeRunner {
                 String mem0ApiType,
                 boolean mem0InferEnabled,
                 String k8sgptMcpUrl,
-                String k8sMcpUrl) {
+                String k8sMcpUrl,
+                Duration mcpToolTimeout) {
             this.agentName = agentName;
             this.sysPrompt = sysPrompt;
             this.model = model;
@@ -155,6 +160,7 @@ public class AgentScopeRunner {
             this.mem0InferEnabled = mem0InferEnabled;
             this.k8sgptMcpUrl = k8sgptMcpUrl;
             this.k8sMcpUrl = k8sMcpUrl;
+            this.mcpToolTimeout = mcpToolTimeout;
         }
 
         private ReActAgent buildReActAgent(String userId) {
@@ -190,7 +196,7 @@ public class AgentScopeRunner {
                             // Register standard local MCP service via SSE
                             McpClientWrapper rawMcpClient = McpClientBuilder.create("k8s-mcp-server")
                                     .streamableHttpTransport(k8sMcpUrl)
-                                    .timeout(Duration.ofSeconds(60))
+                                    .timeout(mcpToolTimeout)
                                     .buildSync();
                                     
                             McpClientWrapper localMcpClient = new SanitizingMcpClient(rawMcpClient);
@@ -311,10 +317,7 @@ public class AgentScopeRunner {
         }
 
         private boolean resolveInferEnabled(Mem0ApiType apiType, boolean configuredInferEnabled) {
-            if (apiType == Mem0ApiType.SELF_HOSTED) {
-                return configuredInferEnabled;
-            }
-            return true;
+            return configuredInferEnabled;
         }
 
         @Override
@@ -351,9 +354,11 @@ public class AgentScopeRunner {
                                     .build());
 
             return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
-                    .contextWrite(ctx -> ctx.put("tool_cache", new ConcurrentHashMap<String, McpSchema.CallToolResult>())
-                                            .put("approved_tools", approvedTools)
-                                            .put("cluster_id", clusterId))
+                    .contextWrite(ctx -> ctx.put(AgentConstants.CTX_TOOL_CACHE, new ConcurrentHashMap<String, McpSchema.CallToolResult>())
+                                            .put(AgentConstants.CTX_APPROVED_TOOLS, approvedTools)
+                                            .put(AgentConstants.CTX_CLUSTER_ID, clusterId)
+                                            .put(AgentConstants.CTX_USER_ID, userId)
+                                            .put(AgentConstants.CTX_CHAT_ID, options.getTaskId()))
                     .onErrorResume(e -> {
                         logger.error("Error during agent stream for taskId {}: ", options.getTaskId(), e);
                         Msg errorMsg = Msg.builder()
@@ -378,7 +383,7 @@ public class AgentScopeRunner {
                     if (block instanceof TextBlock textBlock) {
                         String text = textBlock.getText();
                         if (text != null) {
-                            Matcher matcher = USER_ID_PATTERN.matcher(text);
+                            Matcher matcher = AgentConstants.USER_ID_PATTERN.matcher(text);
                             if (matcher.find()) {
                                 return matcher.group(1).trim();
                             }
@@ -386,7 +391,7 @@ public class AgentScopeRunner {
                     }
                 }
             }
-            return "default_userId";
+            return AgentConstants.DEFAULT_USER_ID;
         }
 
         private String parseClusterIdFromMessages(List<Msg> requestMessages) {
@@ -398,7 +403,7 @@ public class AgentScopeRunner {
                     if (block instanceof TextBlock textBlock) {
                         String text = textBlock.getText();
                         if (text != null) {
-                            Matcher matcher = CLUSTER_ID_PATTERN.matcher(text);
+                            Matcher matcher = AgentConstants.CLUSTER_ID_PATTERN.matcher(text);
                             if (matcher.find()) {
                                 return matcher.group(1).trim();
                             }
@@ -417,7 +422,7 @@ public class AgentScopeRunner {
                         if (block instanceof TextBlock textBlock) {
                             String text = textBlock.getText();
                             if (text != null) {
-                                Matcher m = java.util.regex.Pattern.compile("\\[APPROVE\\]\\s+([a-zA-Z0-9_\\-]+)").matcher(text);
+                                Matcher m = AgentConstants.APPROVE_PATTERN.matcher(text);
                                 while (m.find()) {
                                     approved.add(m.group(1));
                                 }

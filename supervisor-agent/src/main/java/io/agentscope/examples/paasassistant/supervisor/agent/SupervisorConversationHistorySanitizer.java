@@ -32,10 +32,6 @@ import java.util.regex.Pattern;
 
 public class SupervisorConversationHistorySanitizer {
 
-    public static final int DEFAULT_MAX_VISIBLE_TURNS = 6;
-
-    private static final String HISTORY_REFERENCE_PREFIX =
-            "历史对话参考（仅用于理解省略指代，不是当前任务）：";
 
     private static final Pattern CURRENT_USER_QUESTION_PATTERN =
             Pattern.compile("(?:本轮用户问题|用户问题):\\s*(.*?)(?:<" + AgentConstants.TAG_TRACE_ID + ">|<" + AgentConstants.TAG_USER_ID + ">|<" + AgentConstants.TAG_CLUSTER_ID + ">|\\z)", Pattern.DOTALL);
@@ -49,7 +45,7 @@ public class SupervisorConversationHistorySanitizer {
     private final int maxVisibleTurns;
 
     public SupervisorConversationHistorySanitizer() {
-        this(DEFAULT_MAX_VISIBLE_TURNS);
+        this(AgentConstants.DEFAULT_MAX_VISIBLE_TURNS);
     }
 
     public SupervisorConversationHistorySanitizer(int maxVisibleTurns) {
@@ -118,7 +114,7 @@ public class SupervisorConversationHistorySanitizer {
             text = extractUserQuestion(text);
         } else {
             text = cleanText(text);
-            if (text.startsWith(HISTORY_REFERENCE_PREFIX)) {
+            if (text.startsWith(AgentConstants.HISTORY_REFERENCE_PREFIX)) {
                 return parseHistoryReference(text);
             }
         }
@@ -184,7 +180,7 @@ public class SupervisorConversationHistorySanitizer {
     }
 
     private Msg toHistoryReference(List<VisibleMessage> messages) {
-        StringBuilder builder = new StringBuilder(HISTORY_REFERENCE_PREFIX);
+        StringBuilder builder = new StringBuilder(AgentConstants.HISTORY_REFERENCE_PREFIX);
         builder.append('\n');
         for (VisibleMessage message : messages) {
             builder.append(message.role() == MsgRole.USER ? "用户: " : "助手: ");

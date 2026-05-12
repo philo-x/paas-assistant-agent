@@ -46,7 +46,7 @@ public class AgentScopeRunner {
     @Value("${agentscope.mem0.api-type:auto}")
     String mem0ApiType;
 
-    @Value("${agentscope.mem0.infer-enabled:false}")
+    @Value("${agentscope.mem0.infer-enabled:true}")
     boolean mem0InferEnabled;
 
     @Bean
@@ -185,10 +185,7 @@ public class AgentScopeRunner {
         }
 
         private boolean resolveInferEnabled(Mem0ApiType apiType, boolean configuredInferEnabled) {
-            if (apiType == Mem0ApiType.SELF_HOSTED) {
-                return configuredInferEnabled;
-            }
-            return true;
+            return configuredInferEnabled;
         }
 
         @Override

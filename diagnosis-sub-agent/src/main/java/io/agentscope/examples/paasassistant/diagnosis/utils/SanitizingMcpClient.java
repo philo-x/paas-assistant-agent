@@ -1,14 +1,24 @@
 package io.agentscope.examples.paasassistant.diagnosis.utils;
 
 import io.agentscope.core.tool.mcp.McpClientWrapper;
+import io.agentscope.examples.paasassistant.diagnosis.config.AgentConstants;
 import io.modelcontextprotocol.spec.McpSchema;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import java.io.IOException;
+import java.time.Duration;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 /**
  * A wrapper for McpClientWrapper that intercepts tool calls and applies
@@ -17,6 +27,9 @@ import reactor.core.publisher.Mono;
 public class SanitizingMcpClient extends McpClientWrapper {
 
     private static final Logger logger = LoggerFactory.getLogger(SanitizingMcpClient.class);
+
+    private static final ObjectMapper signatureMapper = new ObjectMapper()
+            .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
     private final McpClientWrapper delegate;
 
@@ -32,33 +45,84 @@ public class SanitizingMcpClient extends McpClientWrapper {
 
     @Override
     public Mono<List<McpSchema.Tool>> listTools() {
-        return delegate.listTools();
+        return delegate.listTools().map(tools -> 
+            tools.stream().map(this::filterSystemParameters).collect(Collectors.toList())
+        );
     }
 
-    private static final List<String> DESTRUCTIVE_PREFIXES = List.of(
-            "delete_", "restart_", "scale_", "stop_", "update_", "apply_", 
-            "cordon_", "drain_", "taint_", "uncordon_", "untaint_", "patch_", "restore_", "undo_", "run_command_"
-    );
+    private McpSchema.Tool filterSystemParameters(McpSchema.Tool tool) {
+        if (tool.inputSchema() == null || tool.inputSchema().properties() == null) {
+            return tool;
+        }
+
+        Map<String, Object> properties = new HashMap<>(tool.inputSchema().properties());
+        List<String> required = tool.inputSchema().required() != null ? 
+                new ArrayList<>(tool.inputSchema().required()) : new ArrayList<>();
+
+        // Hide system-level parameters from the Agent
+        properties.remove(AgentConstants.PARAM_CHAT_ID);
+        properties.remove(AgentConstants.PARAM_USER_ID);
+        properties.remove(AgentConstants.PARAM_CLUSTER);
+
+        required.remove(AgentConstants.PARAM_CHAT_ID);
+        required.remove(AgentConstants.PARAM_USER_ID);
+        required.remove(AgentConstants.PARAM_CLUSTER);
+
+        // Construct new JsonSchema
+        McpSchema.JsonSchema newSchema = new McpSchema.JsonSchema(
+                tool.inputSchema().type(),
+                properties,
+                required,
+                tool.inputSchema().additionalProperties(),
+                tool.inputSchema().defs(),
+                tool.inputSchema().definitions()
+        );
+
+        // Construct new Tool using builder
+        return McpSchema.Tool.builder()
+                .name(tool.name())
+                .title(tool.title())
+                .description(tool.description())
+                .inputSchema(newSchema)
+                .outputSchema(tool.outputSchema())
+                .annotations(tool.annotations())
+                .meta(tool.meta())
+                .build();
+    }
+
+    // Destructive prefix list is centrally defined in AgentConstants.DESTRUCTIVE_TOOL_PREFIXES
 
     @Override
     public Mono<McpSchema.CallToolResult> callTool(String name, Map<String, Object> arguments) {
         return Mono.deferContextual(ctx -> {
-            String clusterId = ctx.getOrDefault("cluster_id", "");
-            Map<String, Object> finalArgs = arguments;
+            String clusterId = ctx.getOrDefault(AgentConstants.CTX_CLUSTER_ID, "");
+            String userId = ctx.getOrDefault(AgentConstants.CTX_USER_ID, "");
+            String chatId = ctx.getOrDefault(AgentConstants.CTX_CHAT_ID, "");
+
+            Map<String, Object> finalArgs = new HashMap<>(arguments != null ? arguments : Map.of());
+            
+            // Automatically inject system-level parameters
             if (clusterId != null && !clusterId.isEmpty()) {
-                finalArgs = new java.util.HashMap<>(arguments != null ? arguments : java.util.Map.of());
-                finalArgs.put("cluster", clusterId);
+                finalArgs.put(AgentConstants.PARAM_CLUSTER, clusterId);
+            }
+            if (userId != null && !userId.isEmpty()) {
+                finalArgs.put(AgentConstants.PARAM_USER_ID, userId);
+            }
+            if (chatId != null && !chatId.isEmpty()) {
+                finalArgs.put(AgentConstants.PARAM_CHAT_ID, chatId);
             }
             
-            String signature = name + ":" + finalArgs.toString();
+            // Use Jackson to generate a canonical JSON string with sorted keys (recursive)
+            // Extracted to a method so the variable is effectively final (required for inner lambda use)
+            final String signature = buildSignature(name, finalArgs);
             
-            Map<String, McpSchema.CallToolResult> cache = ctx.getOrDefault("tool_cache", null);
+            Map<String, McpSchema.CallToolResult> cache = ctx.getOrDefault(AgentConstants.CTX_TOOL_CACHE, null);
             if (cache != null && cache.containsKey(signature)) {
                 logger.info("Skipping duplicate tool call for '{}' (returning cached result)", name);
                 return Mono.just(cache.get(signature));
             }
             
-            java.util.Set<String> approvedTools = ctx.getOrDefault("approved_tools", java.util.Collections.emptySet());
+            java.util.Set<String> approvedTools = ctx.getOrDefault(AgentConstants.CTX_APPROVED_TOOLS, java.util.Collections.emptySet());
             if (isDestructive(name) && !approvedTools.contains(name)) {
                 logger.warn("Intercepted unapproved destructive tool call: {}", name);
                 return Mono.error(new io.agentscope.core.tool.ToolSuspendException(
@@ -66,14 +130,37 @@ public class SanitizingMcpClient extends McpClientWrapper {
                 ));
             }
 
-            return delegate.callTool(name, finalArgs)
+            Mono<McpSchema.CallToolResult> call = delegate.callTool(name, finalArgs)
                     .map(result -> sanitizeResult(name, result))
                     .doOnNext(res -> {
                         if (cache != null) {
                             cache.put(signature, res);
                         }
                     });
+
+            // For non-destructive tools only: retry once on transient network failures.
+            // Destructive tools (delete, restart, scale, etc.) are never retried automatically
+            // to prevent accidental double-execution.
+            if (!isDestructive(name)) {
+                call = call.retryWhen(
+                        Retry.backoff(1, Duration.ofSeconds(2))
+                                .maxBackoff(Duration.ofSeconds(10))
+                                .filter(SanitizingMcpClient::isTransientMcpFailure)
+                                .doBeforeRetry(signal -> logger.warn(
+                                        "Transient MCP failure for tool '{}', retrying (attempt {}/1): {}",
+                                        name, signal.totalRetriesInARow() + 1, signal.failure().getMessage())));
+            }
+            return call;
         });
+    }
+
+    private String buildSignature(String toolName, Map<String, Object> args) {
+        try {
+            return toolName + ":" + signatureMapper.writeValueAsString(args);
+        } catch (JsonProcessingException e) {
+            logger.warn("Failed to generate stable signature for tool {}, falling back to toString", toolName);
+            return toolName + ":" + args.toString();
+        }
     }
 
     @Override
@@ -83,9 +170,22 @@ public class SanitizingMcpClient extends McpClientWrapper {
 
     private boolean isDestructive(String toolName) {
         if (toolName == null) return false;
-        String baseName = toolName.contains("__") ? 
+        String baseName = toolName.contains("__") ?
                 toolName.substring(toolName.lastIndexOf("__") + 2) : toolName;
-        return DESTRUCTIVE_PREFIXES.stream().anyMatch(baseName::startsWith);
+        return AgentConstants.DESTRUCTIVE_TOOL_PREFIXES.stream().anyMatch(baseName::startsWith);
+    }
+
+    /**
+     * Returns true for transient network/IO errors that are safe to retry.
+     * Excludes application-level errors (e.g. MCP tool not found, bad arguments).
+     */
+    private static boolean isTransientMcpFailure(Throwable e) {
+        if (e instanceof IOException) {
+            return true;
+        }
+        String msg = e.getMessage();
+        return msg != null && (msg.contains("timeout") || msg.contains("connection reset")
+                || msg.contains("EOF") || msg.contains("broken pipe"));
     }
 
     /**
