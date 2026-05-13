@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 public class CompatibleMem0LongTermMemory implements LongTermMemory {
@@ -27,6 +29,8 @@ public class CompatibleMem0LongTermMemory implements LongTermMemory {
 
     private static final Pattern METADATA_TAG_PATTERN =
             Pattern.compile("<(?:userId|traceId)>.*?</(?:userId|traceId)>", Pattern.DOTALL);
+
+    private static final Logger log = LoggerFactory.getLogger(CompatibleMem0LongTermMemory.class);
 
     private final Mem0Client client;
 
@@ -92,7 +96,10 @@ public class CompatibleMem0LongTermMemory implements LongTermMemory {
                         .infer(infer)
                         .build();
 
-        return client.add(request).then();
+        return client.add(request)
+                .doOnNext(resp -> log.info("Mem0 response: {}", resp))
+                .doOnError(e -> log.error("Failed to record to Mem0: {}", e.getMessage()))
+                .then();
     }
 
     @Override

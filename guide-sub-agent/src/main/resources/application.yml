@@ -21,7 +21,7 @@ agentscope:
     api-key: ${MEM0_API_KEY:-}
     base-url: ${MEM0_BASE_URL:https://api.mem0.ai}
     api-type: ${MEM0_API_TYPE:auto}
-    infer-enabled: ${MEM0_INFER_ENABLED:true}
+    infer-enabled: ${MEM0_INFER_ENABLED:false}
   a2a:
     nacos:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}

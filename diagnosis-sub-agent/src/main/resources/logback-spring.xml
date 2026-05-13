@@ -29,6 +29,11 @@
         <appender-ref ref="CONSOLE"/>
     </root>
 
+    <logger name="io.agentscope.examples.paasassistant.diagnosis.memory" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="AI_LOG_FILE"/>
+    </logger>
+
     <!-- Silence excessive Nacos internal logging if needed, but ensure appenders are started -->
     <logger name="com.alibaba.nacos" level="INFO" additivity="false">
         <appender-ref ref="CONFIG_LOG_FILE"/>
