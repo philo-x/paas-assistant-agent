@@ -185,6 +185,7 @@ public class AgentScopeRunner {
                     .toolkit(toolkit)
                     .longTermMemory(longTermMemory)
                     .hooks(List.of(new MonitoringHook(), new TruncationHook()))
+                    .maxIters(200)
                     .build();
         }
 

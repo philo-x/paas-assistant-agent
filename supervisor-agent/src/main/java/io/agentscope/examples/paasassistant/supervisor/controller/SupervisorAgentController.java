@@ -95,7 +95,7 @@ public class SupervisorAgentController {
 
                         return sink.asFlux()
                                         .doOnCancel(() -> {
-                                                logger.info("Client disconnected from structured stream, cancelling task.");
+                                                logger.warn("Client disconnected from structured stream (traceId={}), cancelling agent task.", traceId);
                                                 disposable.dispose();
                                         })
                                         .doOnError(e -> {

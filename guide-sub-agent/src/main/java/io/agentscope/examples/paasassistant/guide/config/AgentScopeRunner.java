@@ -165,6 +165,7 @@ public class AgentScopeRunner {
                     .ragMode(RAGMode.AGENTIC)
                     .longTermMemory(longTermMemory)
                     .hooks(List.of(new MonitoringHook(), new TruncationHook()))
+                    .maxIters(50)
                     .build();
         }
 

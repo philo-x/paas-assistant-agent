@@ -159,6 +159,7 @@ public class SupervisorAgent {
                                         .maxAttempts(1)
                                         .build())
                         .memory(memory)
+                        .maxIters(30)
                         .build();
         return agent;
     }

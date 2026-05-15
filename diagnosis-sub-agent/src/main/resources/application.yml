@@ -23,7 +23,7 @@ agentscope:
     k8s-mcp-url: ${K8S_MCP_URL:http://localhost:9096/mcp}
     # Timeout for each individual MCP tool call.
     # Must be shorter than the A2A child-agent-timeout on the supervisor side.
-    tool-timeout: ${MCP_TOOL_TIMEOUT:PT60S}
+    tool-timeout: ${MCP_TOOL_TIMEOUT:PT3M}
     nacos:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
       namespace: ${NACOS_NAMESPACE:public}
