@@ -339,7 +339,6 @@ public class AgentScopeRunner {
             }
             String userId = parseUserIdFromMessages(requestMessages);
             String clusterId = parseClusterIdFromMessages(requestMessages);
-            java.util.Set<String> approvedTools = parseApprovedTools(requestMessages);
             // Per-request isolation: create a fresh agent instance
             ReActAgent agent = buildReActAgent(userId);
             agentCache.put(options.getTaskId(), agent);
@@ -356,7 +355,6 @@ public class AgentScopeRunner {
 
             return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
                     .contextWrite(ctx -> ctx.put(AgentConstants.CTX_TOOL_CACHE, new ConcurrentHashMap<String, McpSchema.CallToolResult>())
-                                            .put(AgentConstants.CTX_APPROVED_TOOLS, approvedTools)
                                             .put(AgentConstants.CTX_CLUSTER_ID, clusterId)
                                             .put(AgentConstants.CTX_USER_ID, userId)
                                             .put(AgentConstants.CTX_CHAT_ID, options.getTaskId()))
@@ -415,25 +413,6 @@ public class AgentScopeRunner {
             return "";
         }
 
-        private java.util.Set<String> parseApprovedTools(List<Msg> requestMessages) {
-            java.util.Set<String> approved = new java.util.HashSet<>();
-            for (Msg msg : requestMessages) {
-                if (msg.getContent() != null) {
-                    for (var block : msg.getContent()) {
-                        if (block instanceof TextBlock textBlock) {
-                            String text = textBlock.getText();
-                            if (text != null) {
-                                Matcher m = AgentConstants.APPROVE_PATTERN.matcher(text);
-                                while (m.find()) {
-                                    approved.add(m.group(1));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return approved;
-        }
 
         @Override
         public void stop(String taskId) {

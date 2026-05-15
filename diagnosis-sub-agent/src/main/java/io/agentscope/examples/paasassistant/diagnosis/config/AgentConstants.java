@@ -26,9 +26,6 @@ public final class AgentConstants {
     /** Per-request call-result cache used to deduplicate identical tool invocations. */
     public static final String CTX_TOOL_CACHE = "tool_cache";
 
-    /** Set of tool names that have been explicitly approved for destructive execution. */
-    public static final String CTX_APPROVED_TOOLS = "approved_tools";
-
     /** Kubernetes cluster identifier injected into every MCP tool call. */
     public static final String CTX_CLUSTER_ID = "cluster_id";
 
@@ -57,8 +54,9 @@ public final class AgentConstants {
     // -------------------------------------------------------------------------
     // Destructive Tool Prefixes
     // Tool names whose base-name (the part after the last "__") starts with any
-    // of these prefixes are classified as destructive and require explicit
-    // human approval before execution.
+    // of these prefixes are classified as destructive.  SanitizingMcpClient
+    // intercepts these calls and returns a structured error result directing the
+    // LLM to use the platform change-plan workflow instead.
     // -------------------------------------------------------------------------
 
     public static final List<String> DESTRUCTIVE_TOOL_PREFIXES = List.of(
@@ -78,14 +76,7 @@ public final class AgentConstants {
     /** Extracts the clusterId from {@code <clusterId>…</clusterId>} in message text. */
     public static final Pattern CLUSTER_ID_PATTERN = Pattern.compile("<clusterId>(.+?)</clusterId>");
 
-    /**
-     * Matches human-approval tokens of the form {@code [APPROVE] tool_name}
-     * embedded in message text by the supervisor or operator.
-     */
-    public static final Pattern APPROVE_PATTERN =
-            Pattern.compile("\\[APPROVE\\]\\s+([a-zA-Z0-9_\\-]+)");
 
-    // -------------------------------------------------------------------------
     // Default / Fallback Values
     // -------------------------------------------------------------------------
 

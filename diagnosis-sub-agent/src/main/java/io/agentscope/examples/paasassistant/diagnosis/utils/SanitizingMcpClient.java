@@ -121,13 +121,21 @@ public class SanitizingMcpClient extends McpClientWrapper {
                 logger.info("Skipping duplicate tool call for '{}' (returning cached result)", name);
                 return Mono.just(cache.get(signature));
             }
-            
-            java.util.Set<String> approvedTools = ctx.getOrDefault(AgentConstants.CTX_APPROVED_TOOLS, java.util.Collections.emptySet());
-            if (isDestructive(name) && !approvedTools.contains(name)) {
-                logger.warn("Intercepted unapproved destructive tool call: {}", name);
-                return Mono.error(new io.agentscope.core.tool.ToolSuspendException(
-                        "⚠️ 智能体申请执行高危操作：" + name + "，请人工确认。"
-                ));
+
+            // Destructive tools are not permitted in the diagnosis agent.
+            // Return a structured error result so the LLM can explain to the user
+            // that controlled changes must go through the platform change-plan workflow.
+            if (isDestructive(name)) {
+                logger.warn("Blocked destructive tool call in diagnosis agent: {}", name);
+                McpSchema.TextContent errorContent = new McpSchema.TextContent(
+                        null,
+                        "[TOOL_BLOCKED] The tool '" + name + "' performs a destructive Kubernetes operation "
+                                + "and is not permitted within the diagnosis agent. "
+                                + "Please use the platform change-plan tools (change-plan-restart, "
+                                + "change-plan-scale, change-plan-delete-pod, change-plan-patch) "
+                                + "to create an approved change plan instead.",
+                        null);
+                return Mono.just(new McpSchema.CallToolResult(List.of(errorContent), true, null, null));
             }
 
             Mono<McpSchema.CallToolResult> call = delegate.callTool(name, finalArgs)
