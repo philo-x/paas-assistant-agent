@@ -1,0 +1,171 @@
+09:06:15,008 |-WARN in ch.qos.logback.core.model.processor.AppenderModelHandler - Appender named [AI_LOG_FILE] not referenced. Skipping further processing.
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.4)
+
+2026-05-18T09:06:15.379Z  INFO 7 --- [supervisor-agent] [           main] i.a.e.p.s.SupervisorAgentApplication     : Starting SupervisorAgentApplication using Java 17.0.19 with PID 7 (/app/app.jar started by appuser in /app)
+2026-05-18T09:06:15.384Z  INFO 7 --- [supervisor-agent] [           main] i.a.e.p.s.SupervisorAgentApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-05-18T09:06:18.400Z  INFO 7 --- [supervisor-agent] [           main] i.a.e.p.s.config.AgentScopeModelConfig   : Creating OpenAI Model with model: qwen3.6, baseUrl: http://100.115.102.106:30900/console/llmServices/v1
+2026-05-18T09:06:18.860Z  INFO 7 --- [supervisor-agent] [           main] i.a.e.p.s.config.SupervisorAgentConfig   : SupervisorAgent initialized - creates new agent for each request
+2026-05-18T09:06:18.863Z  INFO 7 --- [supervisor-agent] [           main] i.a.e.p.s.agent.SupervisorAgent          : Session path: /tmp/.agentscope/examples/sessions
+2026-05-18T09:06:19.270Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback12.LogbackNacosLoggingAdapterBuilder
+2026-05-18T09:06:19.270Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback12.LogbackNacosLoggingAdapterBuilder
+2026-05-18T09:06:19.270Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback12.LogbackNacosLoggingAdapterBuilder
+2026-05-18T09:06:19.272Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapterBuilder
+2026-05-18T09:06:19.272Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapterBuilder
+2026-05-18T09:06:19.272Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapterBuilder
+2026-05-18T09:06:19.273Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapter match ch.qos.logback.classic.Logger success.
+2026-05-18T09:06:19.273Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapter match ch.qos.logback.classic.Logger success.
+2026-05-18T09:06:19.273Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapter match ch.qos.logback.classic.Logger success.
+2026-05-18T09:06:19.285Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.log4j2.Log4j2NacosLoggingAdapterBuilder
+2026-05-18T09:06:19.285Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.log4j2.Log4j2NacosLoggingAdapterBuilder
+2026-05-18T09:06:19.285Z  INFO 7 --- [supervisor-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.log4j2.Log4j2NacosLoggingAdapterBuilder
+2026-05-18T09:06:19.464Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-18T09:06:19.464Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-18T09:06:19.464Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-18T09:06:19.464Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-18T09:06:19.464Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-18T09:06:19.464Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-18T09:06:19.465Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-18T09:06:19.465Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-18T09:06:19.465Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-18T09:06:19.699Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-18T09:06:19.699Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-18T09:06:19.699Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-18T09:06:19.700Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-18T09:06:19.700Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-18T09:06:19.700Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-18T09:06:19.700Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-18T09:06:19.700Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-18T09:06:19.700Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-18T09:06:20.739Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to get current node abilities...
+2026-05-18T09:06:20.739Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to get current node abilities...
+2026-05-18T09:06:20.739Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to get current node abilities...
+2026-05-18T09:06:20.743Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to initialize current node abilities, support modes: [SDK_CLIENT]
+2026-05-18T09:06:20.743Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to initialize current node abilities, support modes: [SDK_CLIENT]
+2026-05-18T09:06:20.743Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to initialize current node abilities, support modes: [SDK_CLIENT]
+2026-05-18T09:06:20.744Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Initialize current abilities finish...
+2026-05-18T09:06:20.744Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Initialize current abilities finish...
+2026-05-18T09:06:20.744Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Initialize current abilities finish...
+2026-05-18T09:06:20.745Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.d.NacosAbilityManagerHolder    : [AbilityControlManager] Successfully initialize AbilityControlManager
+2026-05-18T09:06:20.745Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.d.NacosAbilityManagerHolder    : [AbilityControlManager] Successfully initialize AbilityControlManager
+2026-05-18T09:06:20.745Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.c.a.d.NacosAbilityManagerHolder    : [AbilityControlManager] Successfully initialize AbilityControlManager
+2026-05-18T09:06:20.775Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-18T09:06:20.775Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-18T09:06:20.775Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-18T09:06:20.775Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-18T09:06:20.775Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-18T09:06:20.775Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-18T09:06:20.775Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-18T09:06:20.775Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-18T09:06:20.775Z  INFO 7 --- [supervisor-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-18T09:06:21.447Z  INFO 7 --- [supervisor-agent] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 2 endpoints beneath base path '/actuator'
+2026-05-18T09:06:22.616Z  INFO 7 --- [supervisor-agent] [           main] o.s.boot.reactor.netty.NettyWebServer    : Netty started on port 8080 (http)
+2026-05-18T09:06:22.625Z  INFO 7 --- [supervisor-agent] [           main] i.a.e.p.s.SupervisorAgentApplication     : Started SupervisorAgentApplication in 8.697 seconds (process running for 9.679)
+2026-05-18T09:07:42.022Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T09:07:42.022Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T09:07:42.029Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-05-18T09:07:42.371Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@6b579fce
+2026-05-18T09:07:42.380Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-05-18T09:07:59.108Z  INFO 7 --- [supervisor-agent] [oundedElastic-4] io.agentscope.core.a2a.agent.A2aAgent    : [6ad716a3-ca9e-48a9-bf34-4f242ab595d2] A2aAgent start call.
+2026-05-18T09:08:00.500Z  INFO 7 --- [supervisor-agent] [ient-2-Worker-0] i.a.c.a2a.agent.event.TaskEventHandler   : [6ad716a3-ca9e-48a9-bf34-4f242ab595d2] A2A Task 0121f6b0-a7be-4036-87b0-be2a5e83843d with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T09:08:00.298202683Z]
+2026-05-18T09:08:55.834Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-2] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T09:08:55.835Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-2] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T09:09:58.304Z  WARN 7 --- [supervisor-agent] [ctor-http-nio-2] i.a.e.p.s.c.SupervisorAgentController    : Client disconnected from structured stream (traceId=04378bcd-1907-4375-826e-49cff442abcc), cancelling agent task.
+2026-05-18T09:09:58.304Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-2] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1778225281228
+2026-05-18T09:10:07.946Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T09:10:07.946Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T09:10:18.420Z  INFO 7 --- [supervisor-agent] [oundedElastic-9] io.agentscope.core.a2a.agent.A2aAgent    : [b5fa671c-84f7-41a2-a07a-778f3088756f] A2aAgent start call.
+2026-05-18T09:10:18.444Z  INFO 7 --- [supervisor-agent] [ient-3-Worker-1] i.a.c.a2a.agent.event.TaskEventHandler   : [b5fa671c-84f7-41a2-a07a-778f3088756f] A2A Task c91e7447-15b4-43c4-9835-32a391b58576 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T09:10:18.431584993Z]
+2026-05-18T09:10:33.797Z  INFO 7 --- [supervisor-agent] [oundedElastic-7] io.agentscope.core.a2a.agent.A2aAgent    : [afe27c21-9137-4cd8-9062-69925449a620] A2aAgent start call.
+2026-05-18T09:10:33.819Z  INFO 7 --- [supervisor-agent] [ient-4-Worker-0] i.a.c.a2a.agent.event.TaskEventHandler   : [afe27c21-9137-4cd8-9062-69925449a620] A2A Task 8f0e8662-e444-42c3-a6a3-45a4ae3a6982 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T09:10:33.807383461Z]
+2026-05-18T09:14:44.532Z  INFO 7 --- [supervisor-agent] [ient-4-Worker-0] i.a.c.a.a.event.TaskUpdateEventHandler   : [afe27c21-9137-4cd8-9062-69925449a620] A2aAgent complete call.
+2026-05-18T09:16:09.147Z  INFO 7 --- [supervisor-agent] [oundedElastic-7] io.agentscope.core.a2a.agent.A2aAgent    : [6fa64aa0-c64a-4a24-ac05-7c41630b7f31] A2aAgent start call.
+2026-05-18T09:16:09.174Z  INFO 7 --- [supervisor-agent] [ient-5-Worker-1] i.a.c.a2a.agent.event.TaskEventHandler   : [6fa64aa0-c64a-4a24-ac05-7c41630b7f31] A2A Task f2bc7fa0-18fa-442e-b480-2fd3fb069ad7 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T09:16:09.161622031Z]
+2026-05-18T09:17:09.338Z  INFO 7 --- [supervisor-agent] [ient-5-Worker-1] i.a.c.a.a.event.TaskUpdateEventHandler   : [6fa64aa0-c64a-4a24-ac05-7c41630b7f31] A2aAgent complete call.
+2026-05-18T09:19:26.850Z  WARN 7 --- [supervisor-agent] [ctor-http-nio-4] i.a.e.p.s.c.SupervisorAgentController    : Client disconnected from structured stream (traceId=a647cf36-4371-46b3-a998-82063e16d88e), cancelling agent task.
+2026-05-18T09:19:26.850Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1778225281228
+2026-05-18T09:19:30.723Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T09:19:30.724Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T09:19:32.056Z  INFO 7 --- [supervisor-agent] [undedElastic-13] io.agentscope.core.a2a.agent.A2aAgent    : [40cbe40c-835d-44c3-8cd3-488a7c4201cc] A2aAgent start call.
+2026-05-18T09:19:32.082Z  INFO 7 --- [supervisor-agent] [ient-6-Worker-0] i.a.c.a2a.agent.event.TaskEventHandler   : [40cbe40c-835d-44c3-8cd3-488a7c4201cc] A2A Task b376bbb8-e7c6-4e40-bd5d-db38ad8fa164 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T09:19:32.070662577Z]
+2026-05-18T09:19:48.178Z  INFO 7 --- [supervisor-agent] [ient-6-Worker-0] i.a.c.a.a.event.TaskUpdateEventHandler   : [40cbe40c-835d-44c3-8cd3-488a7c4201cc] A2aAgent complete call.
+2026-05-18T09:19:51.501Z  INFO 7 --- [supervisor-agent] [oundedElastic-1] i.a.e.p.s.c.SupervisorAgentController    : Structured stream processing completed successfully
+2026-05-18T09:19:51.501Z  INFO 7 --- [supervisor-agent] [oundedElastic-1] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1778225281228
+2026-05-18T09:20:52.650Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T09:20:52.650Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T09:20:53.971Z  INFO 7 --- [supervisor-agent] [undedElastic-12] io.agentscope.core.a2a.agent.A2aAgent    : [6b3a7ce0-b0f2-4316-91c2-89706537446c] A2aAgent start call.
+2026-05-18T09:20:54.026Z  INFO 7 --- [supervisor-agent] [ient-7-Worker-0] i.a.c.a2a.agent.event.TaskEventHandler   : [6b3a7ce0-b0f2-4316-91c2-89706537446c] A2A Task 5f6eae6e-ea24-45be-b0b2-1ab28100d104 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T09:20:54.014033720Z]
+2026-05-18T09:22:32.345Z  WARN 7 --- [supervisor-agent] [ctor-http-nio-4] i.a.e.p.s.c.SupervisorAgentController    : Client disconnected from structured stream (traceId=6972b23f-eb4d-4192-bfb7-e3cfe06598a1), cancelling agent task.
+2026-05-18T09:22:32.345Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1779095403432
+2026-05-18T09:22:36.922Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T09:22:36.922Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T09:22:40.626Z  INFO 7 --- [supervisor-agent] [undedElastic-17] io.agentscope.core.a2a.agent.A2aAgent    : [bcff0113-1c47-4531-af2b-b6ea775af4dc] A2aAgent start call.
+2026-05-18T09:22:40.650Z  INFO 7 --- [supervisor-agent] [ient-8-Worker-0] i.a.c.a2a.agent.event.TaskEventHandler   : [bcff0113-1c47-4531-af2b-b6ea775af4dc] A2A Task f733d498-56e4-4274-be22-5d02eb72fd28 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T09:22:40.636935794Z]
+2026-05-18T09:23:42.420Z  INFO 7 --- [supervisor-agent] [ient-7-Worker-0] i.a.c.a.a.event.TaskUpdateEventHandler   : [6b3a7ce0-b0f2-4316-91c2-89706537446c] A2aAgent complete call.
+2026-05-18T09:25:03.518Z  INFO 7 --- [supervisor-agent] [oundedElastic-1] i.a.e.p.s.c.SupervisorAgentController    : Structured stream processing completed successfully
+2026-05-18T09:25:03.518Z  INFO 7 --- [supervisor-agent] [oundedElastic-1] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1778225281228
+2026-05-18T09:28:19.482Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T09:28:19.483Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T09:28:20.988Z  INFO 7 --- [supervisor-agent] [undedElastic-21] io.agentscope.core.a2a.agent.A2aAgent    : [cac5efef-d223-49e7-a40a-373c5eebbc7d] A2aAgent start call.
+2026-05-18T09:28:21.012Z  INFO 7 --- [supervisor-agent] [ient-9-Worker-1] i.a.c.a2a.agent.event.TaskEventHandler   : [cac5efef-d223-49e7-a40a-373c5eebbc7d] A2A Task efcaa2d1-680f-473c-8ef7-c580afbae663 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T09:28:21.000042681Z]
+2026-05-18T09:33:21.733Z  INFO 7 --- [supervisor-agent] [ient-9-Worker-1] i.a.c.a.a.event.TaskUpdateEventHandler   : [cac5efef-d223-49e7-a40a-373c5eebbc7d] A2aAgent complete call.
+2026-05-18T09:33:37.813Z  INFO 7 --- [supervisor-agent] [undedElastic-18] i.a.e.p.s.c.SupervisorAgentController    : Structured stream processing completed successfully
+2026-05-18T09:33:37.813Z  INFO 7 --- [supervisor-agent] [undedElastic-18] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1778225281228
+2026-05-18T09:34:22.582Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T09:34:22.583Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T09:34:24.048Z  INFO 7 --- [supervisor-agent] [undedElastic-21] io.agentscope.core.a2a.agent.A2aAgent    : [67369db8-4f71-4c97-8256-933cd24225c5] A2aAgent start call.
+2026-05-18T09:34:24.071Z  INFO 7 --- [supervisor-agent] [ent-10-Worker-2] i.a.c.a2a.agent.event.TaskEventHandler   : [67369db8-4f71-4c97-8256-933cd24225c5] A2A Task 1c4cca34-6e70-48b0-8693-9ae7cfa19c0a with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T09:34:24.059596958Z]
+2026-05-18T09:36:13.308Z  INFO 7 --- [supervisor-agent] [ent-10-Worker-2] i.a.c.a.a.event.TaskUpdateEventHandler   : [67369db8-4f71-4c97-8256-933cd24225c5] A2aAgent complete call.
+2026-05-18T09:36:33.247Z  INFO 7 --- [supervisor-agent] [undedElastic-18] i.a.e.p.s.c.SupervisorAgentController    : Structured stream processing completed successfully
+2026-05-18T09:36:33.248Z  INFO 7 --- [supervisor-agent] [undedElastic-18] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1778225281228
+2026-05-18T10:03:23.267Z  WARN 7 --- [supervisor-agent] [ctor-http-nio-4] i.a.e.p.s.c.SupervisorAgentController    : Client disconnected from structured stream (traceId=b8230640-bd83-4353-8a77-3e20e34a36ce), cancelling agent task.
+2026-05-18T10:03:23.267Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1779095403432
+2026-05-18T10:03:25.881Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T10:03:25.881Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T10:03:27.920Z  INFO 7 --- [supervisor-agent] [undedElastic-25] io.agentscope.core.a2a.agent.A2aAgent    : [5a39159d-c1e0-4a1f-a5ca-c24cf4808b07] A2aAgent start call.
+2026-05-18T10:03:27.944Z  INFO 7 --- [supervisor-agent] [ent-11-Worker-0] i.a.c.a2a.agent.event.TaskEventHandler   : [5a39159d-c1e0-4a1f-a5ca-c24cf4808b07] A2A Task 35eed1bc-6d93-40c2-82c0-3b78347b95a7 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T10:03:27.929995625Z]
+2026-05-18T10:05:24.123Z  INFO 7 --- [supervisor-agent] [ent-11-Worker-0] i.a.c.a.a.event.TaskUpdateEventHandler   : [5a39159d-c1e0-4a1f-a5ca-c24cf4808b07] A2aAgent complete call.
+2026-05-18T10:05:48.218Z  INFO 7 --- [supervisor-agent] [oundedElastic-2] i.a.e.p.s.c.SupervisorAgentController    : Structured stream processing completed successfully
+2026-05-18T10:05:48.218Z  INFO 7 --- [supervisor-agent] [oundedElastic-2] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1779095403432
+2026-05-18T10:07:20.827Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T10:07:20.827Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T10:07:22.225Z  INFO 7 --- [supervisor-agent] [undedElastic-30] io.agentscope.core.a2a.agent.A2aAgent    : [3cf8f55d-0e55-4114-894e-df2a9dd51ab5] A2aAgent start call.
+2026-05-18T10:07:22.246Z  INFO 7 --- [supervisor-agent] [ent-12-Worker-0] i.a.c.a2a.agent.event.TaskEventHandler   : [3cf8f55d-0e55-4114-894e-df2a9dd51ab5] A2A Task 84aa5e31-08da-4bba-9ec0-6683fa8c09b6 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T10:07:22.234407109Z]
+2026-05-18T10:08:37.531Z  INFO 7 --- [supervisor-agent] [ent-12-Worker-0] i.a.c.a.a.event.TaskUpdateEventHandler   : [3cf8f55d-0e55-4114-894e-df2a9dd51ab5] A2aAgent complete call.
+2026-05-18T10:09:10.295Z  INFO 7 --- [supervisor-agent] [undedElastic-27] i.a.e.p.s.c.SupervisorAgentController    : Structured stream processing completed successfully
+2026-05-18T10:09:10.296Z  INFO 7 --- [supervisor-agent] [undedElastic-27] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1778225281228
+2026-05-18T10:11:42.791Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T10:11:42.791Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-1] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T10:11:44.458Z  INFO 7 --- [supervisor-agent] [undedElastic-34] io.agentscope.core.a2a.agent.A2aAgent    : [0c0446fd-e115-449b-93da-44c4d4795ff3] A2aAgent start call.
+2026-05-18T10:11:44.490Z  INFO 7 --- [supervisor-agent] [ent-13-Worker-0] i.a.c.a2a.agent.event.TaskEventHandler   : [0c0446fd-e115-449b-93da-44c4d4795ff3] A2A Task 34b82598-1c7d-4617-b1d3-76475e0b67d1 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T10:11:44.467878644Z]
+2026-05-18T10:12:48.451Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] io.agentscope.core.tool.Toolkit          : Registered tool 'callGuideAgent' in group 'ungrouped'
+2026-05-18T10:12:48.451Z  INFO 7 --- [supervisor-agent] [ctor-http-nio-4] io.agentscope.core.tool.Toolkit          : Registered tool 'callDiagnosisAgent' in group 'ungrouped'
+2026-05-18T10:12:59.085Z ERROR 7 --- [supervisor-agent] [     parallel-2] i.a.e.p.supervisor.tools.A2aAgentTools   : A2A streaming call to diagnosis_agent timed out after PT1H5M. traceId=a647cf36-4371-46b3-a998-82063e16d88e
+
+java.util.concurrent.TimeoutException: Did not observe any item or terminal signal within 3900000ms in 'source(MonoDeferContextual)' (and no fallback has been configured)
+	at reactor.core.publisher.FluxTimeout$TimeoutMainSubscriber.handleTimeout(FluxTimeout.java:297) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxTimeout$TimeoutMainSubscriber.doTimeout(FluxTimeout.java:282) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxTimeout$TimeoutTimeoutSubscriber.onNext(FluxTimeout.java:423) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxOnErrorReturn$ReturnSubscriber.onNext(FluxOnErrorReturn.java:159) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoDelay$MonoDelayRunnable.propagateDelay(MonoDelay.java:269) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoDelay$MonoDelayRunnable.run(MonoDelay.java:284) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.scheduler.SchedulerTask.call(SchedulerTask.java:72) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.scheduler.SchedulerTask.call(SchedulerTask.java:28) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source) ~[na:na]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(Unknown Source) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source) ~[na:na]
+	at java.base/java.lang.Thread.run(Unknown Source) ~[na:na]
+
+2026-05-18T10:13:02.474Z  INFO 7 --- [supervisor-agent] [oundedElastic-3] io.agentscope.core.a2a.agent.A2aAgent    : [4bbd3575-1a4a-41dc-a17a-b3b7653c507a] A2aAgent start call.
+2026-05-18T10:13:02.501Z  INFO 7 --- [supervisor-agent] [ent-14-Worker-0] i.a.c.a2a.agent.event.TaskEventHandler   : [4bbd3575-1a4a-41dc-a17a-b3b7653c507a] A2A Task ff620e94-79b8-4170-9a51-743c8cdfd2d4 with status TaskStatus[state=SUBMITTED, message=null, timestamp=2026-05-18T10:13:02.486594158Z]
+2026-05-18T10:14:16.015Z  INFO 7 --- [supervisor-agent] [ent-14-Worker-0] i.a.c.a.a.event.TaskUpdateEventHandler   : [4bbd3575-1a4a-41dc-a17a-b3b7653c507a] A2aAgent complete call.
+2026-05-18T10:14:40.294Z  INFO 7 --- [supervisor-agent] [undedElastic-32] i.a.e.p.s.c.SupervisorAgentController    : Structured stream processing completed successfully
+2026-05-18T10:14:40.294Z  INFO 7 --- [supervisor-agent] [undedElastic-32] i.a.e.p.s.agent.SupervisorAgent          : Stream terminated with signal: cancel, saving current sanitized session: 1779095403432

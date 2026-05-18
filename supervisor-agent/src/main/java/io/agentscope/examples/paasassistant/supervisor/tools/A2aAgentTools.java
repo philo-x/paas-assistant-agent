@@ -95,6 +95,8 @@ public class A2aAgentTools {
 
     private final Duration childAgentTimeout;
 
+    private final Duration childAgentIdleTimeout;
+
     private final int childAgentRetryAttempts;
 
     private final Duration childAgentRetryBackoff;
@@ -104,12 +106,14 @@ public class A2aAgentTools {
             @Qualifier("diagnosisAgent") ObjectProvider<A2aAgent> diagnosisAgentProvider,
             StructuredTraceRegistry traceRegistry,
             @Value("${agent.a2a.child-agent-timeout:PT15M}") Duration childAgentTimeout,
+            @Value("${agent.a2a.child-agent-idle-timeout:PT60S}") Duration childAgentIdleTimeout,
             @Value("${agent.a2a.child-agent-retry-attempts:3}") int childAgentRetryAttempts,
             @Value("${agent.a2a.child-agent-retry-backoff:PT1S}") Duration childAgentRetryBackoff) {
         this.guideAgentProvider = guideAgentProvider;
         this.diagnosisAgentProvider = diagnosisAgentProvider;
         this.traceRegistry = traceRegistry;
         this.childAgentTimeout = childAgentTimeout;
+        this.childAgentIdleTimeout = childAgentIdleTimeout;
         this.childAgentRetryAttempts = Math.max(1, childAgentRetryAttempts);
         this.childAgentRetryBackoff = childAgentRetryBackoff;
     }
@@ -187,6 +191,8 @@ public class A2aAgentTools {
                                     StringBuilder finalAnswer = new StringBuilder();
                                     ChildStreamState state = new ChildStreamState();
                                     return agent.stream(msg, CHILD_AGENT_STREAM_OPTIONS)
+                                             .timeout(Mono.delay(childAgentIdleTimeout))
+                                             .onErrorMap(TimeoutException.class, e -> new A2aFirstEventTimeoutException("A2A target failed to emit first event within " + childAgentIdleTimeout))
                                              .doOnNext(
                                                      event ->
                                                              handleChildEvent(
@@ -203,7 +209,11 @@ public class A2aAgentTools {
                                              }))
                                              .doFinally(sig -> state.getAssembler().clear());
                                 })
-                        .timeout(childAgentTimeout);
+                        .timeout(childAgentTimeout)
+                        .doOnCancel(() -> {
+                            log.warn("A2A streaming call to {} was cancelled by downstream (e.g., client disconnect). traceId={}", childAgentName, traceId);
+                            interruptChildAgent(agent, childAgentName, traceId);
+                        });
 
         return applyTransientRetry(childCall, childAgentName, traceId)
                 .onErrorResume(
@@ -245,9 +255,21 @@ public class A2aAgentTools {
             String childAgentName,
             String traceId,
             StructuredSseEmitter emitter) {
+        if (isFirstEventTimeoutFailure(throwable)) {
+            log.error(
+                    "A2A streaming call to {} timed out waiting for the FIRST event (pre-submit) after {}. traceId={}",
+                    childAgentName,
+                    childAgentIdleTimeout,
+                    traceId,
+                    throwable);
+            interruptChildAgent(agent, childAgentName, traceId);
+            emitChildAgentError(emitter, childAgentName, AgentConstants.CHILD_AGENT_TIMEOUT_MESSAGE);
+            return Mono.just(AgentConstants.CHILD_AGENT_TIMEOUT_MESSAGE);
+        }
+
         if (isTimeoutFailure(throwable)) {
             log.error(
-                    "A2A streaming call to {} timed out after {}. traceId={}",
+                    "A2A streaming call to {} timed out globally after {}. traceId={}",
                     childAgentName,
                     childAgentTimeout,
                     traceId,
@@ -298,6 +320,10 @@ public class A2aAgentTools {
             current = current.getCause();
         }
         return false;
+    }
+
+    static boolean isFirstEventTimeoutFailure(Throwable throwable) {
+        return findCause(throwable, A2aFirstEventTimeoutException.class) != null;
     }
 
     static boolean isTimeoutFailure(Throwable throwable) {
@@ -576,6 +602,12 @@ public class A2aAgentTools {
 
         private boolean hasAnswerEmitted() {
             return answerEmitted;
+        }
+    }
+
+    private static class A2aFirstEventTimeoutException extends RuntimeException {
+        public A2aFirstEventTimeoutException(String message) {
+            super(message);
         }
     }
 }

@@ -94,6 +94,14 @@ public class SupervisorAgentController {
                                         emitter);
 
                         return sink.asFlux()
+                                        .publish(shared -> Flux.merge(
+                                                shared,
+                                                Flux.interval(java.time.Duration.ofSeconds(15))
+                                                        .map(i -> ServerSentEvent.<String>builder()
+                                                                        .comment("keep-alive")
+                                                                        .build())
+                                                        .takeUntilOther(shared.ignoreElements())
+                                        ))
                                         .doOnCancel(() -> {
                                                 logger.warn("Client disconnected from structured stream (traceId={}), cancelling agent task.", traceId);
                                                 disposable.dispose();

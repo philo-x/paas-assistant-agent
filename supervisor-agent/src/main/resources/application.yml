@@ -85,3 +85,8 @@ agent:
       - 如果表格首列是序号，表头必须显式写“序号”，不要省略空表头
       - 禁止输出单独一行的竖线“|”，禁止输出半截表格或列数不一致的表格
       - 不确定是否能组成合法表格时，优先使用普通项目符号列表
+
+logging:
+  level:
+    io.agentscope.core.a2a: ${A2A_LOG_LEVEL:INFO}
+    io.agentscope.core.nacos: ${A2A_LOG_LEVEL:INFO}
