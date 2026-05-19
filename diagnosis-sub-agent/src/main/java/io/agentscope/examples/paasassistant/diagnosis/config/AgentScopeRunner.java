@@ -58,9 +58,6 @@ public class AgentScopeRunner {
     @Value("${agentscope.mem0.infer-enabled:true}")
     boolean mem0InferEnabled;
 
-    @Value("${agentscope.k8sgpt.mcp-url:http://k8sgpt-server:8089/mcp}")
-    String k8sgptMcpUrl;
-
     @Value("${agentscope.mcp.k8s-mcp-url:http://localhost:9096/mcp}")
     String k8sMcpUrl;
 
@@ -97,7 +94,6 @@ public class AgentScopeRunner {
                 mem0BaseUrl,
                 mem0ApiType,
                 mem0InferEnabled,
-                k8sgptMcpUrl,
                 k8sMcpUrl,
                 mcpToolTimeout);
     }
@@ -136,7 +132,6 @@ public class AgentScopeRunner {
         private final String agentName;
         private final String sysPrompt;
         private final Model model;
-        private final AiService aiService;
         private final Toolkit toolkit;
         private final SkillBox skillBox;
         private final AutoContextConfig autoContextConfig;
@@ -145,7 +140,6 @@ public class AgentScopeRunner {
         private final String mem0BaseUrl;
         private final String mem0ApiType;
         private final boolean mem0InferEnabled;
-        private final String k8sgptMcpUrl;
         private final String k8sMcpUrl;
         private final Duration mcpToolTimeout;
         private volatile boolean mcpInitialized = false;
@@ -162,13 +156,11 @@ public class AgentScopeRunner {
                 String mem0BaseUrl,
                 String mem0ApiType,
                 boolean mem0InferEnabled,
-                String k8sgptMcpUrl,
                 String k8sMcpUrl,
                 Duration mcpToolTimeout) {
             this.agentName = agentName;
             this.sysPrompt = sysPrompt;
             this.model = model;
-            this.aiService = aiService;
             this.toolkit = toolkit;
             this.skillBox = skillBox;
             this.autoContextConfig = autoContextConfig;
@@ -177,7 +169,6 @@ public class AgentScopeRunner {
             this.mem0BaseUrl = mem0BaseUrl;
             this.mem0ApiType = mem0ApiType;
             this.mem0InferEnabled = mem0InferEnabled;
-            this.k8sgptMcpUrl = k8sgptMcpUrl;
             this.k8sMcpUrl = k8sMcpUrl;
             this.mcpToolTimeout = mcpToolTimeout;
         }
