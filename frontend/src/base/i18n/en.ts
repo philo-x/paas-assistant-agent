@@ -41,7 +41,7 @@ export default {
   home: {
     title: 'PaaS Platform Agent Assistant',
     subtitle: 'Kubernetes Diagnosis and Guidance',
-    description: 'Welcome to the PaaS Platform Agent Assistant. You can diagnose K8s issues, explain resources, understand YAML fields, and run controlled changes after explicit confirmation.',
+    description: 'Welcome to the PaaS Platform Agent Assistant. You can diagnose K8s issues, explain resources, understand YAML fields, and get command recommendations.',
     startChat: 'Start Chat',
     systemSettings: 'Settings',
     features: {
@@ -50,10 +50,10 @@ export default {
       consultDesc: 'Field explanations, describe interpretation, and YAML guidance',
       order: 'Incident Diagnosis',
       orderDesc: 'Read-first diagnosis for Pods, Deployments, Services, and other core resources',
-      feedback: 'Controlled Changes',
-      feedbackDesc: 'Restart, scale, delete pod, and patch all require explicit confirmation',
-      support: 'Audit Trail',
-      supportDesc: 'Approvals, executions, and outcomes stay traceable'
+      feedback: 'Root Cause Analysis',
+      feedbackDesc: 'Analyze timeline and blast radius to output confidence levels and risk warnings',
+      support: 'Diagnostic SOPs',
+      supportDesc: 'Built-in troubleshooting SOPs for 7 core resources based on decision trees'
     },
     cta: {
       title: 'Ready to start a platform diagnosis or consultation?',
@@ -70,7 +70,7 @@ export default {
     error: 'Send failed, please try again',
     sendError: 'Send failed',
     unknownError: 'Unknown error',
-    welcome: 'Hello! I am the PaaS Platform Agent Assistant. I can help with K8s diagnosis, resource explanation, command recommendations, and confirmed controlled changes.',
+    welcome: 'Hello! I am the PaaS Platform Agent Assistant. I can help with K8s diagnosis, resource explanation, command recommendations, and resource guidance.',
     chatCleared: 'Chat cleared',
     sessionId: 'Session ID',
     userId: 'User ID',
@@ -140,10 +140,9 @@ export default {
     },
     examples: {
       title: 'Common Questions Examples',
-      diagnosePods: 'Find unhealthy Pods in the default namespace.',
-      explainYaml: 'What does this YAML field mean?',
-      inspectDescribe: 'How should I read this describe output?',
-      scaleDeployment: 'Scale this Deployment to 5 replicas.'
+      diagnoseDeployments: 'Find unhealthy Deployments in the appas namespace.',
+      diagnoseFinops: 'Diagnose Deployment finops-extend.',
+      explainYaml: 'What does this YAML field mean?'
     }
   },
   settings: {

@@ -24,9 +24,9 @@ import {
   BookOutlined,
   SearchOutlined,
   AuditOutlined,
-  ControlOutlined,
   SettingOutlined,
-  GlobalOutlined
+  GlobalOutlined,
+  WarningOutlined
 } from '@ant-design/icons-vue'
 import { setLocale, getLocale } from '@/base/i18n'
 
@@ -50,7 +50,7 @@ const features = computed(() => [
     description: t('home.features.supportDesc')
   },
   {
-    icon: ControlOutlined,
+    icon: WarningOutlined,
     title: t('home.features.feedback'),
     description: t('home.features.feedbackDesc')
   }

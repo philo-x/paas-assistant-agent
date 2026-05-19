@@ -41,7 +41,7 @@ export default {
   home: {
     title: 'PaaS 平台 Agent 助手',
     subtitle: 'Kubernetes 诊断与指南',
-    description: '欢迎使用 PaaS 平台 Agent 助手。您可以在这里进行 K8s 诊断、查看资源解释、获取 YAML 字段说明，并在明确确认后执行受控变更。',
+    description: '欢迎使用 PaaS 平台 Agent 助手。您可以在这里进行 K8s 诊断、查看资源解释、获取 YAML 字段说明与排障命令建议。',
     startChat: '开始对话',
     systemSettings: '系统设置',
     features: {
@@ -50,10 +50,10 @@ export default {
       consultDesc: '字段释义、Describe 解读和 YAML 编写建议',
       order: '故障诊断',
       orderDesc: '聚焦 Pod、Deployment、Service 等核心资源的读诊断能力',
-      feedback: '受控变更',
-      feedbackDesc: '重启、扩缩容、删除 Pod、Patch 均需显式确认后执行',
-      support: '审计回放',
-      supportDesc: '审批、执行和结果可追踪、可查询'
+      feedback: '根因分析',
+      feedbackDesc: '结合时间轴与爆炸半径，输出置信度及修复风险提示',
+      support: '诊断 SOP',
+      supportDesc: '内置 Nodes、Pods、Workloads 等 7 大核心资源的专项排查决策树'
     },
     cta: {
       title: '准备开始一次平台诊断或咨询？',
@@ -70,7 +70,7 @@ export default {
     error: '发送失败，请重试',
     sendError: '发送失败',
     unknownError: '未知错误',
-    welcome: '您好！我是 PaaS 平台 Agent 助手，可以帮您做 K8s 诊断、资源解释、命令建议以及确认后执行受控变更。',
+    welcome: '您好！我是 PaaS 平台 Agent 助手，可以帮您做 K8s 故障诊断、资源解释、命令建议和资源使用指南。',
     chatCleared: '对话已清空',
     sessionId: '对话ID',
     userId: '用户ID',
@@ -140,10 +140,9 @@ export default {
     },
     examples: {
       title: '常见问题示例',
-      diagnosePods: '请找出 default 命名空间中有问题的 Pod',
-      explainYaml: '这个 YAML 字段是什么意思',
-      inspectDescribe: '这个 describe 输出怎么解读',
-      scaleDeployment: '把某 Deployment 扩到 5 个副本'
+      diagnoseDeployments: '请找出appas 命名空间中有问题的Deployment',
+      diagnoseFinops: '诊断 Deployment finops-extend',
+      explainYaml: '这个这个 YAML 字段是什么意思'
     }
   },
   settings: {

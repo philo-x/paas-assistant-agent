@@ -34,7 +34,6 @@ import {
   AlertOutlined,
   ClearOutlined,
   CodeOutlined,
-  ControlOutlined,
   GlobalOutlined,
   SearchOutlined,
   SendOutlined,
@@ -76,10 +75,9 @@ const languageMenuItems = computed(() => [
 ])
 
 const chatExamples = computed(() => [
-  { text: t('chat.examples.diagnosePods'), icon: AlertOutlined },
-  { text: t('chat.examples.explainYaml'), icon: CodeOutlined },
-  { text: t('chat.examples.inspectDescribe'), icon: SearchOutlined },
-  { text: t('chat.examples.scaleDeployment'), icon: ControlOutlined }
+  { text: t('chat.examples.diagnoseDeployments'), icon: AlertOutlined },
+  { text: t('chat.examples.diagnoseFinops'), icon: SearchOutlined },
+  { text: t('chat.examples.explainYaml'), icon: CodeOutlined }
 ])
 
 const hasBaseUrl = computed(() => configStore.baseUrl.trim().length > 0)
