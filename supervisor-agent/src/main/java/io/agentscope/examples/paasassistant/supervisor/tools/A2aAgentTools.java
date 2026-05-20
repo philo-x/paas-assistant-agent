@@ -356,15 +356,20 @@ public class A2aAgentTools {
     }
 
     private void interruptChildAgent(A2aAgent agent, String childAgentName, String traceId) {
-        try {
-            agent.interrupt();
-        } catch (RuntimeException ex) {
-            log.warn(
-                    "Failed to interrupt A2A task for {} after timeout. traceId={}",
-                    childAgentName,
-                    traceId,
-                    ex);
-        }
+        reactor.core.publisher.Mono.fromRunnable(() -> {
+            try {
+                log.info("Sending A2A interrupt to {} for traceId={}", childAgentName, traceId);
+                agent.interrupt();
+            } catch (RuntimeException ex) {
+                log.warn(
+                        "Failed to interrupt A2A task for {} after timeout. traceId={}",
+                        childAgentName,
+                        traceId,
+                        ex);
+            }
+        })
+        .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+        .subscribe();
     }
 
     private void handleChildEvent(

@@ -87,6 +87,9 @@ public class SupervisorAgent {
 
     private final Duration toolTimeout;
 
+    private final java.util.concurrent.ConcurrentHashMap<String, ReActAgent> activeAgents =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
     public SupervisorAgent(
             Model model,
             A2aAgentTools tools,
@@ -130,9 +133,11 @@ public class SupervisorAgent {
             historySanitizer.toHistoryReferenceMessage(visibleHistory).ifPresent(memory::addMessage);
 
             ReActAgent agent = createAgent(toolkit, memory, hook);
+            activeAgents.put(sessionId, agent);
             return agent.stream(msg, SUPERVISOR_STREAM_OPTIONS)
                     .doFinally(
                             signalType -> {
+                                activeAgents.remove(sessionId);
                                 logger.info(
                                         "Stream terminated with signal: {}, saving current sanitized session: {}",
                                         signalType,
@@ -140,6 +145,19 @@ public class SupervisorAgent {
                                 sessionHistoryStore.saveSanitizedHistory(sessionId, memory);
                             });
         }).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
+    }
+
+    /**
+     * Interrupts the active agent execution for the given session.
+     *
+     * @param sessionId the session identifier
+     */
+    public void interruptSession(String sessionId) {
+        ReActAgent agent = activeAgents.remove(sessionId);
+        if (agent != null) {
+            logger.info("Interrupting active agent for session: {}", sessionId);
+            agent.interrupt();
+        }
     }
 
     /**

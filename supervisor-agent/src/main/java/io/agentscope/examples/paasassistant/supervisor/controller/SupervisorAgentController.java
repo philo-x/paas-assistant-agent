@@ -108,13 +108,16 @@ public class SupervisorAgentController {
                                         .doOnCancel(() -> {
                                                 logger.warn("Client disconnected from structured stream (traceId={}), cancelling agent task.", traceId);
                                                 disposable.dispose();
+                                                supervisorAgent.interruptSession(chatId);
                                         })
                                         .doOnError(e -> {
                                                 logger.error("Error occurred during structured streaming", e);
                                                 disposable.dispose();
+                                                supervisorAgent.interruptSession(chatId);
                                         })
                                         .doFinally(signalType -> {
                                                 disposable.dispose();
+                                                supervisorAgent.interruptSession(chatId);
                                                 traceRegistry.unregister(traceId);
                                         });
 

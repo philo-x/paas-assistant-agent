@@ -359,7 +359,11 @@ public class AgentScopeRunner {
                         return Flux.just(new Event(EventType.AGENT_RESULT, errorMsg, false));
                     })
                     .doFinally(signal -> {
-                        agentCache.remove(options.getTaskId());
+                        ReActAgent cachedAgent = agentCache.remove(options.getTaskId());
+                        if (cachedAgent != null) {
+                            logger.info("Interrupting agent {} in doFinally on signal: {}", options.getTaskId(), signal);
+                            cachedAgent.interrupt();
+                        }
                     });
         }
 
