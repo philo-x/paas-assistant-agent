@@ -36,6 +36,8 @@ public class SupervisorSessionHistoryStore {
 
     private final SupervisorConversationHistorySanitizer historySanitizer;
 
+    private volatile Session mysqlSession;
+
     public SupervisorSessionHistoryStore(
             Model model,
             DataSource dataSource,
@@ -65,6 +67,13 @@ public class SupervisorSessionHistoryStore {
     }
 
     Session openSession() {
-        return new MysqlSession(dataSource, dbName, null, true);
+        if (mysqlSession == null) {
+            synchronized (this) {
+                if (mysqlSession == null) {
+                    mysqlSession = new MysqlSession(dataSource, dbName, null, true);
+                }
+            }
+        }
+        return mysqlSession;
     }
 }

@@ -140,7 +140,7 @@ export default {
     },
     examples: {
       title: '常见问题示例',
-      diagnoseDeployments: '请找出appas 命名空间中有问题的Deployment',
+      diagnoseDeployments: 'kube-system命名空间下哪些Deployment有问题',
       diagnoseFinops: '诊断 Deployment finops-extend',
       explainYaml: '这个这个 YAML 字段是什么意思'
     }

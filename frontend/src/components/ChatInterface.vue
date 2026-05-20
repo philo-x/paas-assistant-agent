@@ -15,7 +15,7 @@
 -->
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -61,6 +61,7 @@ const chatStore = useChatStore()
 const configStore = useConfigStore()
 
 const inputValue = ref('')
+const activeAbortController = ref<AbortController | null>(null)
 const chatContainer = ref<HTMLElement>()
 const userIdInput = ref('')
 const showUserIdInput = ref(false)
@@ -161,6 +162,10 @@ const handleExampleClick = (example: string) => {
 }
 
 const clearChat = () => {
+  if (activeAbortController.value) {
+    activeAbortController.value.abort()
+    activeAbortController.value = null
+  }
   const newSessionId = Date.now().toString()
   router.push(`/chat/${newSessionId}`)
   message.success(t('chat.chatCleared'))
@@ -208,6 +213,11 @@ const sendMessage = async () => {
     return
   }
 
+  if (activeAbortController.value) {
+    activeAbortController.value.abort()
+  }
+  activeAbortController.value = new AbortController()
+
   const userMessage = inputValue.value.trim()
 
   await nextTick(() => {
@@ -222,8 +232,12 @@ const sendMessage = async () => {
     chatStore.setLoading(true)
     chatStore.setError(null)
 
-    await chatApiService.sendStructuredMessage(userMessage, handleStructuredEvent)
+    await chatApiService.sendStructuredMessage(userMessage, handleStructuredEvent, activeAbortController.value.signal)
   } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.log('Request aborted by user/system.')
+      return
+    }
     console.error('Structured chat error details:', {
       error,
       message: error?.message,
@@ -234,6 +248,7 @@ const sendMessage = async () => {
     chatStore.setAssistantError(error?.message || t('chat.unknownError'))
     message.error(`${t('chat.sendError')}: ${error?.message || t('chat.unknownError')}`)
   } finally {
+    activeAbortController.value = null
     chatStore.finalizeAssistantMessage()
     chatStore.setLoading(false)
     nextTick(() => {
@@ -241,6 +256,13 @@ const sendMessage = async () => {
     })
   }
 }
+
+onUnmounted(() => {
+  if (activeAbortController.value) {
+    activeAbortController.value.abort()
+    activeAbortController.value = null
+  }
+})
 
 onMounted(() => {
   configStore.loadConfig()

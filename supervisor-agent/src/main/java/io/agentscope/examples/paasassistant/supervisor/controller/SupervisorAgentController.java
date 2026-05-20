@@ -30,7 +30,9 @@ import io.agentscope.examples.paasassistant.supervisor.utils.AgentConstants;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -60,7 +62,7 @@ public class SupervisorAgentController {
         }
 
         @PostMapping(value = "/chat/structured", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-        public Flux<ServerSentEvent<String>> structuredChat(@RequestBody StructuredChatRequest request) {
+        public ResponseEntity<Flux<ServerSentEvent<String>>> structuredChat(@RequestBody StructuredChatRequest request) {
                 String userQuery = request.user_query();
                 String userId = request.user_id();
                 String chatId = request.chat_id();
@@ -74,8 +76,8 @@ public class SupervisorAgentController {
                         Msg msg = Msg.builder()
                                         .role(MsgRole.USER)
                                         .content(TextBlock.builder()
-                                                        .text(formatStructuredUserInput(userQuery))
-                                                        .build())
+                                                         .text(formatStructuredUserInput(userQuery))
+                                                         .build())
                                         .build();
 
                         Disposable disposable = processStructuredStream(
@@ -84,7 +86,7 @@ public class SupervisorAgentController {
                                                                         msg,
                                                                         chatId,
                                                                 new StructuredStreamHook(AgentConstants.AGENT_NAME_SUPERVISOR,
-                                                                                        emitter))
+                                                                                         emitter))
                                                         .contextWrite(ctx -> ctx.put(StructuredSseEmitter.CONTEXT_KEY,
                                                                         emitter)
                                                                         .put(AgentConstants.CTX_CLUSTER_ID, safe(request.cluster_id()))
@@ -93,15 +95,16 @@ public class SupervisorAgentController {
                                         sink,
                                         emitter);
 
-                        return sink.asFlux()
+                        Flux<ServerSentEvent<String>> flux = sink.asFlux()
                                         .publish(shared -> Flux.merge(
                                                 shared,
                                                 Flux.interval(java.time.Duration.ofSeconds(15))
-                                                        .map(i -> ServerSentEvent.<String>builder()
-                                                                        .comment("keep-alive")
-                                                                        .build())
-                                                        .takeUntilOther(shared.ignoreElements())
-                                        ))
+                                                         .onBackpressureDrop()
+                                                         .map(i -> ServerSentEvent.<String>builder()
+                                                                         .comment("keep-alive")
+                                                                         .build())
+                                                         .takeUntilOther(shared.ignoreElements())
+                                         ))
                                         .doOnCancel(() -> {
                                                 logger.warn("Client disconnected from structured stream (traceId={}), cancelling agent task.", traceId);
                                                 disposable.dispose();
@@ -114,14 +117,24 @@ public class SupervisorAgentController {
                                                 disposable.dispose();
                                                 traceRegistry.unregister(traceId);
                                         });
+
+                        return ResponseEntity.ok()
+                                        .header("X-Accel-Buffering", "no")
+                                        .header("Cache-Control", "no-cache")
+                                        .header("Connection", "keep-alive")
+                                        .body(flux);
                 } catch (Exception e) {
                         logger.error("Failed to process structured user query: {}", userQuery, e);
-                        return Flux.just(
-                                        ServerSentEvent.<String>builder()
-                                                        .event("error")
-                                                        .data(
-                                                                        "{\"message\":\"System processing error, please try again later.\",\"stage\":\"request\"}")
-                                                        .build());
+                        return ResponseEntity.ok()
+                                        .header("X-Accel-Buffering", "no")
+                                        .header("Cache-Control", "no-cache")
+                                        .header("Connection", "keep-alive")
+                                        .body(Flux.just(
+                                                        ServerSentEvent.<String>builder()
+                                                                        .event("error")
+                                                                        .data(
+                                                                                        "{\"message\":\"System processing error, please try again later.\",\"stage\":\"request\"}")
+                                                                        .build()));
                 }
         }
 

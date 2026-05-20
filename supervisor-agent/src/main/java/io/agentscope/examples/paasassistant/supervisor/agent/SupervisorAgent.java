@@ -122,22 +122,24 @@ public class SupervisorAgent {
      * @return Flux of Events from the agent
      */
     public Flux<Event> stream(Msg msg, String sessionId, Hook hook) {
-        Toolkit toolkit = new Toolkit();
-        toolkit.registerTool(tools);
-        List<Msg> visibleHistory = sessionHistoryStore.loadVisibleHistory(sessionId);
-        AutoContextMemory memory = sessionHistoryStore.createMemory();
-        historySanitizer.toHistoryReferenceMessage(visibleHistory).ifPresent(memory::addMessage);
+        return Flux.defer(() -> {
+            Toolkit toolkit = new Toolkit();
+            toolkit.registerTool(tools);
+            List<Msg> visibleHistory = sessionHistoryStore.loadVisibleHistory(sessionId);
+            AutoContextMemory memory = sessionHistoryStore.createMemory();
+            historySanitizer.toHistoryReferenceMessage(visibleHistory).ifPresent(memory::addMessage);
 
-        ReActAgent agent = createAgent(toolkit, memory, hook);
-        return agent.stream(msg, SUPERVISOR_STREAM_OPTIONS)
-                .doFinally(
-                        signalType -> {
-                            logger.info(
-                                    "Stream terminated with signal: {}, saving current sanitized session: {}",
-                                    signalType,
-                                    sessionId);
-                            sessionHistoryStore.saveSanitizedHistory(sessionId, memory);
-                        });
+            ReActAgent agent = createAgent(toolkit, memory, hook);
+            return agent.stream(msg, SUPERVISOR_STREAM_OPTIONS)
+                    .doFinally(
+                            signalType -> {
+                                logger.info(
+                                        "Stream terminated with signal: {}, saving current sanitized session: {}",
+                                        signalType,
+                                        sessionId);
+                                sessionHistoryStore.saveSanitizedHistory(sessionId, memory);
+                            });
+        }).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic());
     }
 
     /**

@@ -95,7 +95,8 @@ export class ChatApiService {
 
   async sendStructuredMessage(
     query: string,
-    onEvent: (event: StructuredSseEvent) => void
+    onEvent: (event: StructuredSseEvent) => void,
+    signal?: AbortSignal
   ): Promise<void> {
     const payload: StructuredChatRequest = {
       chat_id: this.configStore.chatId,
@@ -112,7 +113,8 @@ export class ChatApiService {
         'Accept': 'text/event-stream',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      signal
     })
 
     if (!response.ok) {
@@ -143,6 +145,10 @@ export class ChatApiService {
         const event = parseStructuredEvent(chunk)
         if (event) {
           onEvent(event)
+          if (event.event === 'done' || event.event === 'error') {
+            await reader.cancel()
+            return
+          }
         }
       }
     }
@@ -151,6 +157,10 @@ export class ChatApiService {
       const event = parseStructuredEvent(buffer)
       if (event) {
         onEvent(event)
+        if (event.event === 'done' || event.event === 'error') {
+          await reader.cancel()
+          return
+        }
       }
     }
   }

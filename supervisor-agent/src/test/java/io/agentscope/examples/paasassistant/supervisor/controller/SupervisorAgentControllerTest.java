@@ -1,15 +1,17 @@
 package io.agentscope.examples.paasassistant.supervisor.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.agentscope.core.agent.Event;
-import io.agentscope.core.agent.EventType;
+import io.agentscope.core.hook.PostCallEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredSseEmitter;
+import io.agentscope.examples.paasassistant.supervisor.stream.StructuredStreamHook;
 import io.agentscope.examples.paasassistant.supervisor.stream.StructuredTraceRegistry;
 import java.time.Duration;
 import java.util.List;
@@ -24,44 +26,61 @@ class SupervisorAgentControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
-    void structuredStreamKeepsExistingTextBlockStreamingBehavior() throws Exception {
+    void processStructuredStreamOnlyEmitsDoneOnComplete() throws Exception {
         Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().replay().all();
         StructuredSseEmitter emitter = new StructuredSseEmitter(sink, objectMapper);
         SupervisorAgentController controller =
                 new SupervisorAgentController(null, objectMapper, new StructuredTraceRegistry());
 
         controller.processStructuredStream(
-                Flux.just(
-                        event(EventType.REASONING, "final answer chunk"),
-                        event(EventType.TOOL_RESULT, "tool result text"),
-                        event(EventType.AGENT_RESULT, "agent result chunk")),
+                Flux.empty(),
                 sink,
                 emitter);
 
         List<ServerSentEvent<String>> events =
                 sink.asFlux().collectList().block(Duration.ofSeconds(1));
 
-        assertThat(events).hasSize(4);
-        assertThat(events.get(0).event()).isEqualTo("answer_delta");
-        assertThat(payload(events.get(0))).containsEntry("text", "final answer chunk");
-        assertThat(events.get(1).event()).isEqualTo("answer_delta");
-        assertThat(payload(events.get(1))).containsEntry("text", "tool result text");
-        assertThat(events.get(2).event()).isEqualTo("answer_delta");
-        assertThat(payload(events.get(2))).containsEntry("text", "agent result chunk");
-        assertThat(events.get(3).event()).isEqualTo("done");
+        assertThat(events).hasSize(1);
+        assertThat(events.get(0).event()).isEqualTo("done");
+        assertThat(payload(events.get(0))).containsEntry("status", "completed");
     }
 
-    private Event event(EventType eventType, String text) {
-        return new Event(
-                eventType,
-                Msg.builder()
-                        .role(MsgRole.ASSISTANT)
-                        .content(TextBlock.builder().text(text).build())
-                        .build(),
-                false);
+    @Test
+    void structuredStreamHookEmitsAnswerDeltaOnPostCallEvent() throws Exception {
+        Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().replay().all();
+        StructuredSseEmitter emitter = new StructuredSseEmitter(sink, objectMapper);
+        StructuredStreamHook hook = new StructuredStreamHook("supervisor_agent", emitter);
+
+        PostCallEvent postCall = mock(PostCallEvent.class);
+        Msg finalMsg = Msg.builder()
+                .role(MsgRole.ASSISTANT)
+                .content(TextBlock.builder().text("final diagnosis answer").build())
+                .build();
+        when(postCall.getFinalMessage()).thenReturn(finalMsg);
+
+        hook.onEvent(postCall).block();
+        sink.tryEmitComplete();
+
+        List<ServerSentEvent<String>> events =
+                sink.asFlux().collectList().block(Duration.ofSeconds(1));
+
+        assertThat(events).hasSize(1);
+        assertThat(events.get(0).event()).isEqualTo("answer_delta");
+        assertThat(payload(events.get(0))).containsEntry("text", "final diagnosis answer");
     }
 
     private Map<String, Object> payload(ServerSentEvent<String> event) throws Exception {
         return objectMapper.readValue(event.data(), new TypeReference<>() {});
+    }
+
+    @Test
+    void testReflect() {
+        System.out.println("AutoCloseable? " + java.lang.AutoCloseable.class.isAssignableFrom(io.agentscope.core.session.mysql.MysqlSession.class));
+        for (java.lang.reflect.Constructor<?> c : io.agentscope.core.session.mysql.MysqlSession.class.getConstructors()) {
+            System.out.println("Constructor: " + c.toString());
+        }
+        for (java.lang.reflect.Field f : io.agentscope.core.session.mysql.MysqlSession.class.getDeclaredFields()) {
+            System.out.println("Field: " + f.toString());
+        }
     }
 }

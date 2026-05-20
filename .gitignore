@@ -19,6 +19,8 @@ logs/
 
 # Node modules (如果 frontend 是 Node 项目)
 node_modules/
+dist/
+frontend/dist/
 
 # Offline dependency payloads are generated outside Git.
 offline-deps/*

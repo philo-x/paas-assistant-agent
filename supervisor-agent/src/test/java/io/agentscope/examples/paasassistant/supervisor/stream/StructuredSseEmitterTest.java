@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.codec.ServerSentEvent;
 import reactor.core.publisher.Sinks;
@@ -24,6 +25,11 @@ class StructuredSseEmitterTest {
                     "done",
                     "error");
 
+    @BeforeAll
+    static void setUp() {
+        ToolNarrationTestUtils.initCatalog();
+    }
+
     @Test
     void emitsSequenceAndToolMetadataForStructuredTimeline() throws Exception {
         Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().replay().all();
@@ -36,7 +42,7 @@ class StructuredSseEmitterTest {
                 "{namespace=default, kind=Pod}");
         emitter.emitToolResult(
                 "diagnosis_agent",
-                "resource-list",
+                "list-resources",
                 "success",
                 "已查询目标资源列表，用于筛查异常对象。",
                 "{namespace=default, kind=Pod}");
@@ -66,8 +72,8 @@ class StructuredSseEmitterTest {
         assertThat(toolPayload)
                 .containsEntry("sequence", 3)
                 .containsEntry("agent", "diagnosis_agent")
-                .containsEntry("tool", "resource-list")
-                .containsEntry("title", "查询资源列表 (resource-list)")
+                .containsEntry("tool", "list-resources")
+                .containsEntry("title", "查询资源列表 (list-resources)")
                 .containsEntry("delegation", false)
                 .containsEntry("status", "success");
     }
