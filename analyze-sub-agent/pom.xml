@@ -41,6 +41,10 @@
             <groupId>io.agentscope</groupId>
             <artifactId>agentscope-extensions-mcp-nacos</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-extensions-mem0</artifactId>
+        </dependency>
 
         <!-- Spring Boot Validation -->
         <dependency>

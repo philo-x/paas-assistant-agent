@@ -206,59 +206,41 @@ public class AgentScopeRunner {
                     if (!mcpInitialized) {
                         try {
                             // Register standard local MCP service via SSE
-                            McpClientWrapper rawMcpClient = McpClientBuilder.create("k8s-mcp-server")
+                            McpClientWrapper rawMcpClient = McpClientBuilder.create("kom-mcp-server")
                                     .streamableHttpTransport(k8sMcpUrl)
                                     .timeout(mcpToolTimeout)
                                     .buildSync();
                                     
-                            McpClientWrapper localMcpClient = new SanitizingMcpClient(rawMcpClient);
+                            McpClientWrapper komMcpClient = new SanitizingMcpClient(rawMcpClient);
+
 
                             // 1. 集群管理 (Cluster Management)
                             toolkit.createToolGroup("cluster_management", "Kubernetes集群的列表管理", true);
-                            toolkit.registration().mcpClient(localMcpClient)
+                            toolkit.registration().mcpClient(komMcpClient)
                                     .enableTools(List.of("list_k8s_clusters"))
                                     .group("cluster_management").apply();
 
-                            // 2. 部署管理 (Deployment)
-                            toolkit.createToolGroup("deployment_management", "Deployment的状态与事件管理", false);
-                            toolkit.registration().mcpClient(localMcpClient)
-                                    .enableTools(List.of(
-                                            "get_k8s_deployment_hpa_list", "get_k8s_deployment_rollout_history",
-                                            "get_k8s_deployment_rollout_status", "list_k8s_deploy_event"))
-                                    .group("deployment_management").apply();
-
-                            // 3. 动态资源管理 (Dynamic Resource/CRD)
-                            toolkit.createToolGroup("dynamic_resource_management", "Kubernetes任意资源(含CRD)的动态查询", false);
-                            toolkit.registration().mcpClient(localMcpClient)
-                                    .enableTools(List.of(
-                                            "describe_k8s_resource", "get_k8s_resource",
-                                            "list_k8s_resource", "list_k8s_namespace"))
-                                    .group("dynamic_resource_management").apply();
-
-                            // 4. 节点管理 (Node)
+                            // 2. 节点管理 (Node)
                             toolkit.createToolGroup("node_management", "节点状态与资源占用管理", false);
-                            toolkit.registration().mcpClient(localMcpClient)
+                            toolkit.registration().mcpClient(komMcpClient)
                                     .enableTools(List.of(
                                             "get_k8s_node_ip_usage", "get_k8s_node_resource_usage",
                                             "get_k8s_pod_count_running_on_node", "get_k8s_top_node",
                                             "list_k8s_node"))
                                     .group("node_management").apply();
 
-                            // 5. 事件管理 (Event)
-                            toolkit.createToolGroup("event_management", "Kubernetes集群事件查询", true);
-                            toolkit.registration().mcpClient(localMcpClient)
-                                    .enableTools(List.of("list_k8s_event"))
-                                    .group("event_management").apply();
+                            // 3. 部署管理 (Deployment)
+                            toolkit.createToolGroup("deployment_management", "Deployment的状态与事件管理", true);
+                            toolkit.registration().mcpClient(komMcpClient)
+                                    .enableTools(List.of(
+                                            "get_k8s_deployment_hpa_list", "get_k8s_deployment_rollout_history",
+                                            "get_k8s_deployment_rollout_status", "list_k8s_deploy_event"))
+                                    .group("deployment_management").apply();
 
-                            // 6. Ingress管理
-                            toolkit.createToolGroup("ingress_management", "Ingress路由管理", false);
-                            toolkit.registration().mcpClient(localMcpClient)
-                                    .enableTools(List.of("get_pod_linked_ingresses"))
-                                    .group("ingress_management").apply();
 
-                            // 7. Pod管理
+                            // 4. Pod管理
                             toolkit.createToolGroup("pod_management", "Pod的生命周期、日志、执行与关联资源管理", true);
-                            toolkit.registration().mcpClient(localMcpClient)
+                            toolkit.registration().mcpClient(komMcpClient)
                                     .enableTools(List.of(
                                             "describe_k8s_pod",
                                             "get_k8s_pod_linked_env", "get_k8s_pod_linked_services",
@@ -269,13 +251,33 @@ public class AgentScopeRunner {
                                             "run_command_in_k8s_pod"))
                                     .group("pod_management").apply();
 
-                            // 8. 存储管理 (Storage)
+                            // 5. 事件管理 (Event)
+                            toolkit.createToolGroup("event_management", "Kubernetes集群事件查询", true);
+                            toolkit.registration().mcpClient(komMcpClient)
+                                    .enableTools(List.of("list_k8s_event"))
+                                    .group("event_management").apply();
+
+                            // 6. 动态资源管理 (Dynamic Resource/CRD)
+                            toolkit.createToolGroup("dynamic_resource_management", "Kubernetes任意资源(含CRD)的动态查询", false);
+                            toolkit.registration().mcpClient(komMcpClient)
+                                    .enableTools(List.of(
+                                            "describe_k8s_resource", "get_k8s_resource",
+                                            "list_k8s_resource", "list_k8s_namespace"))
+                                    .group("dynamic_resource_management").apply();
+
+                            // 7. 存储管理 (Storage)
                             toolkit.createToolGroup("storage_management", "PV、PVC与StorageClass管理", false);
-                            toolkit.registration().mcpClient(localMcpClient)
+                            toolkit.registration().mcpClient(komMcpClient)
                                     .enableTools(List.of(
                                             "get_k8s_pod_linked_pv", "get_k8s_pod_linked_pvc",
                                             "get_k8s_storageclass_pv_count", "get_k8s_storageclass_pvc_count"))
                                     .group("storage_management").apply();
+
+                            // 8. Ingress管理
+                            toolkit.createToolGroup("ingress_management", "Ingress路由管理", false);
+                            toolkit.registration().mcpClient(komMcpClient)
+                                    .enableTools(List.of("get_pod_linked_ingresses"))
+                                    .group("ingress_management").apply();
 
                             // 注册 Meta Tool，允许 LLM 在运行时动态激活或停用上述工具组
                             toolkit.registerMetaTool();

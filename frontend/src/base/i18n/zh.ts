@@ -148,8 +148,8 @@ export default {
     examples: {
       title: '常见问题示例',
       diagnoseDeployments: 'kube-system命名空间下哪些Deployment有问题',
-      diagnoseFinops: '诊断 Deployment finops-extend',
-      explainYaml: '这个这个 YAML 字段是什么意思'
+      diagnoseFinops: '请诊断Deployment coredns',
+      explainYaml: '这个 YAML 字段是什么意思'
     }
   },
   settings: {

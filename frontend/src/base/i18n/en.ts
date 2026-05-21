@@ -148,7 +148,7 @@ export default {
     examples: {
       title: 'Common Questions Examples',
       diagnoseDeployments: 'Find unhealthy Deployments in the kube-system namespace.',
-      diagnoseFinops: 'Diagnose Deployment finops-extend.',
+      diagnoseFinops: 'Please diagnose Deployment coredns.',
       explainYaml: 'What does this YAML field mean?'
     }
   },
