@@ -3,6 +3,10 @@ agent:
     groups:
       - name: "1. 代理转发 (Delegation)"
         items:
+          - tools: ["callAnalyzeAgent"]
+            title: "转交 Analyze Agent"
+            delegation: true
+            append-tool-name-to-title: false
           - tools: ["callDiagnosisAgent"]
             title: "转交 Diagnosis Agent"
             delegation: true

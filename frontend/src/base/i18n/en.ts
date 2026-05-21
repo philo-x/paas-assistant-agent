@@ -61,6 +61,10 @@ export default {
     }
   },
   chat: {
+    mode: {
+      flash: "Flash",
+      pro: "Pro"
+    },
     title: 'PaaS Platform Agent Assistant',
     placeholder: 'Please enter your question...',
     send: 'Send',
@@ -116,13 +120,15 @@ export default {
       error: 'Failed'
     },
     agentNames: {
-      supervisor: 'Supervisor',
+      supervisor: 'Supervisor Agent',
       diagnosis: 'Diagnosis Agent',
+      analyze: 'Analyze Agent',
       guide: 'Guide Agent'
     },
     timelineTitles: {
       supervisorInitial: 'Analyzing the request',
       diagnosisInitial: 'Diagnosing the Kubernetes issue',
+      analyzeInitial: 'Fast scanning cluster status',
       guideInitial: 'Preparing explanation and guidance',
       afterTool: 'Reviewing tool results',
       afterSubAgent: 'Merging sub-agent output',
@@ -135,6 +141,7 @@ export default {
       errorDescription: 'An unexpected error occurred while processing the request.'
     },
     toolNames: {
+      callAnalyzeAgent: 'Call analyze_agent',
       callDiagnosisAgent: 'Call diagnosis_agent',
       callGuideAgent: 'Call guide_agent'
     },
@@ -160,7 +167,9 @@ export default {
       userId: 'User ID',
       userIdPlaceholder: 'Please enter platform user ID',
       chatId: 'Chat ID',
-      chatIdPlaceholder: 'Please enter chat ID (optional, leave empty for auto-generation)'
+      chatIdPlaceholder: 'Please enter chat ID (optional, leave empty for auto-generation)',
+      paasManagedAlert: 'The User ID is managed by the PaaS platform login session and cannot be manually modified.',
+      paasSessionActive: 'PaaS Login Session Active'
     },
     validation: {
       baseUrlRequired: 'Please enter the backend service URL',
@@ -178,5 +187,10 @@ export default {
       chatIdHelp: 'Used to identify the current chat session, leave empty for auto-generation',
       apiHelp: 'The chat page calls {url}/api/assistant/chat/structured'
     }
+  },
+  auth: {
+    loginRequired: 'PaaS Authentication Required',
+    loginRequiredDesc: 'The current session is not logged in or has expired. To ensure data security and audit compliance, please log in to the PaaS platform first, and access the Diagnostic Assistant through the platform portal.',
+    backToPaaS: 'Back to PaaS Platform'
   }
 }

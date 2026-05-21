@@ -83,8 +83,13 @@ export class ChatApiService {
 
   async testConnection(): Promise<boolean> {
     try {
+      const headers: Record<string, string> = {}
+      if (this.configStore.token) {
+        headers['Authorization'] = `Bearer ${this.configStore.token}`
+      }
       const response = await axios.get(`${this.configStore.baseUrl}/actuator/health`, {
-        timeout: 5000
+        timeout: 5000,
+        headers
       })
       return response.status === 200
     } catch (error) {
@@ -95,6 +100,7 @@ export class ChatApiService {
 
   async sendStructuredMessage(
     query: string,
+    mode: 'flash' | 'pro',
     onEvent: (event: StructuredSseEvent) => void,
     signal?: AbortSignal
   ): Promise<void> {
@@ -102,17 +108,23 @@ export class ChatApiService {
       chat_id: this.configStore.chatId,
       user_id: this.configStore.userId,
       cluster_id: this.configStore.clusterId,
-      user_query: query
+      user_query: query,
+      mode
+    }
+
+    const headers: Record<string, string> = {
+      'Accept': 'text/event-stream',
+      'Content-Type': 'application/json'
+    }
+    if (this.configStore.token) {
+      headers['Authorization'] = `Bearer ${this.configStore.token}`
     }
 
     const response = await fetch(this.configStore.structuredApiUrl, {
       method: 'POST',
       mode: 'cors',
       credentials: 'omit',
-      headers: {
-        'Accept': 'text/event-stream',
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(payload),
       signal
     })

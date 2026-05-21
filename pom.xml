@@ -30,6 +30,7 @@
         <module>platform-mcp-server</module>
         <module>guide-sub-agent</module>
         <module>diagnosis-sub-agent</module>
+        <module>analyze-sub-agent</module>
         <module>supervisor-agent</module>
     </modules>
 

@@ -38,7 +38,8 @@ import {
   SearchOutlined,
   SendOutlined,
   SettingOutlined,
-  UserOutlined
+  UserOutlined,
+  LockOutlined
 } from '@ant-design/icons-vue'
 import { useChatStore } from '@/stores/chat'
 import { useConfigStore } from '@/stores/config'
@@ -60,7 +61,10 @@ const route = useRoute()
 const chatStore = useChatStore()
 const configStore = useConfigStore()
 
+const isManagedByPaaS = computed(() => !!configStore.token)
+
 const inputValue = ref('')
+const chatMode = ref<'flash' | 'pro'>('flash')
 const activeAbortController = ref<AbortController | null>(null)
 const chatContainer = ref<HTMLElement>()
 const userIdInput = ref('')
@@ -136,6 +140,10 @@ const setUserId = () => {
 }
 
 const showUserIdInputDialog = () => {
+  if (isManagedByPaaS.value) {
+    message.info(t('settings.userConfig.paasManagedAlert'))
+    return
+  }
   showUserIdInput.value = true
   userIdInput.value = configStore.userId
 }
@@ -210,6 +218,9 @@ const handleStructuredEvent = (event: StructuredSseEvent) => {
 
 const sendMessage = async () => {
   if (!canSend.value) {
+    if (sendButtonTooltip.value) {
+      message.warning(sendButtonTooltip.value)
+    }
     return
   }
 
@@ -232,7 +243,7 @@ const sendMessage = async () => {
     chatStore.setLoading(true)
     chatStore.setError(null)
 
-    await chatApiService.sendStructuredMessage(userMessage, handleStructuredEvent, activeAbortController.value.signal)
+    await chatApiService.sendStructuredMessage(userMessage, chatMode.value, handleStructuredEvent, activeAbortController.value.signal)
   } catch (error: any) {
     if (error.name === 'AbortError') {
       console.log('Request aborted by user/system.')
@@ -282,9 +293,22 @@ onMounted(() => {
     })
   }
 
-  nextTick(() => {
-    focusChatInputTextArea()
-  })
+  // Handle auto-fill and auto-submit prompt from URL if present
+  if (configStore.initialPrompt) {
+    inputValue.value = configStore.initialPrompt
+    configStore.initialPrompt = '' // Clear immediately to prevent repeat submission on mount/refresh
+    nextTick(() => {
+      if (canSend.value) {
+        sendMessage()
+      } else {
+        message.warning(sendButtonTooltip.value || '无法自动发送，请检查配置')
+      }
+    })
+  } else {
+    nextTick(() => {
+      focusChatInputTextArea()
+    })
+  }
 })
 </script>
 
@@ -302,7 +326,9 @@ onMounted(() => {
             </div>
             <div class="session-item">
               <span class="label">{{ t('chat.clusterId') }}:</span>
-              <span v-if="hasClusterId" class="session-id">{{ configStore.clusterId }}</span>
+              <span v-if="hasClusterId" class="session-id" style="cursor: pointer" @click="showClusterIdInputDialog">
+                {{ configStore.clusterId }}
+              </span>
               <Tag v-else color="error" style="cursor: pointer" @click="showClusterIdInputDialog">
                 {{ t('common.set') }}
               </Tag>
@@ -346,14 +372,19 @@ onMounted(() => {
               <div class="user-info-content">
                 <div class="user-info-item">
                   <span class="label">{{ t('chat.userId') }}:</span>
-                  <span v-if="hasUserId" class="user-id">{{ configStore.userId }}</span>
+                  <span v-if="hasUserId" class="user-id">
+                    {{ configStore.userId }}
+                    <LockOutlined v-if="isManagedByPaaS" style="margin-left: 4px; font-size: 10px; color: #64748b" />
+                  </span>
                   <Button v-else type="link" size="small" @click="showUserIdInputDialog">
                     {{ t('common.set') }}
                   </Button>
                 </div>
                 <div class="user-info-item" style="margin-top: 8px">
                   <span class="label">{{ t('chat.clusterId') }}:</span>
-                  <span v-if="hasClusterId" class="user-id">{{ configStore.clusterId }}</span>
+                  <span v-if="hasClusterId" class="user-id" style="cursor: pointer" @click="showClusterIdInputDialog">
+                    {{ configStore.clusterId }}
+                  </span>
                   <Button v-else type="link" size="small" @click="showClusterIdInputDialog">
                     {{ t('common.set') }}
                   </Button>
@@ -417,21 +448,12 @@ onMounted(() => {
             :auto-size="{ minRows: 2, maxRows: 5 }"
             :disabled="chatStore.isLoading"
             class="message-input"
+            @keydown.enter.exact.prevent="sendMessage"
           />
-          <Tooltip :title="sendButtonTooltip" placement="top">
-            <span class="send-button-wrapper" :class="{ 'show-tooltip': !hasBaseUrl || !hasUserId }">
-              <Button
-                type="primary"
-                class="send-button"
-                :disabled="!canSend"
-                :loading="chatStore.isLoading"
-                @click="sendMessage"
-              >
-                <template #icon><SendOutlined /></template>
-                {{ t('chat.send') }}
-              </Button>
-            </span>
-          </Tooltip>
+          <Select v-model:value="chatMode" class="mode-select">
+            <Select.Option value="flash">{{ t('chat.mode.flash') }}</Select.Option>
+            <Select.Option value="pro">{{ t('chat.mode.pro') }}</Select.Option>
+          </Select>
         </div>
       </div>
     </div>
@@ -711,22 +733,48 @@ onMounted(() => {
 
 .input-wrapper {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
+  align-items: center; /* Align items to center vertically */
+  gap: 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 24px;
+  padding: 8px 16px;
+  background: #ffffff;
+  transition: all 0.3s;
+}
+
+.input-wrapper:focus-within {
+  border-color: #4096ff;
+  box-shadow: 0 0 0 2px rgba(5, 145, 255, 0.1);
 }
 
 .message-input {
   flex: 1;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent;
+  padding: 4px 0;
 }
 
-.send-button-wrapper {
-  display: inline-flex;
+.message-input:focus {
+  box-shadow: none !important;
 }
 
-.send-button {
-  height: 44px;
-  border-radius: 8px;
+.mode-select {
+  width: 90px;
 }
+
+.mode-select :deep(.ant-select-selector) {
+  border-radius: 16px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: background-color 0.3s;
+}
+
+.mode-select:hover :deep(.ant-select-selector) {
+  background: #f1f5f9 !important;
+}
+
 
 .user-id-modal {
   position: fixed;

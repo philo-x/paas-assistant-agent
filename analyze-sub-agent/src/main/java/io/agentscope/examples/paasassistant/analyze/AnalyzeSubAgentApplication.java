@@ -14,6 +14,15 @@
  * limitations under the License.
  */
 
-package io.agentscope.examples.paasassistant.supervisor.controller.dto;
+package io.agentscope.examples.paasassistant.analyze;
 
-public record StructuredChatRequest(String chat_id, String user_id, String user_query, String cluster_id, String mode) {}
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class AnalyzeSubAgentApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(AnalyzeSubAgentApplication.class, args);
+    }
+}

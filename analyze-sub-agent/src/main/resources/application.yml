@@ -1,0 +1,62 @@
+server:
+  port: 10007
+
+agentscope:
+  model:
+    provider: ${MODEL_PROVIDER:dashscope}
+  dashscope:
+    api-key: ${MODEL_API_KEY:-}
+    model-name: ${MODEL_NAME:qwen-max}
+    base-url: ${DASHSCOPE_BASE_URL:-}
+  openai:
+    api-key: ${MODEL_API_KEY:-}
+    model-name: ${MODEL_NAME:gpt-5}
+    base-url: ${OPENAI_BASE_URL:${MODEL_BASE_URL:-}}
+  a2a:
+    nacos:
+      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+      namespace: ${NACOS_NAMESPACE:public}
+      username: ${NACOS_USERNAME:nacos}
+      password: ${NACOS_PASSWORD:nacos}
+    server:
+      require-inner-message: true
+      card:
+        name: analyze_agent
+        description: PaaS 平台 K8s 快速诊断助手
+        provider:
+          name: PaaS Platform Agent Assistant
+          organization: PaaS Platform Team
+          url: https://paas.example.com
+          contact:
+            email: support@paas.example.com
+            phone: 400-100-2000
+  mcp:
+    k8sgpt-mcp-url: ${K8SGPT_MCP_URL:http://localhost:8089/mcp}
+    tool-timeout: ${MCP_TOOL_TIMEOUT:PT3M}
+
+spring:
+  application:
+    name: analyze-sub-agent
+  main:
+    web-application-type: reactive
+
+agent:
+  prompts:
+    analyze-agent-instruction: |
+      角色与职责:
+      你是一个 Kubernetes 快速诊断助手，专注于快速识别和解释集群异常。
+
+      可用能力:
+      - k8sgpt MCP 工具：你可以调用 analyze 等工具来快速扫描集群异常。
+
+      工作原则:
+      - 收到用户请求后，立即调用 analyze 工具扫描集群异常，设置 explain=false 以确保快速返回。
+      - 如果需要限定命名空间，请从用户的请求中提取 namespace 参数，否则分析整个集群。
+      - 基于 analyze 返回的原始异常数据，用简洁中文解释每个问题。
+      - 给出优先级排序和修复建议。
+      - 只做一轮分析和解释，不要进行深度的多轮调查或循环调用。
+
+      输出要求:
+      - 输出简洁明了，不需要完整的证据链。
+      - 如果问题复杂度超出快速诊断范围（例如需要深入查看日志或复杂的网络排查），在结论最后建议用户切换到“深度诊断模式”（diagnosis_agent）。
+      - 使用 GitHub Flavored Markdown 输出表格、列表和代码块。

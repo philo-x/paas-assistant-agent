@@ -31,7 +31,8 @@ import {
   Row,
   Col,
   Select,
-  Dropdown
+  Dropdown,
+  Alert
 } from 'ant-design-vue'
 import { ArrowLeftOutlined, ExperimentOutlined, SaveOutlined, GlobalOutlined } from '@ant-design/icons-vue'
 import { useConfigStore } from '@/stores/config'
@@ -41,6 +42,8 @@ import { setLocale, getLocale } from '@/base/i18n'
 const { t } = useI18n()
 const router = useRouter()
 const configStore = useConfigStore()
+
+const isManagedByPaaS = computed(() => !!configStore.token)
 
 const formRef = ref()
 const loading = ref(false)
@@ -251,6 +254,14 @@ onMounted(() => {
             class="config-card"
             :bordered="false"
           >
+            <Alert
+              v-if="isManagedByPaaS"
+              :message="t('settings.userConfig.paasSessionActive')"
+              :description="t('settings.userConfig.paasManagedAlert')"
+              type="info"
+              show-icon
+              class="paas-managed-alert"
+            />
             <Form
               :model="formData"
               layout="vertical"
@@ -263,6 +274,7 @@ onMounted(() => {
                 <Input
                   v-model:value="formData.userId"
                   :placeholder="t('settings.userConfig.userIdPlaceholder')"
+                  :disabled="isManagedByPaaS"
                 />
               </Form.Item>
 
@@ -451,6 +463,11 @@ onMounted(() => {
   border-radius: 4px;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 12px;
+}
+
+.paas-managed-alert {
+  margin-bottom: 20px;
+  border-radius: 8px;
 }
 
 /* Responsive */

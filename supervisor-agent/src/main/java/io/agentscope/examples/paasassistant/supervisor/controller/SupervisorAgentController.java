@@ -66,6 +66,7 @@ public class SupervisorAgentController {
                 String userQuery = request.user_query();
                 String userId = request.user_id();
                 String chatId = request.chat_id();
+                String mode = request.mode();
 
                 try {
                         Sinks.Many<ServerSentEvent<String>> sink = Sinks.many().unicast().onBackpressureBuffer();
@@ -76,7 +77,7 @@ public class SupervisorAgentController {
                         Msg msg = Msg.builder()
                                         .role(MsgRole.USER)
                                         .content(TextBlock.builder()
-                                                         .text(formatStructuredUserInput(userQuery))
+                                                         .text(formatStructuredUserInput(userQuery, mode))
                                                          .build())
                                         .build();
 
@@ -166,8 +167,14 @@ public class SupervisorAgentController {
                                 .subscribe();
         }
 
-        private String formatStructuredUserInput(String userQuery) {
+        private String formatStructuredUserInput(String userQuery, String mode) {
                 StringBuilder builder = new StringBuilder();
+                if ("pro".equalsIgnoreCase(mode)) {
+                        builder.append("【系统强制指令】：用户本次显式选择了 Pro 模式（深度诊断）。在处理本轮诊断请求时，你**必须且只能**调用 `callDiagnosisAgent` 工具，绝对禁止调用 `callAnalyzeAgent`！\n\n");
+                } else if ("flash".equalsIgnoreCase(mode)) {
+                        builder.append("【系统强制指令】：用户本次显式选择了 Flash 模式（快速诊断）。在处理本轮诊断请求时，你**必须且只能**调用 `callAnalyzeAgent` 工具，绝对禁止调用 `callDiagnosisAgent`！\n\n");
+                }
+                
                 builder.append("本轮请求是唯一需要路由和处理的用户请求；历史记录只能作为参考，不能替换本轮问题。\n\n");
                 builder.append("本轮用户问题:\n").append(userQuery).append('\n');
                 return builder.toString();

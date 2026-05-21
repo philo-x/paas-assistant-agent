@@ -44,5 +44,13 @@ export const routes: RouteRecordRaw[] = [
     meta: {
       title: 'System Settings'
     }
+  },
+  {
+    path: '/login-required',
+    name: 'LoginRequired',
+    component: () => import('@/views/LoginRequired.vue'),
+    meta: {
+      title: 'PaaS Authentication Required'
+    }
   }
 ]

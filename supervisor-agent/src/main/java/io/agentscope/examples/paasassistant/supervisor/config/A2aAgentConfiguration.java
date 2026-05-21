@@ -45,4 +45,13 @@ public class A2aAgentConfiguration {
                 .agentCardResolver(new NacosAgentCardResolver(a2aService))
                 .build();
     }
+
+    @Bean
+    @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+    public A2aAgent analyzeAgent(AiService a2aService) {
+        return A2aAgent.builder()
+                .name(AgentConstants.AGENT_NAME_ANALYZE)
+                .agentCardResolver(new NacosAgentCardResolver(a2aService))
+                .build();
+    }
 }

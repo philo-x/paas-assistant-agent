@@ -31,6 +31,7 @@ public final class AgentConstants {
     // -------------------------------------------------------------------------
 
     public static final String AGENT_NAME_SUPERVISOR = "supervisor_agent";
+    public static final String AGENT_NAME_ANALYZE = "analyze_agent";
     public static final String AGENT_NAME_DIAGNOSIS = "diagnosis_agent";
     public static final String AGENT_NAME_GUIDE = "guide_agent";
 

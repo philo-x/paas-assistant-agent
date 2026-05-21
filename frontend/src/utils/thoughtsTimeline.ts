@@ -21,6 +21,7 @@ export interface ThoughtsTimelineLabels {
   titles: {
     supervisorInitial: string
     diagnosisInitial: string
+    analyzeInitial: string
     guideInitial: string
     afterTool: string
     afterSubAgent: string
@@ -46,7 +47,7 @@ interface StructuredEventData {
   delegation?: boolean
 }
 
-const DELEGATION_TOOLS = new Set(['callDiagnosisAgent', 'callGuideAgent'])
+const DELEGATION_TOOLS = new Set(['callDiagnosisAgent', 'callAnalyzeAgent', 'callGuideAgent'])
 
 const normalizeText = (raw: string | undefined | null) => {
   if (!raw) {
@@ -141,6 +142,9 @@ const resolveInitialReasoningTitle = (agent: string, labels: ThoughtsTimelineLab
   if (agent === 'diagnosis_agent') {
     return labels.titles.diagnosisInitial
   }
+  if (agent === 'analyze_agent') {
+    return labels.titles.analyzeInitial
+  }
   if (agent === 'guide_agent') {
     return labels.titles.guideInitial
   }
@@ -203,11 +207,13 @@ export const createThoughtsTimelineLabels = (translate: (key: string) => string)
   agentLabels: {
     supervisor_agent: translate('chat.agentNames.supervisor'),
     diagnosis_agent: translate('chat.agentNames.diagnosis'),
+    analyze_agent: translate('chat.agentNames.analyze'),
     guide_agent: translate('chat.agentNames.guide')
   },
   titles: {
     supervisorInitial: translate('chat.timelineTitles.supervisorInitial'),
     diagnosisInitial: translate('chat.timelineTitles.diagnosisInitial'),
+    analyzeInitial: translate('chat.timelineTitles.analyzeInitial'),
     guideInitial: translate('chat.timelineTitles.guideInitial'),
     afterTool: translate('chat.timelineTitles.afterTool'),
     afterSubAgent: translate('chat.timelineTitles.afterSubAgent'),

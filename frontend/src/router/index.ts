@@ -16,6 +16,7 @@
 
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { routes } from '@/router/defaultRoutes'
+import { useConfigStore } from '@/stores/config'
 
 const options = {
   history: createWebHashHistory('/paas-agent-assistant'),
@@ -24,8 +25,26 @@ const options = {
 
 const router = createRouter(options)
 
-// Add navigation guards for debugging
+// Navigation guard for token check and redirection
 router.beforeEach((to, from, next) => {
+  const configStore = useConfigStore()
+
+  // Load config first (which extracts token from URL if present)
+  configStore.loadConfig()
+
+  // If going to LoginRequired
+  if (to.name === 'LoginRequired') {
+    if (configStore.token) {
+      return next({ name: 'Chat' })
+    }
+    return next()
+  }
+
+  // If no token is set (neither in localStorage nor URL params), block access
+  if (!configStore.token) {
+    return next({ name: 'LoginRequired' })
+  }
+
   next()
 })
 

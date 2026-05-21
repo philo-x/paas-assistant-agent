@@ -91,6 +91,8 @@ public class A2aAgentTools {
 
     private final ObjectProvider<A2aAgent> diagnosisAgentProvider;
 
+    private final ObjectProvider<A2aAgent> analyzeAgentProvider;
+
     private final StructuredTraceRegistry traceRegistry;
 
     private final Duration childAgentTimeout;
@@ -104,6 +106,7 @@ public class A2aAgentTools {
     public A2aAgentTools(
             @Qualifier("guideAgent") ObjectProvider<A2aAgent> guideAgentProvider,
             @Qualifier("diagnosisAgent") ObjectProvider<A2aAgent> diagnosisAgentProvider,
+            @Qualifier("analyzeAgent") ObjectProvider<A2aAgent> analyzeAgentProvider,
             StructuredTraceRegistry traceRegistry,
             @Value("${agent.a2a.child-agent-timeout:PT15M}") Duration childAgentTimeout,
             @Value("${agent.a2a.child-agent-idle-timeout:PT60S}") Duration childAgentIdleTimeout,
@@ -111,6 +114,7 @@ public class A2aAgentTools {
             @Value("${agent.a2a.child-agent-retry-backoff:PT1S}") Duration childAgentRetryBackoff) {
         this.guideAgentProvider = guideAgentProvider;
         this.diagnosisAgentProvider = diagnosisAgentProvider;
+        this.analyzeAgentProvider = analyzeAgentProvider;
         this.traceRegistry = traceRegistry;
         this.childAgentTimeout = childAgentTimeout;
         this.childAgentIdleTimeout = childAgentIdleTimeout;
@@ -146,6 +150,37 @@ public class A2aAgentTools {
             Msg msg = Msg.builder().content(TextBlock.builder().text(finalContext).build()).build();
             A2aAgent guideAgent = guideAgentProvider.getObject();
             return callChildAgent(guideAgent, AgentConstants.AGENT_NAME_GUIDE, msg, traceId);
+        });
+    }
+
+    @Tool(
+            description =
+                    "Route simple Kubernetes diagnosis, fast scan, and overview requests to the analyze agent."
+                            + " Pass the full conversational context.")
+    public Mono<String> callAnalyzeAgent(
+            @ToolParam(name = "context", description = "Complete context") String context) {
+        final String originalContext = context;
+        return Mono.deferContextual(ctx -> {
+            String clusterId = ctx.getOrDefault(AgentConstants.CTX_CLUSTER_ID, "");
+            String userId = ctx.getOrDefault(AgentConstants.CTX_USER_ID, "");
+            String traceId = ctx.getOrDefault(AgentConstants.CTX_TRACE_ID, "");
+
+            StringBuilder builder = new StringBuilder();
+            if (userId != null && !userId.isEmpty()) {
+                builder.append("<").append(AgentConstants.TAG_USER_ID).append(">").append(userId).append("</").append(AgentConstants.TAG_USER_ID).append(">");
+            }
+            if (clusterId != null && !clusterId.isEmpty()) {
+                builder.append("<").append(AgentConstants.TAG_CLUSTER_ID).append(">").append(clusterId).append("</").append(AgentConstants.TAG_CLUSTER_ID).append(">");
+            }
+            if (traceId != null && !traceId.isEmpty()) {
+                builder.append("<").append(AgentConstants.TAG_TRACE_ID).append(">").append(traceId).append("</").append(AgentConstants.TAG_TRACE_ID).append(">");
+            }
+            builder.append(originalContext);
+            
+            String finalContext = builder.toString();
+            Msg msg = Msg.builder().content(TextBlock.builder().text(finalContext).build()).build();
+            A2aAgent analyzeAgent = analyzeAgentProvider.getObject();
+            return callChildAgent(analyzeAgent, AgentConstants.AGENT_NAME_ANALYZE, msg, traceId);
         });
     }
 

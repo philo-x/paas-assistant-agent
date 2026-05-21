@@ -61,6 +61,10 @@ export default {
     }
   },
   chat: {
+    mode: {
+      flash: "Flash",
+      pro: "Pro"
+    },
     title: 'PaaS 平台 Agent 助手',
     placeholder: '请输入您的问题...',
     send: '发送',
@@ -117,11 +121,13 @@ export default {
     },
     agentNames: {
       supervisor: 'Supervisor',
+      analyze: 'Analyze Agent',
       diagnosis: 'Diagnosis Agent',
       guide: 'Guide Agent'
     },
     timelineTitles: {
       supervisorInitial: '分析用户请求',
+      analyzeInitial: '快速扫描集群状态',
       diagnosisInitial: '诊断 Kubernetes 问题',
       guideInitial: '整理解释与建议',
       afterTool: '分析工具结果',
@@ -135,6 +141,7 @@ export default {
       errorDescription: '处理过程中发生异常，请稍后重试。'
     },
     toolNames: {
+      callAnalyzeAgent: '调用 analyze_agent',
       callDiagnosisAgent: '调用 diagnosis_agent',
       callGuideAgent: '调用 guide_agent'
     },
