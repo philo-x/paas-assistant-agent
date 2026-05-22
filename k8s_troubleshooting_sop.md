@@ -1,3 +1,4 @@
+
 # Kubernetes Troubleshooting SOP (Standard Operating Procedures)
 This document contains a comprehensive, classified guide for diagnosing and resolving Kubernetes issues based on the K8sQuest simulator.
 ## 🔍 Table of Contents

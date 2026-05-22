@@ -160,7 +160,7 @@ public class AgentScopeRunner {
                                             "list-integrations",
                                             "list-filters",
                                             "add-filters"))
-                                    .group("k8s_resource_gpt")
+                                    .group("k8s_resource_analyze")
                                     .apply();
 
                             // kom mcp 工具注册
@@ -172,13 +172,13 @@ public class AgentScopeRunner {
 
                             // 1. 集群管理 (Cluster Management)
                             toolkit.createToolGroup("cluster_management", "Kubernetes集群的列表管理", true);
-                            toolkit.registration().mcpClient(komMcpClient)
+                            toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of("list_k8s_clusters"))
                                     .group("cluster_management").apply();
 
                             // 2. 节点管理 (Node)
                             toolkit.createToolGroup("node_management", "节点状态与资源占用管理", false);
-                            toolkit.registration().mcpClient(komMcpClient)
+                            toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
                                             "get_k8s_node_ip_usage", "get_k8s_node_resource_usage",
                                             "get_k8s_pod_count_running_on_node", "get_k8s_top_node",
@@ -187,7 +187,7 @@ public class AgentScopeRunner {
 
                             // 3. 部署管理 (Deployment)
                             toolkit.createToolGroup("deployment_management", "Deployment的状态与事件管理", true);
-                            toolkit.registration().mcpClient(komMcpClient)
+                            toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
                                             "get_k8s_deployment_hpa_list", "get_k8s_deployment_rollout_history",
                                             "get_k8s_deployment_rollout_status", "list_k8s_deploy_event"))
@@ -196,7 +196,7 @@ public class AgentScopeRunner {
 
                             // 4. Pod管理
                             toolkit.createToolGroup("pod_management", "Pod的生命周期、日志、执行与关联资源管理", true);
-                            toolkit.registration().mcpClient(komMcpClient)
+                            toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
                                             "describe_k8s_pod",
                                             "get_k8s_pod_linked_env", "get_k8s_pod_linked_services",
@@ -209,13 +209,13 @@ public class AgentScopeRunner {
 
                             // 5. 事件管理 (Event)
                             toolkit.createToolGroup("event_management", "Kubernetes集群事件查询", true);
-                            toolkit.registration().mcpClient(komMcpClient)
+                            toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of("list_k8s_event"))
                                     .group("event_management").apply();
 
                             // 6. 动态资源管理 (Dynamic Resource/CRD)
                             toolkit.createToolGroup("dynamic_resource_management", "Kubernetes任意资源(含CRD)的动态查询", false);
-                            toolkit.registration().mcpClient(komMcpClient)
+                            toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
                                             "describe_k8s_resource", "get_k8s_resource",
                                             "list_k8s_resource", "list_k8s_namespace"))
@@ -223,7 +223,7 @@ public class AgentScopeRunner {
 
                             // 7. 存储管理 (Storage)
                             toolkit.createToolGroup("storage_management", "PV、PVC与StorageClass管理", false);
-                            toolkit.registration().mcpClient(komMcpClient)
+                            toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
                                             "get_k8s_pod_linked_pv", "get_k8s_pod_linked_pvc",
                                             "get_k8s_storageclass_pv_count", "get_k8s_storageclass_pvc_count"))
@@ -231,7 +231,7 @@ public class AgentScopeRunner {
 
                             // 8. Ingress管理
                             toolkit.createToolGroup("ingress_management", "Ingress路由管理", false);
-                            toolkit.registration().mcpClient(komMcpClient)
+                            toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of("get_pod_linked_ingresses"))
                                     .group("ingress_management").apply();
                             
@@ -270,7 +270,7 @@ public class AgentScopeRunner {
                     .longTermMemory(longTermMemory)
                     .toolkit(toolkit)
                     .hooks(List.of(new MonitoringHook(), new TruncationHook()))
-                    .maxIters(50)
+                    .maxIters(30)
                     .build();
         }
 

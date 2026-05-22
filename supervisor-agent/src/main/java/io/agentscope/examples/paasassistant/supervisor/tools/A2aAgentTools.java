@@ -99,6 +99,8 @@ public class A2aAgentTools {
 
     private final Duration childAgentIdleTimeout;
 
+    private final Duration childAgentInterEventTimeout;
+
     private final int childAgentRetryAttempts;
 
     private final Duration childAgentRetryBackoff;
@@ -110,6 +112,7 @@ public class A2aAgentTools {
             StructuredTraceRegistry traceRegistry,
             @Value("${agent.a2a.child-agent-timeout:PT15M}") Duration childAgentTimeout,
             @Value("${agent.a2a.child-agent-idle-timeout:PT60S}") Duration childAgentIdleTimeout,
+            @Value("${agent.a2a.child-agent-inter-event-timeout:PT5M}") Duration childAgentInterEventTimeout,
             @Value("${agent.a2a.child-agent-retry-attempts:3}") int childAgentRetryAttempts,
             @Value("${agent.a2a.child-agent-retry-backoff:PT1S}") Duration childAgentRetryBackoff) {
         this.guideAgentProvider = guideAgentProvider;
@@ -118,6 +121,7 @@ public class A2aAgentTools {
         this.traceRegistry = traceRegistry;
         this.childAgentTimeout = childAgentTimeout;
         this.childAgentIdleTimeout = childAgentIdleTimeout;
+        this.childAgentInterEventTimeout = childAgentInterEventTimeout;
         this.childAgentRetryAttempts = Math.max(1, childAgentRetryAttempts);
         this.childAgentRetryBackoff = childAgentRetryBackoff;
     }
@@ -218,6 +222,8 @@ public class A2aAgentTools {
     private Mono<String> callChildAgent(
             A2aAgent agent, String childAgentName, Msg msg, String traceId) {
 
+        AtomicBoolean interrupted = new AtomicBoolean(false);
+
         Mono<String> childCall =
                 Mono.deferContextual(
                                 ctxView -> {
@@ -226,8 +232,21 @@ public class A2aAgentTools {
                                     StringBuilder finalAnswer = new StringBuilder();
                                     ChildStreamState state = new ChildStreamState();
                                     return agent.stream(msg, CHILD_AGENT_STREAM_OPTIONS)
-                                             .timeout(Mono.delay(childAgentIdleTimeout))
-                                             .onErrorMap(TimeoutException.class, e -> new A2aFirstEventTimeoutException("A2A target failed to emit first event within " + childAgentIdleTimeout))
+                                             // First-event timeout + inter-event idle timeout.
+                                             // The two-arg timeout() applies firstTimeout to the
+                                             // first element and calls the factory for each
+                                             // subsequent element, so a silently-dropped SSE
+                                             // connection is detected within interEventTimeout
+                                             // instead of waiting for the global timeout.
+                                             .timeout(Mono.delay(childAgentIdleTimeout),
+                                                      s -> Mono.delay(childAgentInterEventTimeout))
+                                             .onErrorMap(TimeoutException.class, e -> {
+                                                 if (!state.hasStepEmitted()) {
+                                                     return new A2aFirstEventTimeoutException(
+                                                             "A2A target failed to emit first event within " + childAgentIdleTimeout);
+                                                 }
+                                                 return e;
+                                             })
                                              .doOnNext(
                                                      event ->
                                                              handleChildEvent(
@@ -247,7 +266,9 @@ public class A2aAgentTools {
                         .timeout(childAgentTimeout)
                         .doOnCancel(() -> {
                             log.warn("A2A streaming call to {} was cancelled by downstream (e.g., client disconnect). traceId={}", childAgentName, traceId);
-                            interruptChildAgent(agent, childAgentName, traceId);
+                            if (interrupted.compareAndSet(false, true)) {
+                                interruptChildAgent(agent, childAgentName, traceId);
+                            }
                         });
 
         return applyTransientRetry(childCall, childAgentName, traceId)
@@ -260,7 +281,8 @@ public class A2aAgentTools {
                                                         agent,
                                                         childAgentName,
                                                         traceId,
-                                                        resolveEmitter(traceId, ctxView))));
+                                                        resolveEmitter(traceId, ctxView),
+                                                        interrupted)));
     }
 
     private Mono<String> applyTransientRetry(
@@ -289,7 +311,8 @@ public class A2aAgentTools {
             A2aAgent agent,
             String childAgentName,
             String traceId,
-            StructuredSseEmitter emitter) {
+            StructuredSseEmitter emitter,
+            AtomicBoolean interrupted) {
         if (isFirstEventTimeoutFailure(throwable)) {
             log.error(
                     "A2A streaming call to {} timed out waiting for the FIRST event (pre-submit) after {}. traceId={}",
@@ -297,19 +320,23 @@ public class A2aAgentTools {
                     childAgentIdleTimeout,
                     traceId,
                     throwable);
-            interruptChildAgent(agent, childAgentName, traceId);
+            if (interrupted.compareAndSet(false, true)) {
+                interruptChildAgent(agent, childAgentName, traceId);
+            }
             emitChildAgentError(emitter, childAgentName, AgentConstants.CHILD_AGENT_TIMEOUT_MESSAGE);
             return Mono.just(AgentConstants.CHILD_AGENT_TIMEOUT_MESSAGE);
         }
 
         if (isTimeoutFailure(throwable)) {
             log.error(
-                    "A2A streaming call to {} timed out globally after {}. traceId={}",
+                    "A2A streaming call to {} timed out (inter-event idle or global) after at most {}. traceId={}",
                     childAgentName,
                     childAgentTimeout,
                     traceId,
                     throwable);
-            interruptChildAgent(agent, childAgentName, traceId);
+            if (interrupted.compareAndSet(false, true)) {
+                interruptChildAgent(agent, childAgentName, traceId);
+            }
             emitChildAgentError(emitter, childAgentName, AgentConstants.CHILD_AGENT_TIMEOUT_MESSAGE);
             return Mono.just(AgentConstants.CHILD_AGENT_TIMEOUT_MESSAGE);
         }

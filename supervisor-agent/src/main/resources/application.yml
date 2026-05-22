@@ -52,12 +52,13 @@ management:
 
 agent:
   a2a:
-    child-agent-timeout: ${A2A_CHILD_AGENT_TIMEOUT:PT65M}
-    child-agent-idle-timeout: ${A2A_CHILD_AGENT_IDLE_TIMEOUT:PT3M}
+    child-agent-timeout: ${A2A_CHILD_AGENT_TIMEOUT:PT40M}
+    child-agent-idle-timeout: ${A2A_CHILD_AGENT_IDLE_TIMEOUT:PT1M}
+    child-agent-inter-event-timeout: ${A2A_CHILD_AGENT_INTER_EVENT_TIMEOUT:PT5M}
     child-agent-retry-attempts: ${A2A_CHILD_AGENT_RETRY_ATTEMPTS:3}
     child-agent-retry-backoff: ${A2A_CHILD_AGENT_RETRY_BACKOFF:PT1S}
   supervisor:
-    tool-timeout: ${SUPERVISOR_TOOL_TIMEOUT:PT70M}
+    tool-timeout: ${SUPERVISOR_TOOL_TIMEOUT:PT42M}
   prompts:
     supervisor-agent-instruction: |
       角色与职责:
