@@ -60,7 +60,7 @@ public class AgentScopeModelConfig {
     @Value("${agentscope.openai.base-url}")
     private String openaiBaseUrl;
 
-    @Value("${agentscope.model.disable-parallel-tools:false}")
+    @Value("${agentscope.model.disable-parallel-tools:true}")
     private boolean disableParallelTools;
 
     @Bean

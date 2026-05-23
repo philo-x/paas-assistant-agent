@@ -45,7 +45,7 @@ import io.agentscope.examples.paasassistant.common.utils.SanitizingMcpClient;
 
 import io.agentscope.core.memory.mem0.Mem0ApiType;
 
-import io.agentscope.extensions.nacos.mcp.tool.NacosToolkit;
+
 
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -103,7 +103,7 @@ public class AgentScopeRunner {
             AgentPromptConfig promptConfig,
             Model model) {
 
-        Toolkit toolkit = new NacosToolkit();
+        Toolkit toolkit = new Toolkit(io.agentscope.core.tool.ToolkitConfig.builder().parallel(false).build());
         AutoContextConfig autoContextConfig = AutoContextConfig.builder().tokenRatio(0.2).lastKeep(10).build();
 
         return new CustomAgentRunner(

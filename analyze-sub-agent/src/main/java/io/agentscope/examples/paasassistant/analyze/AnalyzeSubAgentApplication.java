@@ -19,7 +19,7 @@ package io.agentscope.examples.paasassistant.analyze;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"io.agentscope.examples.paasassistant"})
 public class AnalyzeSubAgentApplication {
 
     public static void main(String[] args) {

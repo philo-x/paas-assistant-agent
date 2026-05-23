@@ -47,7 +47,7 @@ import io.agentscope.examples.paasassistant.common.utils.SanitizingMcpClient;
 
 
 
-import io.agentscope.extensions.nacos.mcp.tool.NacosToolkit;
+
 
 import io.agentscope.core.skill.SkillBox;
 
@@ -110,7 +110,7 @@ public class AgentScopeRunner {
     public AgentRunner agentRunner(
             AgentPromptConfig promptConfig, AiService aiService, Model model) {
 
-        Toolkit toolkit = new NacosToolkit();
+        Toolkit toolkit = new Toolkit(io.agentscope.core.tool.ToolkitConfig.builder().parallel(false).build());
         AutoContextConfig autoContextConfig = AutoContextConfig.builder().tokenRatio(0.4).lastKeep(10).build();
 
         AgentSkillRepository skillRepository;

@@ -43,7 +43,7 @@ import io.agentscope.examples.paasassistant.guide.tools.GuideTools;
 
 
 
-import io.agentscope.extensions.nacos.mcp.tool.NacosToolkit;
+
 
 import java.util.List;
 
@@ -90,7 +90,7 @@ public class AgentScopeRunner {
             Knowledge knowledge,
             Model model) {
 
-        Toolkit toolkit = new NacosToolkit();
+        Toolkit toolkit = new Toolkit(io.agentscope.core.tool.ToolkitConfig.builder().parallel(false).build());
         toolkit.registerTool(guideTools);
 
         AutoContextConfig autoContextConfig = AutoContextConfig.builder().tokenRatio(0.2).lastKeep(10).build();

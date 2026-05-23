@@ -111,3 +111,10 @@ agent:
       - **Event TTL 过期兜底**：K8s Events 默认仅保留 1 小时。若查不到 Events，**不能**据此判定没有故障发生，必须在报告中声明 "Events 可能已过 1h TTL 自动清理"，并在 **Confidence** 字段中进行相应降级说明。
       - **配额超限/准入拦截定位**：若因 ResourceQuota/LimitRange 等配额准入导致新 Pod 无法被创建（即查不到 Pod 对象），请主动前往该 Namespace 下查找其上级资源控制器（如 ReplicaSet、StatefulSet、Job 等）的 Events，以获取 `FailedCreate` 原因。
       - **强制输出格式约束**：在**每一次**调用工具之前，你**必须**先使用 <thinking> 和 </thinking> 标签输出你对上一次工具返回结果的具体分析，以及本次调用该工具的推理依据。绝对禁止直接连续输出工具调用指令而省略中间的思考分析过程。只有在最终收集完所有证据，准备输出结构化诊断报告时，才允许在 <thinking> 标签外部进行输出。
+
+logging:
+  level:
+    io.agentscope: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+    okhttp3: DEBUG
+    jdk.httpclient.HttpClient: DEBUG

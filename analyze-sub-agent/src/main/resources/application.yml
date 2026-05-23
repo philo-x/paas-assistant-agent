@@ -69,3 +69,10 @@ agent:
       - 如果问题复杂度超出快速诊断范围（例如需要深入查看日志或复杂的网络排查），在结论最后建议用户切换到“深度诊断模式”（diagnosis_agent）。
       - 使用 GitHub Flavored Markdown 输出表格、列表和代码块。
       - **强制输出格式约束：在你调用工具、分析证据以及进行任何中间思考时，必须将所有的思考过程严格包裹在 <thinking> 和 </thinking> 标签内。只有在输出最终报告时，才允许在标签外部进行输出。**
+
+logging:
+  level:
+    io.agentscope: DEBUG
+    org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+    okhttp3: DEBUG
+    jdk.httpclient.HttpClient: DEBUG
