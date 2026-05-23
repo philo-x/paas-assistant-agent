@@ -1,4 +1,5 @@
 package io.agentscope.examples.paasassistant.guide.config;
+import io.agentscope.examples.paasassistant.common.config.AgentScopeModelConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

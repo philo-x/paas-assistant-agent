@@ -1,4 +1,4 @@
-package io.agentscope.examples.paasassistant.analyze.config;
+package io.agentscope.examples.paasassistant.common.config;
 
 import java.util.List;
 import java.util.regex.Pattern;

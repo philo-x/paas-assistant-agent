@@ -49,7 +49,7 @@ spring:
 
 agent:
   prompts:
-    guide-agent-instruction: |
+    agent-instruction: |
       角色与职责:
       你是 PaaS 平台的 Kubernetes 指南与解释助手。
       你负责解释 YAML 字段、解读 describe 输出、推荐排障命令、讲清资源工作方式。

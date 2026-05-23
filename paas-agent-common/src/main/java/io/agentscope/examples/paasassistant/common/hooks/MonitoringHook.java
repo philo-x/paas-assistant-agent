@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.agentscope.examples.paasassistant.guide.hooks;
+package io.agentscope.examples.paasassistant.common.hooks;
 
 import io.agentscope.core.hook.ActingChunkEvent;
 import io.agentscope.core.hook.Hook;
@@ -26,7 +26,7 @@ import io.agentscope.core.hook.PreCallEvent;
 import io.agentscope.core.hook.ReasoningChunkEvent;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.ToolResultBlock;
-import io.agentscope.examples.paasassistant.guide.utils.MsgUtils;
+import io.agentscope.examples.paasassistant.common.utils.MsgUtils;
 import reactor.core.publisher.Mono;
 
 public class MonitoringHook implements Hook {

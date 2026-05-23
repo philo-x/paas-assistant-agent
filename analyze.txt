@@ -1,0 +1,2317 @@
+﻿SLF4J(W): Class path contains multiple SLF4J providers.
+SLF4J(W): Found provider [ch.qos.logback.classic.spi.LogbackServiceProvider@709ba3fb]
+SLF4J(W): Found provider [org.slf4j.impl.JBossSlf4jServiceProvider@3d36e4cd]
+SLF4J(W): See https://www.slf4j.org/codes.html#multiple_bindings for an explanation.
+SLF4J(I): Actual provider is of type [ch.qos.logback.classic.spi.LogbackServiceProvider@709ba3fb]
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.4)
+
+2026-05-23T05:51:20.281Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.e.p.a.AnalyzeSubAgentApplication     : Starting AnalyzeSubAgentApplication using Java 17.0.19 with PID 7 (/app/app.jar started by appuser in /app)
+2026-05-23T05:51:20.288Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.e.p.a.AnalyzeSubAgentApplication     : No active profile set, falling back to 1 default profile: "default"
+2026-05-23T05:51:22.895Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.e.p.a.config.AgentScopeModelConfig   : Creating OpenAI Model with model: qwen3-coder, baseUrl: http://100.89.126.30:30279/48643f774f424d5d8d9ea6b1051d0bc5/v1
+2026-05-23T05:51:24.293Z  INFO 7 --- [analyze-sub-agent] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-05-23T05:51:24.688Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback12.LogbackNacosLoggingAdapterBuilder
+2026-05-23T05:51:24.694Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapterBuilder
+2026-05-23T05:51:24.696Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter: com.alibaba.nacos.logger.adapter.logback14.LogbackNacosLoggingAdapter match ch.qos.logback.classic.Logger success.
+2026-05-23T05:51:24.705Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.nacos.client.logging.NacosLogging    : Nacos Logging Adapter Builder: com.alibaba.nacos.logger.adapter.log4j2.Log4j2NacosLoggingAdapterBuilder
+2026-05-23T05:51:24.974Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-23T05:51:24.974Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-23T05:51:24.974Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-23T05:51:25.021Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-23T05:51:25.022Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-23T05:51:25.022Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-23T05:51:26.041Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-23T05:51:26.042Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-23T05:51:26.042Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-23T05:51:26.077Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-23T05:51:26.077Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-23T05:51:26.077Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-23T05:51:26.266Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-23T05:51:26.266Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-23T05:51:26.266Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-23T05:51:26.607Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to get current node abilities...
+2026-05-23T05:51:26.611Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Ready to initialize current node abilities, support modes: [SDK_CLIENT]
+2026-05-23T05:51:26.612Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.c.a.AbstractAbilityControlManager  : Initialize current abilities finish...
+2026-05-23T05:51:26.612Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.c.a.d.NacosAbilityManagerHolder    : [AbilityControlManager] Successfully initialize AbilityControlManager
+2026-05-23T05:51:26.656Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.impl.NacosClientAuthServiceImpl success.
+2026-05-23T05:51:26.656Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.ram.RamClientAuthServiceImpl success.
+2026-05-23T05:51:26.656Z  INFO 7 --- [analyze-sub-agent] [           main] c.a.n.p.a.s.c.ClientAuthPluginManager    : [ClientAuthPluginManager] Load ClientAuthService com.alibaba.nacos.client.auth.oidc.OidcClientAuthServiceImpl success.
+2026-05-23T05:51:26.761Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.c.a.s.t.DeploymentProperties         : No host configured in deployment properties, try to get local IP address as host
+2026-05-23T05:51:26.762Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.c.a.s.t.DeploymentProperties         : Local IP address: 172.60.8.125
+2026-05-23T05:51:26.785Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.c.a.s.c.AgentScopeAgentCardConverter : No preferred transport specified, using default transport `JSONRPC`.
+2026-05-23T05:51:26.793Z  WARN 7 --- [analyze-sub-agent] [           main] io.a2a.server.AgentCardValidator         : AgentCard does not include all available transports. Missing: [RocketMQ]. Available transports: [JSONRPC, RocketMQ]. AgentCard transports: [JSONRPC]
+2026-05-23T05:51:28.071Z  INFO 7 --- [analyze-sub-agent] [           main] o.s.boot.reactor.netty.NettyWebServer    : Netty started on port 8083 (http)
+2026-05-23T05:51:28.079Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.e.p.a.AnalyzeSubAgentApplication     : Started AnalyzeSubAgentApplication in 9.43 seconds (process running for 10.636)
+2026-05-23T05:51:28.084Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.c.a.s.registry.AgentRegistryService  : Start to auto register agent analyze_agent into Registries.
+2026-05-23T05:51:28.085Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.c.a.s.registry.AgentRegistryService  : Auto register agent analyze_agent into Registry Nacos.
+2026-05-23T05:51:28.116Z  WARN 7 --- [analyze-sub-agent] [           main] i.a.c.n.a2a.registry.NacosA2aRegistry    : Agent card analyze_agent already exists, agentCard release might be ignored.
+2026-05-23T05:51:28.116Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.c.n.a2a.registry.NacosA2aRegistry    : Register agent card analyze_agent to Nacos.
+2026-05-23T05:51:28.152Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.c.n.a2a.registry.NacosA2aRegistry    : Register agent card analyze_agent to Nacos successfully.
+2026-05-23T05:51:28.152Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.c.n.a2a.registry.NacosA2aRegistry    : Register 1 endpoint(s) to Nacos
+2026-05-23T05:51:28.162Z  INFO 7 --- [analyze-sub-agent] [           main] i.a.c.a.s.registry.AgentRegistryService  : Auto register agent analyze_agent into Registry Nacos successfully.
+2026-05-23T06:15:37.692Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.ToolGroupManager  : Created tool group 'k8s_resource_analyze': k8s资源问题快速分析
+2026-05-23T06:15:37.693Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.McpClientManager  : Registering MCP client: k8sgpt-mcp-server
+2026-05-23T06:15:37.693Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.a.core.tool.mcp.McpSyncClientWrapper   : Initializing MCP sync client: k8sgpt-mcp-server
+2026-05-23T06:15:37.882Z  INFO 7 --- [analyze-sub-agent] [ient-3-Worker-2] i.m.client.LifecycleInitializer          : Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=PromptCapabilities[listChanged=null], resources=ResourceCapabilities[subscribe=true, listChanged=null], tools=ToolCapabilities[listChanged=true]], Info: Implementation[name=k8sgpt, title=null, version=1.0.0] and Instructions null
+2026-05-23T06:15:37.959Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-3] io.agentscope.core.tool.Toolkit          : Registered tool 'add-filters' in group 'k8s_resource_analyze'
+2026-05-23T06:15:37.959Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-3] io.agentscope.core.tool.Toolkit          : Registered tool 'analyze' in group 'k8s_resource_analyze'
+2026-05-23T06:15:37.959Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-3] io.agentscope.core.tool.Toolkit          : Registered tool 'list-filters' in group 'k8s_resource_analyze'
+2026-05-23T06:15:37.959Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-3] io.agentscope.core.tool.Toolkit          : Registered tool 'list-integrations' in group 'k8s_resource_analyze'
+2026-05-23T06:15:37.959Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-3] i.agentscope.core.tool.McpClientManager  : MCP client 'k8sgpt-mcp-server' registered successfully
+2026-05-23T06:15:37.961Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.ToolGroupManager  : Created tool group 'cluster_management': Kubernetes集群的列表管理
+2026-05-23T06:15:37.962Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.McpClientManager  : Registering MCP client: kom-mcp-server
+2026-05-23T06:15:37.962Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.a.core.tool.mcp.McpSyncClientWrapper   : Initializing MCP sync client: kom-mcp-server
+2026-05-23T06:15:37.973Z  INFO 7 --- [analyze-sub-agent] [ient-4-Worker-0] i.m.client.LifecycleInitializer          : Server response with Protocol: 2025-06-18, Capabilities: ServerCapabilities[completions=null, experimental=null, logging=null, prompts=null, resources=null, tools=ToolCapabilities[listChanged=true]], Info: Implementation[name=kom mcp server, title=null, version=0.0.1] and Instructions null
+2026-05-23T06:15:38.092Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_k8s_clusters' in group 'cluster_management'
+2026-05-23T06:15:38.093Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] i.agentscope.core.tool.McpClientManager  : MCP client 'kom-mcp-server' registered successfully
+2026-05-23T06:15:38.093Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.ToolGroupManager  : Created tool group 'node_management': 节点状态与资源占用管理
+2026-05-23T06:15:38.093Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.McpClientManager  : Registering MCP client: kom-mcp-server
+2026-05-23T06:15:38.147Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_node_ip_usage' in group 'node_management'
+2026-05-23T06:15:38.147Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_node_resource_usage' in group 'node_management'
+2026-05-23T06:15:38.147Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_pod_count_running_on_node' in group 'node_management'
+2026-05-23T06:15:38.147Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_top_node' in group 'node_management'
+2026-05-23T06:15:38.148Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_k8s_node' in group 'node_management'
+2026-05-23T06:15:38.148Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] i.agentscope.core.tool.McpClientManager  : MCP client 'kom-mcp-server' registered successfully
+2026-05-23T06:15:38.148Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.ToolGroupManager  : Created tool group 'deployment_management': Deployment的状态与事件管理
+2026-05-23T06:15:38.148Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.McpClientManager  : Registering MCP client: kom-mcp-server
+2026-05-23T06:15:38.169Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_deployment_hpa_list' in group 'deployment_management'
+2026-05-23T06:15:38.169Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_deployment_rollout_history' in group 'deployment_management'
+2026-05-23T06:15:38.169Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_deployment_rollout_status' in group 'deployment_management'
+2026-05-23T06:15:38.169Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_k8s_deploy_event' in group 'deployment_management'
+2026-05-23T06:15:38.169Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] i.agentscope.core.tool.McpClientManager  : MCP client 'kom-mcp-server' registered successfully
+2026-05-23T06:15:38.169Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.ToolGroupManager  : Created tool group 'pod_management': Pod的生命周期、日志、执行与关联资源管理
+2026-05-23T06:15:38.170Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.McpClientManager  : Registering MCP client: kom-mcp-server
+2026-05-23T06:15:38.186Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'describe_k8s_pod' in group 'pod_management'
+2026-05-23T06:15:38.186Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_pod_linked_env' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_pod_linked_services' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_pod_logs' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_pod_resource_usage' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_top_pod' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_pod_linked_endpoints' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_pod_linked_env_from_yaml' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_files_in_k8s_pod' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_k8s_pod' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_k8s_pod_event' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_pod_all_files' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'run_command_in_k8s_pod' in group 'pod_management'
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] i.agentscope.core.tool.McpClientManager  : MCP client 'kom-mcp-server' registered successfully
+2026-05-23T06:15:38.187Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.ToolGroupManager  : Created tool group 'event_management': Kubernetes集群事件查询
+2026-05-23T06:15:38.188Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.McpClientManager  : Registering MCP client: kom-mcp-server
+2026-05-23T06:15:38.200Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_k8s_event' in group 'event_management'
+2026-05-23T06:15:38.200Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] i.agentscope.core.tool.McpClientManager  : MCP client 'kom-mcp-server' registered successfully
+2026-05-23T06:15:38.200Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.ToolGroupManager  : Created tool group 'dynamic_resource_management': Kubernetes任意资源(含CRD)的动态查询
+2026-05-23T06:15:38.201Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.McpClientManager  : Registering MCP client: kom-mcp-server
+2026-05-23T06:15:38.213Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'describe_k8s_resource' in group 'dynamic_resource_management'
+2026-05-23T06:15:38.213Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_resource' in group 'dynamic_resource_management'
+2026-05-23T06:15:38.213Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_k8s_namespace' in group 'dynamic_resource_management'
+2026-05-23T06:15:38.213Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'list_k8s_resource' in group 'dynamic_resource_management'
+2026-05-23T06:15:38.214Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] i.agentscope.core.tool.McpClientManager  : MCP client 'kom-mcp-server' registered successfully
+2026-05-23T06:15:38.214Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.ToolGroupManager  : Created tool group 'storage_management': PV、PVC与StorageClass管理
+2026-05-23T06:15:38.214Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.McpClientManager  : Registering MCP client: kom-mcp-server
+2026-05-23T06:15:38.244Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_pod_linked_pv' in group 'storage_management'
+2026-05-23T06:15:38.244Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_pod_linked_pvc' in group 'storage_management'
+2026-05-23T06:15:38.244Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_storageclass_pv_count' in group 'storage_management'
+2026-05-23T06:15:38.244Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_k8s_storageclass_pvc_count' in group 'storage_management'
+2026-05-23T06:15:38.244Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] i.agentscope.core.tool.McpClientManager  : MCP client 'kom-mcp-server' registered successfully
+2026-05-23T06:15:38.244Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.ToolGroupManager  : Created tool group 'ingress_management': Ingress路由管理
+2026-05-23T06:15:38.245Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.agentscope.core.tool.McpClientManager  : Registering MCP client: kom-mcp-server
+2026-05-23T06:15:38.256Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] io.agentscope.core.tool.Toolkit          : Registered tool 'get_pod_linked_ingresses' in group 'ingress_management'
+2026-05-23T06:15:38.256Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-2] i.agentscope.core.tool.McpClientManager  : MCP client 'kom-mcp-server' registered successfully
+2026-05-23T06:15:38.257Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] io.agentscope.core.tool.Toolkit          : Registered tool 'reset_equipped_tools' in group 'ungrouped'
+2026-05-23T06:15:38.258Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] io.agentscope.core.tool.Toolkit          : Registered meta tool: reset_equipped_tools
+2026-05-23T06:15:38.258Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] i.a.e.p.analyze.config.AgentScopeRunner  : Successfully initialized k8sgpt MCP client at http://k8sgpt-mcp:8089/mcp
+2026-05-23T06:15:38.380Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] io.agentscope.core.tool.Toolkit          : Registered tool 'recordToMemory' in group 'ungrouped'
+2026-05-23T06:15:38.381Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-1] io.agentscope.core.tool.Toolkit          : Registered tool 'retrieveFromMemory' in group 'ungrouped'
+
+[HOOK] PreCallEvent - Agent started: analyze_agent
+
+[HOOK] PreActingEvent - Tool: list-filters, Input: {}
+
+[HOOK] PreActingEvent - Tool: analyze, Input: {namespace=doap, explain=false}
+[HOOK] PostActingEvent - Tool: list-filters, Result: {
+  "activeFilters": [
+    "Pod",
+    "Deployment",
+    "StatefulSet",
+    "ReplicaSet",
+    "DaemonSet",
+    "Service",
+    "Ingress",
+    "PersistentVolumeClaim",
+    "Node",
+    "Job",
+    "CronJob"
+  ],
+  "additionalFilters": [
+    "GatewayClass",
+    "Storage",
+    "ClusterExtension",
+    "ClusterCatalog",
+    "ClusterServiceVersion",
+    "Log",
+    "HTTPRoute",
+    "Subscription",
+    "CatalogSource",
+    "HorizontalPodAutoscaler",
+    "Gateway",
+    "Security",
+    "InstallPlan",
+    "OperatorGroup",
+    "PodDisruptionBudget",
+    "NetworkPolicy"
+  ],
+  "coreFilters": [
+    "MutatingWebhookConfiguration",
+    "Pod",
+    "ReplicaSet",
+    "PersistentVolumeClaim",
+    "Ingress",
+    "Job",
+    "ConfigMap",
+    "DaemonSet",
+    "Deployment",
+    "Service",
+    "StatefulSet",
+    "CronJob",
+    "Node",
+    "ValidatingWebhookConfiguration"
+  ],
+  "integrationFilters": null
+}
+[HOOK] PostActingEvent - Tool: analyze, Result: {
+  "provider": "",
+  "errors": null,
+  "status": "ProblemDetected",
+  "problems": 144,
+  "results": [
+    {
+      "kind": "Node",
+      "name": "100.115.100.155",
+      "error": [
+        {
+          "Text": "100.115.100.155 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.155",
+              "Masked": "TF5qU0BPI00qbnteaSNm"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.155 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.155",
+              "Masked": "VGQ5cT9pfUNDeEVTe2I7"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.2",
+      "error": [
+        {
+          "Text": "100.115.100.2 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.2",
+              "Masked": "PUk7cyVeUHluMzAzUQ=="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.2 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.2",
+              "Masked": "cF9ma1ltalZxaF94Qw=="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.174",
+      "error": [
+        {
+          "Text": "100.115.103.174 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.174",
+              "Masked": "cDFWU1I4dCQpYz9AQGc2"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.174 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.174",
+              "Masked": "VkhGUEBKUzQ1QUhlZXg1"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.180",
+      "error": [
+        {
+          "Text": "100.115.103.180 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.180",
+              "Masked": "NmVaWE9td2Fjezppcih8"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.180 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.180",
+              "Masked": "IVMzdHM9M3M1fV1ndGFs"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.250",
+      "error": [
+        {
+          "Text": "100.115.103.250 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.250",
+              "Masked": "QzteIk5EPHJnPUxjdDdT"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.250 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.250",
+              "Masked": "THpPMSZxYVBpKnpFbW9a"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.252",
+      "error": [
+        {
+          "Text": "100.115.103.252 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.252",
+              "Masked": "MDVqeiM2ezB8byNvOGwm"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.252 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.252",
+              "Masked": "K2d0QHY+L05ZUElQc1Ih"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.55",
+      "error": [
+        {
+          "Text": "100.115.103.55 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.55",
+              "Masked": "WTI0dTlASicrWEVWLGE="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.55 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.55",
+              "Masked": "IVBkMjlFMCoqekN2VjA="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.28",
+      "error": [
+        {
+          "Text": "100.115.100.28 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.28",
+              "Masked": "ZUl2aWQya0N4QTVtM0I="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.28 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.28",
+              "Masked": "cjUnOSp3IjZJNDFRcjM="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.3",
+      "error": [
+        {
+          "Text": "100.115.100.3 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.3",
+              "Masked": "bStAXmNGJ0ByQHFYZA=="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.3 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.3",
+              "Masked": "OylIbTNXWl5jSHIobA=="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.178",
+      "error": [
+        {
+          "Text": "100.115.103.178 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.178",
+              "Masked": "eks3YWQiPzpsNFRDKGF1"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.178 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.178",
+              "Masked": "LHQqaCRJOjQ9USpCNlg5"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.35",
+      "error": [
+        {
+          "Text": "100.115.100.35 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.35",
+              "Masked": "RCpLIzh7ekF2Ul8yfWk="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.35 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.35",
+              "Masked": "bHxxLV1lRSslXmxePWM="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.140",
+      "error": [
+        {
+          "Text": "100.115.103.140 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.140",
+              "Masked": "O1Q3JjtUbnFmZ1JKIURP"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.140 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.140",
+              "Masked": "dlg7XzZCdEhlXkA3fSow"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.160",
+      "error": [
+        {
+          "Text": "100.115.103.160 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.160",
+              "Masked": "KDE1OSd5cE1deyRwSGVQ"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.160 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.160",
+              "Masked": "X011PzBHNUx6d0U4WUFZ"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.42",
+      "error": [
+        {
+          "Text": "100.115.103.42 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.42",
+              "Masked": "NSlAPlNnYXBKT1c2RT8="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.42 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.42",
+              "Masked": "e1FQb3VfPHlTZnp8K0A="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.99.40",
+      "error": [
+        {
+          "Text": "100.115.99.40 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.40",
+              "Masked": "OTA6c15hfWtxTm0iZg=="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.99.40 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.40",
+              "Masked": "VEV3LEpScnMpXW16Rw=="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.99.58",
+      "error": [
+        {
+          "Text": "100.115.99.58 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.58",
+              "Masked": "aFAldCMpKWRzM2grYg=="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.99.58 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.58",
+              "Masked": "LCg2U242ZFU3YW8qXg=="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.143",
+      "error": [
+        {
+          "Text": "100.115.100.143 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.143",
+              "Masked": "dDktX2h3c15CcWYramp9"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.143 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.143",
+              "Masked": "VGo4bG9YO0g3aVJYNmhX"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.16",
+      "error": [
+        {
+          "Text": "100.115.100.16 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.16",
+              "Masked": "SDZmZFRoJ2pqTl9DNEA="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.16 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.16",
+              "Masked": "ckIjL1gqRkFDJF9MbCU="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.176",
+      "error": [
+        {
+          "Text": "100.115.100.176 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.176",
+              "Masked": "JUVmVXk+cWVyZiVyZCdv"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.176 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.176",
+              "Masked": "KzJyKm55IzZaa0VsWXVz"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.47",
+      "error": [
+        {
+          "Text": "100.115.100.47 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.47",
+              "Masked": "cXJrJioqVDxJSjF0Vj0="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.47 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.47",
+              "Masked": "QThTaXVTMTUnUl8zdW0="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.88",
+      "error": [
+        {
+          "Text": "100.115.100.88 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.88",
+              "Masked": "Xy0vSzZ2UG8yXVRpey4="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.88 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.88",
+              "Masked": "RipmcEFeSDJbKUxzUVs="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.101.20",
+      "error": [
+        {
+          "Text": "100.115.101.20 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.101.20",
+              "Masked": "RGNnTjEsbCwvYjl9VXM="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.101.20 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.101.20",
+              "Masked": "TDAhcWZmKjR0PGlCWTw="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.136",
+      "error": [
+        {
+          "Text": "100.115.103.136 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.136",
+              "Masked": "eEsyKFVOfCYnZCg8Z0ZW"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.136 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.136",
+              "Masked": "S3ZoJSF5JnBlKXI+WiNU"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.251",
+      "error": [
+        {
+          "Text": "100.115.103.251 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.251",
+              "Masked": "Rl92RkN5WGhudSlRRFIs"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.251 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.251",
+              "Masked": "bEIydFkpKWtbSGctQXUm"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.179",
+      "error": [
+        {
+          "Text": "100.115.100.179 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.179",
+              "Masked": "O2xXVzBSI3M5WFdJbDhr"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.179 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.179",
+              "Masked": "NTk7ZUo1VCgreHsncWsi"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.98",
+      "error": [
+        {
+          "Text": "100.115.100.98 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.98",
+              "Masked": "cW5HOSphek07IWImKXI="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.98 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.98",
+              "Masked": "LUl6YiJzSVAxd1BaMEI="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.122",
+      "error": [
+        {
+          "Text": "100.115.103.122 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.122",
+              "Masked": "UHw0ZUt7VDRbaE5TJnxK"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.122 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.122",
+              "Masked": "VkNTdjtXM2wiJlJ3VXto"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.170",
+      "error": [
+        {
+          "Text": "100.115.103.170 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.170",
+              "Masked": "SVVLSSFrLjw6aHFdPCk9"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.170 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.170",
+              "Masked": "VzA1WHBAfTswT3dPZzch"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.88",
+      "error": [
+        {
+          "Text": "100.115.103.88 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.88",
+              "Masked": "PTUhNDQ6N2lAe2JCWjQ="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.88 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.88",
+              "Masked": "UG9yQCtTNzZhU3JVJGE="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.82.107",
+      "error": [
+        {
+          "Text": "100.115.82.107 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.82.107",
+              "Masked": "SFclb2RlKUNnfG5ZOSI="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.82.107 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.82.107",
+              "Masked": "cj9WW3lAS001VSwpaXE="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.88.122",
+      "error": [
+        {
+          "Text": "100.115.88.122 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.88.122",
+              "Masked": "clZGT19UbGMrR1Z5bXU="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.88.122 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.88.122",
+              "Masked": "Ykx1ZClsXnUre3kyYUs="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.99.235",
+      "error": [
+        {
+          "Text": "100.115.99.235 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.235",
+              "Masked": "VmhzKy9mZSNqWGVtV2I="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.99.235 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.235",
+              "Masked": "WHtqPUpyPnRkdydyT2c="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.69",
+      "error": [
+        {
+          "Text": "100.115.100.69 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.69",
+              "Masked": "aWVzZGxBKlpIVzEsJGg="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.69 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.69",
+              "Masked": "PVtRN0YlTjR1NCY5N1g="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.210",
+      "error": [
+        {
+          "Text": "100.115.103.210 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.210",
+              "Masked": "JHVhKUE3LytiazNpYS9M"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.210 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.210",
+              "Masked": "biplNmMwd0NzdE44VE41"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.139",
+      "error": [
+        {
+          "Text": "100.115.100.139 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.139",
+              "Masked": "USJrO11oaFZWPF0wSjAo"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.139 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.139",
+              "Masked": "Q21OLGFfaDopaFJ8T3Un"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.40",
+      "error": [
+        {
+          "Text": "100.115.100.40 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.40",
+              "Masked": "OyN2QnUnRkB4JUkjVUE="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.40 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.40",
+              "Masked": "KEpTcFU6UGtwdzlhPDU="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.152",
+      "error": [
+        {
+          "Text": "100.115.103.152 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.152",
+              "Masked": "YlRHJDA3YjZiJlRdU3Un"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.152 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.152",
+              "Masked": "V1hpXltZTT4ydmNIJig5"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.163",
+      "error": [
+        {
+          "Text": "100.115.103.163 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.163",
+              "Masked": "UF8nIW8/WWhbY2lobzwp"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.163 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.163",
+              "Masked": "N3spWnRDSCZ7SHhOdTpQ"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.99.203",
+      "error": [
+        {
+          "Text": "100.115.99.203 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.203",
+              "Masked": "JiJDfVlocCNRbzRtJzY="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.99.203 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.203",
+              "Masked": "ck9jNiUwLVhmTC46aWY="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.194",
+      "error": [
+        {
+          "Text": "100.115.100.194 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.194",
+              "Masked": "MEYhdmlAMCgiWnNjJyhj"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.194 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.194",
+              "Masked": "IUwrOCV6PWhTaUg8ZEhl"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.123",
+      "error": [
+        {
+          "Text": "100.115.103.123 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.123",
+              "Masked": "JHI+Uyl6ISEqajApJTly"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.123 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.123",
+              "Masked": "ZGIteWNOOj1RIzN8YWE6"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.99.221",
+      "error": [
+        {
+          "Text": "100.115.99.221 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.221",
+              "Masked": "MnJBUUwnaE0mKCl8Zig="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.99.221 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.221",
+              "Masked": "KXg1TXJmZ3poLzJ0ZGQ="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.135",
+      "error": [
+        {
+          "Text": "100.115.100.135 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.135",
+              "Masked": "MCNYT2FfS1lnRFBAXnw4"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.135 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.135",
+              "Masked": "I2M2a1J2LCRBbyQ1IlZV"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.151",
+      "error": [
+        {
+          "Text": "100.115.100.151 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.151",
+              "Masked": "QU10UGtPWUlvYkJzTi4h"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.151 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.151",
+              "Masked": "fWQhYzR9WytFUiNkJSlU"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.36",
+      "error": [
+        {
+          "Text": "100.115.100.36 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.36",
+              "Masked": "eFNqciV4Y0BuRHJGSDI="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.36 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.36",
+              "Masked": "KVpNdUxXbWFkLWV1cjo="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.213",
+      "error": [
+        {
+          "Text": "100.115.103.213 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.213",
+              "Masked": "NkkkUV5NeDJxd1ttfGc5"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.213 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.213",
+              "Masked": "ZjRBeVJpI0RRVUd0RStL"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.243",
+      "error": [
+        {
+          "Text": "100.115.103.243 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.243",
+              "Masked": "KWQ4STpieTMkVVN9Ry51"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.243 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.243",
+              "Masked": "Uz4tZDN4TVg6ZStdTGMm"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.99.238",
+      "error": [
+        {
+          "Text": "100.115.99.238 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.238",
+              "Masked": "VHFmaGZ2LmRGdGhAdE4="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.99.238 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.238",
+              "Masked": "MVYyRyZQdkAxVkhbV30="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.182",
+      "error": [
+        {
+          "Text": "100.115.100.182 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.182",
+              "Masked": "d1BCeUtkNzUxYlZeVGxd"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.182 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.182",
+              "Masked": "ViUpOzdwVj11MS1KN2VN"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.176",
+      "error": [
+        {
+          "Text": "100.115.103.176 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.176",
+              "Masked": "bWFERkw2cUVxb0lUKXh7"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.176 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.176",
+              "Masked": "O0JGQ1skOWxdY01MKCVO"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.41",
+      "error": [
+        {
+          "Text": "100.115.103.41 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.41",
+              "Masked": "UkEuOnlVP3lWNTJzKkA="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.41 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.41",
+              "Masked": "KjJ6TDBTU2U/TiZQWCU="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.87",
+      "error": [
+        {
+          "Text": "100.115.100.87 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.87",
+              "Masked": "Pz1PSyYmMUF6LUVsXUQ="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.87 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.87",
+              "Masked": "XTp3dCZ3S2VhJSUzNGE="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.93",
+      "error": [
+        {
+          "Text": "100.115.100.93 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.93",
+              "Masked": "K1FFQmRaYjZedm4rUDA="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.93 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.93",
+              "Masked": "MSd0SGJOcmcqKFBNTUU="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.99.201",
+      "error": [
+        {
+          "Text": "100.115.99.201 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.201",
+              "Masked": "RlFVajBodDdTaWwqSDw="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.99.201 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.201",
+              "Masked": "aVBve3c4ZkQ/LT8ublg="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.101.6",
+      "error": [
+        {
+          "Text": "100.115.101.6 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.101.6",
+              "Masked": "T0JMU0NialM+fVduYQ=="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.101.6 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.101.6",
+              "Masked": "Wz9BViVZeSNJa2gpNA=="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.116",
+      "error": [
+        {
+          "Text": "100.115.103.116 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.116",
+              "Masked": "eTU1Z0R1XyN5a1l2Q0x1"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.116 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.116",
+              "Masked": "LVhfY3kpKlFTLXpvL0BR"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.125",
+      "error": [
+        {
+          "Text": "100.115.103.125 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.125",
+              "Masked": "cSM5QTFOVTdUOlRod3Ao"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.125 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.125",
+              "Masked": "T2lsPzddaE96MUstJCYv"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.19",
+      "error": [
+        {
+          "Text": "100.115.103.19 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.19",
+              "Masked": "WFI7bWVNQkNaTnBYTyM="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.19 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.19",
+              "Masked": "Y2U/NHxhQUtRRUNXZzQ="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.115",
+      "error": [
+        {
+          "Text": "100.115.100.115 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.115",
+              "Masked": "OydALThkJ2hFUER9dyk0"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.115 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.115",
+              "Masked": "ZTkxS3Q1JS1KQ18icSdt"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.92",
+      "error": [
+        {
+          "Text": "100.115.103.92 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.92",
+              "Masked": "QzRBPFBFWnhVaFVMIVg="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.92 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.92",
+              "Masked": "JCdwYVUhdS1wcXklUHQ="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.113",
+      "error": [
+        {
+          "Text": "100.115.100.113 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.113",
+              "Masked": "UWo1PXdGa0ZhdylrT3Vf"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.113 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.113",
+              "Masked": "bF9FQWxPek4yS2pkMSlF"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.124",
+      "error": [
+        {
+          "Text": "100.115.100.124 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.124",
+              "Masked": "MXtOYywqTlYhJyFOLGRp"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.124 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.124",
+              "Masked": "N0FHeSZeKFVZWUt6QU9T"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.133",
+      "error": [
+        {
+          "Text": "100.115.100.133 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.133",
+              "Masked": "WDdjSkwqckZbSTgnbSRx"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.133 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.133",
+              "Masked": "JDpIdjdNVzQySUNZSVFI"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.84",
+      "error": [
+        {
+          "Text": "100.115.100.84 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.84",
+              "Masked": "X0NKX1l8Q1FbRihGVVc="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.84 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.84",
+              "Masked": "VE81SSZrSFEpVDhTVmU="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.101.40",
+      "error": [
+        {
+          "Text": "100.115.101.40 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.101.40",
+              "Masked": "V0RzNUVjbXFlLSYkeDQ="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.101.40 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.101.40",
+              "Masked": "MzNZMXZScXI5NVcxYkk="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.179",
+      "error": [
+        {
+          "Text": "100.115.103.179 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.179",
+              "Masked": "MCRBeWI1NSZNMCFUTmUz"
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.179 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.179",
+              "Masked": "NCt5Y09raj16OzUyWGgo"
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.31",
+      "error": [
+        {
+          "Text": "100.115.103.31 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.31",
+              "Masked": "TGtAbUQ7WzM0LmIpUlQ="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.31 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.31",
+              "Masked": "U1BYSjNiQitLXSh3T3s="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.7",
+      "error": [
+        {
+          "Text": "100.115.100.7 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.7",
+              "Masked": "XigrYTBmOzU1amxmdA=="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.7 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.7",
+              "Masked": "Si5zcF45YTxheTNzIQ=="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.100.99",
+      "error": [
+        {
+          "Text": "100.115.100.99 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.99",
+              "Masked": "R15IVUkwOm4kRWEsMTg="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.100.99 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.100.99",
+              "Masked": "UCg8dk1TUTo0dFgoTko="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.46",
+      "error": [
+        {
+          "Text": "100.115.103.46 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.46",
+              "Masked": "WTQuZzBkK0IjYTVsQiM="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.46 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.46",
+              "Masked": "JHBCbWZhbTRKblsyR3o="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.103.79",
+      "error": [
+        {
+          "Text": "100.115.103.79 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.79",
+              "Masked": "XXhnZWhZVFp3QFF5TTM="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.103.79 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.103.79",
+              "Masked": "SEomREUwWlM6b29Mczo="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    },
+    {
+      "kind": "Node",
+      "name": "100.115.99.248",
+      "error": [
+        {
+          "Text": "100.115.99.248 has condition of type NodeHasInsufficientFD, reason NodeHasInsufficientFD: Kubelet has insufficient FileDescriptor available",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.248",
+              "Masked": "djVAPERJaDxhLj8oZkI="
+            }
+          ]
+        },
+        {
+          "Text": "100.115.99.248 has condition of type KernelDeadlock, reason KernelHasNoDeadlock: kernel has no deadlock",
+          "KubernetesDoc": "",
+          "Sensitive": [
+            {
+              "Unmasked": "100.115.99.248",
+              "Masked": "cE4idl9tO0tMQXFyK1I="
+            }
+          ]
+        }
+      ],
+      "details": "",
+      "parentObject": ""
+    }
+  ]
+}
+2026-05-23T06:15:41.097Z  INFO 7 --- [analyze-sub-agent] [oundedElastic-3] i.a.e.p.analyze.hooks.TruncationHook     : Truncated tool output for tool 'analyze' (60727 -> 5067 chars)
+2026-05-23T06:15:41.110Z ERROR 7 --- [analyze-sub-agent] [oundedElastic-2] i.a.e.p.analyze.config.AgentScopeRunner  : Error during agent stream for taskId 1779515268335: 
+
+java.lang.NullPointerException: Cannot invoke "io.agentscope.core.message.Msg.getRole()" because "msg" is null
+	at io.agentscope.examples.paasassistant.analyze.config.SafeOpenAIChatFormatter.sanitizeMsg(SafeOpenAIChatFormatter.java:70) ~[!/:na]
+	at io.agentscope.examples.paasassistant.analyze.config.SafeOpenAIChatFormatter.doFormat(SafeOpenAIChatFormatter.java:54) ~[!/:na]
+	at io.agentscope.core.formatter.AbstractBaseFormatter.lambda$format$0(AbstractBaseFormatter.java:73) ~[agentscope-1.0.12.jar!/:na]
+	at io.agentscope.core.tracing.Tracer.callFormat(Tracer.java:62) ~[agentscope-1.0.12.jar!/:na]
+	at io.agentscope.core.formatter.AbstractBaseFormatter.format(AbstractBaseFormatter.java:73) ~[agentscope-1.0.12.jar!/:na]
+	at io.agentscope.core.model.OpenAIChatModel.doStream0(OpenAIChatModel.java:118) ~[agentscope-1.0.12.jar!/:na]
+	at io.agentscope.core.model.OpenAIChatModel.doStream(OpenAIChatModel.java:86) ~[agentscope-1.0.12.jar!/:na]
+	at io.agentscope.core.model.ChatModelBase.lambda$stream$0(ChatModelBase.java:47) ~[agentscope-1.0.12.jar!/:na]
+	at io.agentscope.core.tracing.Tracer.callModel(Tracer.java:48) ~[agentscope-1.0.12.jar!/:na]
+	at io.agentscope.core.model.ChatModelBase.stream(ChatModelBase.java:46) ~[agentscope-1.0.12.jar!/:na]
+	at io.agentscope.core.ReActAgent.lambda$reasoning$9(ReActAgent.java:476) ~[agentscope-1.0.12.jar!/:na]
+	at reactor.core.publisher.MonoFlatMapMany$FlatMapManyMain.onNext(MonoFlatMapMany.java:164) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoIgnoreThen$ThenIgnoreMain.complete(MonoIgnoreThen.java:297) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoIgnoreThen$ThenIgnoreMain.onNext(MonoIgnoreThen.java:191) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:158) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:158) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:158) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:158) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$ScalarSubscription.request(Operators.java:2564) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.request(MonoFlatMap.java:194) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.request(MonoFlatMap.java:194) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.request(MonoFlatMap.java:194) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.request(MonoFlatMap.java:194) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoIgnoreThen$ThenIgnoreMain.onSubscribe(MonoIgnoreThen.java:135) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onSubscribe(MonoFlatMap.java:117) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onSubscribe(MonoFlatMap.java:117) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onSubscribe(MonoFlatMap.java:117) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onSubscribe(MonoFlatMap.java:117) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxFlatMap.trySubscribeScalarMap(FluxFlatMap.java:193) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap.subscribeOrReturn(MonoFlatMap.java:53) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.InternalMonoOperator.subscribe(InternalMonoOperator.java:62) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoIgnoreThen$ThenIgnoreMain.subscribeNext(MonoIgnoreThen.java:244) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoIgnoreThen$ThenIgnoreMain.onComplete(MonoIgnoreThen.java:207) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators.complete(Operators.java:137) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoEmpty.subscribe(MonoEmpty.java:46) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoDefer.subscribe(MonoDefer.java:54) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Mono.subscribe(Mono.java:4569) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoIgnoreThen$ThenIgnoreMain.subscribeNext(MonoIgnoreThen.java:268) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoIgnoreThen.subscribe(MonoIgnoreThen.java:51) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Flux.subscribe(Flux.java:8888) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoIgnoreThen$ThenIgnoreMain.subscribeNext(MonoIgnoreThen.java:268) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoIgnoreThen.subscribe(MonoIgnoreThen.java:51) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.InternalMonoOperator.subscribe(InternalMonoOperator.java:75) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:165) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2093) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoTakeLastOne$TakeLastOneSubscriber.onComplete(MonoTakeLastOne.java:161) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxConcatMapNoPrefetch$FluxConcatMapNoPrefetchSubscriber.onComplete(FluxConcatMapNoPrefetch.java:240) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxIterable$IterableSubscription.slowPath(FluxIterable.java:357) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxIterable$IterableSubscription.request(FluxIterable.java:294) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxConcatMapNoPrefetch$FluxConcatMapNoPrefetchSubscriber.innerComplete(FluxConcatMapNoPrefetch.java:274) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxConcatMap$ConcatMapInner.onComplete(FluxConcatMap.java:892) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxPeekFuseable$PeekFuseableSubscriber.onComplete(FluxPeekFuseable.java:278) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:159) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:158) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:158) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:158) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$ScalarSubscription.request(Operators.java:2564) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.request(MonoFlatMap.java:194) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.request(MonoFlatMap.java:194) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.request(MonoFlatMap.java:194) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.request(MonoFlatMap.java:194) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxPeekFuseable$PeekFuseableSubscriber.request(FluxPeekFuseable.java:144) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$MultiSubscriptionSubscriber.request(Operators.java:2325) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxConcatMapNoPrefetch$FluxConcatMapNoPrefetchSubscriber.request(FluxConcatMapNoPrefetch.java:338) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$BaseFluxToMonoOperator.request(Operators.java:2063) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.request(MonoFlatMap.java:194) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapInner.onSubscribe(MonoFlatMap.java:292) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onSubscribe(MonoFlatMap.java:117) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$BaseFluxToMonoOperator.onSubscribe(Operators.java:2047) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxConcatMapNoPrefetch$FluxConcatMapNoPrefetchSubscriber.onSubscribe(FluxConcatMapNoPrefetch.java:163) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxIterable.subscribe(FluxIterable.java:200) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxIterable.subscribe(FluxIterable.java:82) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.InternalMonoOperator.subscribe(InternalMonoOperator.java:75) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.onNext(MonoFlatMap.java:165) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapMain.secondComplete(MonoFlatMap.java:245) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoFlatMap$FlatMapInner.onNext(MonoFlatMap.java:306) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxOnErrorResume$ResumeSubscriber.onNext(FluxOnErrorResume.java:80) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableSubscriber.onNext(FluxMapFuseable.java:130) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$BaseFluxToMonoOperator.completePossiblyEmpty(Operators.java:2093) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoCollectList$MonoCollectListSubscriber.onComplete(MonoCollectList.java:117) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxConcatIterable$ConcatIterableSubscriber.onComplete(FluxConcatIterable.java:122) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$MultiSubscriptionSubscriber.onComplete(Operators.java:2225) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxMap$MapSubscriber.onComplete(FluxMap.java:144) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxFirstWithSignal$FirstEmittingSubscriber.onComplete(FluxFirstWithSignal.java:349) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.SerializedSubscriber.onComplete(SerializedSubscriber.java:147) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxTimeout$TimeoutMainSubscriber.onComplete(FluxTimeout.java:236) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoSubscribeOn$SubscribeOnSubscriber.onComplete(MonoSubscribeOn.java:163) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$MultiSubscriptionSubscriber.onComplete(Operators.java:2225) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$MultiSubscriptionSubscriber.onComplete(Operators.java:2225) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.Operators$MultiSubscriptionSubscriber.onComplete(Operators.java:2225) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoPeekTerminal$MonoTerminalPeekSubscriber.onComplete(MonoPeekTerminal.java:303) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxMapFuseable$MapFuseableConditionalSubscriber.onComplete(FluxMapFuseable.java:351) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.MonoPeekTerminal$MonoTerminalPeekSubscriber.onComplete(MonoPeekTerminal.java:303) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.publisher.FluxSubscribeOnCallable$CallableSubscribeOnSubscription.run(FluxSubscribeOnCallable.java:254) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.scheduler.SchedulerTask.call(SchedulerTask.java:72) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at reactor.core.scheduler.SchedulerTask.call(SchedulerTask.java:28) ~[reactor-core-3.8.4.jar!/:3.8.4]
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source) ~[na:na]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(Unknown Source) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source) ~[na:na]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source) ~[na:na]
+	at java.base/java.lang.Thread.run(Unknown Source) ~[na:na]
+

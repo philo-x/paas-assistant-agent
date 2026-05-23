@@ -48,7 +48,7 @@ spring:
 
 agent:
   prompts:
-    analyze-agent-instruction: |
+    agent-instruction: |
       角色与职责:
       你是一个 Kubernetes 快速诊断助手，专注于 Kubernetes 日常资源查询与快速异常诊断。
 

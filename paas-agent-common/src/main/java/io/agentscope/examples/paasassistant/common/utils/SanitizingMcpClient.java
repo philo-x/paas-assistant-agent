@@ -1,7 +1,7 @@
-package io.agentscope.examples.paasassistant.diagnosis.utils;
+package io.agentscope.examples.paasassistant.common.utils;
 
 import io.agentscope.core.tool.mcp.McpClientWrapper;
-import io.agentscope.examples.paasassistant.diagnosis.config.AgentConstants;
+import io.agentscope.examples.paasassistant.common.config.AgentConstants;
 import io.modelcontextprotocol.spec.McpSchema;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -126,11 +126,11 @@ public class SanitizingMcpClient extends McpClientWrapper {
             // Return a structured error result so the LLM can explain to the user
             // that controlled changes must go through the platform change-plan workflow.
             if (isDestructive(name)) {
-                logger.warn("Blocked destructive tool call in diagnosis agent: {}", name);
+                logger.warn("Blocked destructive tool call in analyze agent: {}", name);
                 McpSchema.TextContent errorContent = new McpSchema.TextContent(
                         null,
                         "[TOOL_BLOCKED] The tool '" + name + "' performs a destructive Kubernetes operation "
-                                + "and is not permitted within the diagnosis agent. "
+                                + "and is not permitted within the analyze agent. "
                                 + "Please use the platform change-plan tools (change-plan-restart, "
                                 + "change-plan-scale, change-plan-delete-pod, change-plan-patch) "
                                 + "to create an approved change plan instead.",

@@ -1,36 +1,70 @@
 package io.agentscope.examples.paasassistant.guide.config;
+import io.agentscope.examples.paasassistant.common.config.AgentPromptConfig;
+import io.agentscope.examples.paasassistant.common.hooks.TruncationHook;
+import io.agentscope.examples.paasassistant.common.hooks.MonitoringHook;
+import io.agentscope.examples.paasassistant.common.memory.CompatibleMem0LongTermMemory;
+
+
 
 import io.agentscope.core.ReActAgent;
+
 import io.agentscope.core.a2a.server.executor.runner.AgentRequestOptions;
+
 import io.agentscope.core.a2a.server.executor.runner.AgentRunner;
+
 import io.agentscope.core.agent.Event;
+
 import io.agentscope.core.agent.EventType;
+
 import io.agentscope.core.agent.StreamOptions;
+
 import io.agentscope.core.memory.autocontext.AutoContextConfig;
+
 import io.agentscope.core.memory.autocontext.AutoContextMemory;
+
 import io.agentscope.core.memory.mem0.Mem0ApiType;
+
 import io.agentscope.core.message.Msg;
+
 import io.agentscope.core.message.MsgRole;
+
 import io.agentscope.core.message.TextBlock;
+
 import io.agentscope.core.model.Model;
+
 import io.agentscope.core.rag.Knowledge;
+
 import io.agentscope.core.rag.RAGMode;
+
 import io.agentscope.core.tool.Toolkit;
-import io.agentscope.examples.paasassistant.guide.memory.CompatibleMem0LongTermMemory;
+
+
 import io.agentscope.examples.paasassistant.guide.tools.GuideTools;
-import io.agentscope.examples.paasassistant.guide.hooks.MonitoringHook;
-import io.agentscope.examples.paasassistant.guide.hooks.TruncationHook;
+
+
+
 import io.agentscope.extensions.nacos.mcp.tool.NacosToolkit;
+
 import java.util.List;
+
 import java.util.Map;
+
 import java.util.concurrent.ConcurrentHashMap;
+
 import java.util.regex.Matcher;
+
 import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
+
 import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.context.annotation.Bean;
+
 import org.springframework.context.annotation.Configuration;
+
 import reactor.core.publisher.Flux;
 
 @Configuration
@@ -63,7 +97,7 @@ public class AgentScopeRunner {
 
         return new CustomAgentRunner(
                 "guide_agent",
-                promptConfig.getGuideAgentInstruction(),
+                promptConfig.getAgentInstruction(),
                 model,
                 toolkit,
                 autoContextConfig,
@@ -152,7 +186,7 @@ public class AgentScopeRunner {
                     mem0BaseUrl,
                     mem0ApiKey,
                     apiType,
-                    java.time.Duration.ofSeconds(30),
+                    java.time.Duration.ofSeconds(60),
                     resolveInferEnabled(apiType, mem0InferEnabled));
 
             return ReActAgent.builder()

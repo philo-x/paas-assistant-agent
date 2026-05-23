@@ -1,4 +1,4 @@
-package io.agentscope.examples.paasassistant.diagnosis.config;
+package io.agentscope.examples.paasassistant.common.config;
 
 import io.a2a.spec.JSONRPCResponse;
 import io.a2a.spec.TransportProtocol;

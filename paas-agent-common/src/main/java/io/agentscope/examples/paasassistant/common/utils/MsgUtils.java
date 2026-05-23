@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.agentscope.examples.paasassistant.guide.utils;
+package io.agentscope.examples.paasassistant.common.utils;
 
 import io.agentscope.core.message.AudioBlock;
 import io.agentscope.core.message.ImageBlock;

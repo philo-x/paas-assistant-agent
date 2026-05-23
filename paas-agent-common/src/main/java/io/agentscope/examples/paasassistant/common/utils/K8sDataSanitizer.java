@@ -1,4 +1,4 @@
-package io.agentscope.examples.paasassistant.analyze.utils;
+package io.agentscope.examples.paasassistant.common.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

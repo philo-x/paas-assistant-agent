@@ -54,7 +54,7 @@ spring:
 
 agent:
   prompts:
-    diagnosis-agent-instruction: |
+    agent-instruction: |
       # Role
       你是一个专注于 Kubernetes 深度问题排查与根因定位的资深 SRE 专家。
       你的唯一职责是：通过系统性地调用各维度工具收集证据，识别疑难杂症的根因，并输出结构化诊断报告。

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.agentscope.examples.paasassistant.analyze.config;
+package io.agentscope.examples.paasassistant.common.config;
 
 import io.agentscope.core.formatter.openai.OpenAIChatFormatter;
 import io.agentscope.core.formatter.openai.dto.OpenAIMessage;

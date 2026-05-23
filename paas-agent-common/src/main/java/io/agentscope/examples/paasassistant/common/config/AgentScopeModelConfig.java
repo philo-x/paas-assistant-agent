@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.agentscope.examples.paasassistant.diagnosis.config;
+package io.agentscope.examples.paasassistant.common.config;
 
 import io.agentscope.core.formatter.dashscope.DashScopeChatFormatter;
 import io.agentscope.core.model.DashScopeChatModel;
-import io.agentscope.core.model.GenerateOptions;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.OpenAIChatModel;
+import io.agentscope.core.model.GenerateOptions;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +60,9 @@ public class AgentScopeModelConfig {
     @Value("${agentscope.openai.base-url}")
     private String openaiBaseUrl;
 
+    @Value("${agentscope.model.disable-parallel-tools:false}")
+    private boolean disableParallelTools;
+
     @Bean
     public Model model() {
         String provider = normalizeProvider(modelProvider);
@@ -73,10 +76,12 @@ public class AgentScopeModelConfig {
                             .apiKey(openaiApiKey)
                             .modelName(openaiModelName)
                             .stream(true)
-                            .formatter(new SafeOpenAIChatFormatter())
-                            .generateOptions(GenerateOptions.builder()
-                                    .additionalBodyParam("parallel_tool_calls", false)
-                                    .build());
+                            .formatter(new SafeOpenAIChatFormatter());
+            if (disableParallelTools) {
+                builder.generateOptions(GenerateOptions.builder()
+                        .additionalBodyParam("parallel_tool_calls", false)
+                        .build());
+            }
             if (openaiBaseUrl != null && !openaiBaseUrl.isEmpty() && !openaiBaseUrl.equals("-")) {
                 builder.baseUrl(openaiBaseUrl);
             }
@@ -91,10 +96,12 @@ public class AgentScopeModelConfig {
                     DashScopeChatModel.builder()
                             .apiKey(dashscopeApiKey)
                             .modelName(dashscopeModelName)
-                            .formatter(new DashScopeChatFormatter())
-                            .defaultOptions(GenerateOptions.builder()
-                                    .additionalBodyParam("parallel_tool_calls", false)
-                                    .build());
+                            .formatter(new DashScopeChatFormatter());
+            if (disableParallelTools) {
+                builder.defaultOptions(GenerateOptions.builder()
+                        .additionalBodyParam("parallel_tool_calls", false)
+                        .build());
+            }
             if (dashscopeBaseUrl != null
                     && !dashscopeBaseUrl.isEmpty()
                     && !dashscopeBaseUrl.equals("-")) {

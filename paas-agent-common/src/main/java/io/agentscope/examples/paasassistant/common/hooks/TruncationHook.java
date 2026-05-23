@@ -1,9 +1,10 @@
-package io.agentscope.examples.paasassistant.guide.hooks;
+package io.agentscope.examples.paasassistant.common.hooks;
 
 import io.agentscope.core.hook.Hook;
 import io.agentscope.core.hook.HookEvent;
 import io.agentscope.core.hook.PostActingEvent;
 import io.agentscope.core.message.ContentBlock;
+import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.TextBlock;
 import io.agentscope.core.message.ToolResultBlock;
 import java.util.ArrayList;
@@ -20,8 +21,8 @@ public class TruncationHook implements Hook {
 
     private static final Logger logger = LoggerFactory.getLogger(TruncationHook.class);
 
-    // Limit output to ~5000 characters
-    private static final int MAX_OUTPUT_LENGTH = 5000;
+    // Limit output to ~10000 characters
+    private static final int MAX_OUTPUT_LENGTH = 50000;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -56,7 +57,10 @@ public class TruncationHook implements Hook {
 
             if (truncated) {
                 ToolResultBlock truncatedBlock = ToolResultBlock.builder()
+                        .id(result.getId())
+                        .name(result.getName())
                         .output(newOutput)
+                        .metadata(result.getMetadata())
                         .build();
 
                 PostActingEvent newEvent = new PostActingEvent(
@@ -64,6 +68,20 @@ public class TruncationHook implements Hook {
                         postActing.getToolkit(),
                         postActing.getToolUse(),
                         truncatedBlock);
+
+                Msg origMsg = postActing.getToolResultMsg();
+                if (origMsg != null) {
+                    Msg newMsg = Msg.builder()
+                            .id(origMsg.getId())
+                            .name(origMsg.getName())
+                            .role(origMsg.getRole())
+                            .content(truncatedBlock)
+                            .timestamp(origMsg.getTimestamp())
+                            .metadata(origMsg.getMetadata())
+                            .build();
+                    newEvent.setToolResultMsg(newMsg);
+                }
+
                 return Mono.just((T) newEvent);
             }
         }

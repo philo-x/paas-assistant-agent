@@ -1,4 +1,4 @@
-package io.agentscope.examples.paasassistant.analyze.memory;
+package io.agentscope.examples.paasassistant.common.memory;
 
 import io.agentscope.core.memory.LongTermMemory;
 import io.agentscope.core.memory.mem0.Mem0AddRequest;
