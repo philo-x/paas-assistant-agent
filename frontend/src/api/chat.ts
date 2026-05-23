@@ -120,7 +120,10 @@ export class ChatApiService {
       headers['Authorization'] = `Bearer ${this.configStore.token}`
     }
 
-    const response = await fetch(this.configStore.structuredApiUrl, {
+    const apiPath = mode === 'flash' ? '/api/analyze/chat/structured' : '/api/diagnosis/chat/structured'
+    const requestUrl = `${this.configStore.baseUrl}${apiPath}`
+
+    const response = await fetch(requestUrl, {
       method: 'POST',
       mode: 'cors',
       credentials: 'omit',

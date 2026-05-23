@@ -31,7 +31,7 @@
         <module>guide-sub-agent</module>
         <module>diagnosis-sub-agent</module>
         <module>analyze-sub-agent</module>
-        <module>supervisor-agent</module>
+        <module>paas-agent-common</module>
     </modules>
 
     <properties>

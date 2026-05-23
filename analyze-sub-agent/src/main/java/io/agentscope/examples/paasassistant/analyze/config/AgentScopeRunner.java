@@ -240,8 +240,8 @@ public class AgentScopeRunner {
                             mcpInitialized = true;
                             logger.info("Successfully initialized k8sgpt MCP client at {}", k8sgptMcpUrl);
                         } catch (Exception e) {
-                            logger.error("Failed to initialize k8sgpt MCP client: {}", e.getMessage(), e);
-                            throw new RuntimeException("Failed to initialize k8sgpt MCP client", e);
+                            logger.warn("Failed to initialize k8sgpt MCP client: {}", e.getMessage());
+                            // Do not throw, as NacosToolkit may throw IllegalArgumentException if group already exists
                         }
                     }
                 }
@@ -310,26 +310,40 @@ public class AgentScopeRunner {
                 throw new IllegalStateException(
                         "Agent already exists for taskId: " + options.getTaskId());
             }
-            String userId = parseUserIdFromMessages(requestMessages);
-            String clusterId = parseClusterIdFromMessages(requestMessages);
-            ReActAgent agent = buildReActAgent(userId);
-            agentCache.put(options.getTaskId(), agent);
 
-            agent.getMemory()
-                    .addMessage(
-                            Msg.builder()
-                                    .role(MsgRole.USER)
-                                    .content(
-                                            TextBlock.builder()
-                                                    .text("<userId>" + userId + "</userId>")
-                                                    .build())
-                                    .build());
-
-            return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
-                    .contextWrite(ctx -> ctx.put(AgentConstants.CTX_TOOL_CACHE, new ConcurrentHashMap<String, McpSchema.CallToolResult>())
-                                            .put(AgentConstants.CTX_CLUSTER_ID, clusterId)
-                                            .put(AgentConstants.CTX_USER_ID, userId)
-                                            .put(AgentConstants.CTX_CHAT_ID, options.getTaskId()))
+            return reactor.core.publisher.Mono.fromCallable(() -> {
+                        String userId = parseUserIdFromMessages(requestMessages);
+                        String clusterId = parseClusterIdFromMessages(requestMessages);
+                        ReActAgent agent = buildReActAgent(userId);
+                        agentCache.put(options.getTaskId(), agent);
+                        agent.getMemory()
+                                .addMessage(
+                                        Msg.builder()
+                                                .role(MsgRole.USER)
+                                                .content(
+                                                        TextBlock.builder()
+                                                                .text("<userId>" + userId + "</userId>")
+                                                                .build())
+                                                .build());
+                        return new Object[]{agent, clusterId, userId};
+                    })
+                    .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                    .flatMapMany(params -> {
+                        ReActAgent agent = (ReActAgent) params[0];
+                        String clusterId = (String) params[1];
+                        String userId = (String) params[2];
+                        return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
+                                .contextWrite(ctx -> ctx.put(AgentConstants.CTX_TOOL_CACHE, new ConcurrentHashMap<String, McpSchema.CallToolResult>())
+                                        .put(AgentConstants.CTX_CLUSTER_ID, clusterId)
+                                        .put(AgentConstants.CTX_USER_ID, userId)
+                                        .put(AgentConstants.CTX_CHAT_ID, options.getTaskId()))
+                                .doFinally(signal -> {
+                                    ReActAgent cachedAgent = agentCache.remove(options.getTaskId());
+                                    if (cachedAgent != null) {
+                                        cachedAgent.interrupt();
+                                    }
+                                });
+                    })
                     .onErrorResume(e -> {
                         logger.error("Error during agent stream for taskId {}: ", options.getTaskId(), e);
                         Msg errorMsg = Msg.builder()
@@ -339,12 +353,6 @@ public class AgentScopeRunner {
                                         .build())
                                 .build();
                         return Flux.just(new Event(EventType.AGENT_RESULT, errorMsg, false));
-                    })
-                    .doFinally(signal -> {
-                        ReActAgent cachedAgent = agentCache.remove(options.getTaskId());
-                        if (cachedAgent != null) {
-                            cachedAgent.interrupt();
-                        }
                     });
         }
 

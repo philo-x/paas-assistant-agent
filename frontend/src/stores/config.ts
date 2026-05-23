@@ -97,8 +97,9 @@ export const useConfigStore = defineStore('config', () => {
     // Smart default:
     // 1. If we're on port 9999 (standard for this project's Vite), assume local dev and use :10008
     // 2. Otherwise, assume we're served by the backend or a proxy, and use the current origin
-    const isLocalVite = window.location.port === '9999' || window.location.port === '5173'
-    return isLocalVite ? 'http://localhost:10008' : window.location.origin
+    // In local dev, we now rely on Vite's proxy instead of direct CORS to a single port
+    // In production, we rely on the Gateway or Nginx proxy on the origin
+    return window.location.origin
   }
 
   // State
@@ -224,6 +225,11 @@ export const useConfigStore = defineStore('config', () => {
       !window.location.hostname.includes('localhost') &&
       !window.location.hostname.includes('127.0.0.1')
     ) {
+      savedBaseUrl = getInitialBaseUrl()
+    }
+
+    // Protection against deprecated direct backend ports (10008, 10006, 10007)
+    if (savedBaseUrl && (savedBaseUrl.includes('10008') || savedBaseUrl.includes('10006') || savedBaseUrl.includes('10007'))) {
       savedBaseUrl = getInitialBaseUrl()
     }
 

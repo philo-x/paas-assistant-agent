@@ -27,6 +27,16 @@ export default defineConfig({
     open: true,
     host: true,
     port: 9999,
+    proxy: {
+      '/api/diagnosis': {
+        target: 'http://localhost:10006',
+        changeOrigin: true,
+      },
+      '/api/analyze': {
+        target: 'http://localhost:10007',
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [
     vue(),
