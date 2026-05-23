@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: paas-assistant-alb-ingress
+  namespace: paas-ai
+  annotations:
+    # 假设使用阿里云 ALB，具体使用的 Ingress Class 或相关注解可按需调整
+    kubernetes.io/ingress.class: "alb"
+    # alibabacloud.com/lb-id: "alb-xxxxxx" # 若需指定已存在的 ALB 实例
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-svc
+                port:
+                  number: 80

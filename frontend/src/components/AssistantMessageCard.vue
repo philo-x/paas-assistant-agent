@@ -37,6 +37,10 @@ const visibleSteps = computed(() => {
   return [...props.message.thinkingTimeline].sort((left, right) => left.sequence - right.sequence)
 })
 
+const showEmptyAnswerFallback = computed(() => {
+  return !props.message.isStreaming && !props.message.answer && !props.message.error
+})
+
 const normalizeEscapedText = (raw: string) => {
   if (!raw) {
     return ''
@@ -142,14 +146,22 @@ const stepCardClass = (step: ThinkingTimelineStep) => {
     </section>
 
     <!-- Result Module (New Separate Module) -->
-    <section v-if="message.answer" class="result-module">
+    <section v-if="message.answer || showEmptyAnswerFallback" class="result-module">
       <div class="result-header">
         <div class="result-label-wrapper">
           <span class="result-label">{{ t('chat.sections.result') }}</span>
         </div>
       </div>
       <div class="result-content">
-        <MarkdownRenderer :content="message.answer" :is-streaming="message.isStreaming || false" />
+        <MarkdownRenderer
+          v-if="message.answer"
+          :content="message.answer"
+          :is-streaming="message.isStreaming || false"
+        />
+        <div v-else class="empty-answer-fallback">
+          <BulbFilled class="fallback-icon" />
+          <span class="fallback-text">{{ t('chat.timelineFallbacks.emptyAnswer') }}</span>
+        </div>
       </div>
     </section>
 
@@ -355,6 +367,30 @@ const stepCardClass = (step: ThinkingTimelineStep) => {
   text-transform: uppercase;
 }
 .error-text { color: #b91c1c; font-size: 13px; }
+
+.empty-answer-fallback {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 18px;
+  background: rgba(241, 245, 249, 0.6);
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.fallback-icon {
+  margin-top: 3px;
+  color: #eab308;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.fallback-text {
+  flex-grow: 1;
+}
 
 /* --- Transitions --- */
 .fade-slide-enter-active,

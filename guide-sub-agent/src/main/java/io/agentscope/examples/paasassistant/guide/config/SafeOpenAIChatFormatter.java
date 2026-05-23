@@ -48,10 +48,15 @@ public class SafeOpenAIChatFormatter extends OpenAIChatFormatter {
 
     @Override
     protected List<OpenAIMessage> doFormat(List<Msg> messages) {
+        if (messages == null) {
+            return List.of();
+        }
         // Sanitize messages to avoid "ToolUseBlock/ToolResultBlock is not supported in user messages" warnings
         List<Msg> sanitized = new ArrayList<>(messages.size());
         for (Msg msg : messages) {
-            sanitized.add(sanitizeMsg(msg));
+            if (msg != null) {
+                sanitized.add(sanitizeMsg(msg));
+            }
         }
 
         List<OpenAIMessage> formatted = super.doFormat(sanitized);
@@ -67,6 +72,9 @@ public class SafeOpenAIChatFormatter extends OpenAIChatFormatter {
      * Sanitizes a message by converting Tool blocks to Text blocks if the role is USER.
      */
     private Msg sanitizeMsg(Msg msg) {
+        if (msg == null) {
+            return null;
+        }
         if (msg.getRole() != MsgRole.USER || msg.getContent() == null) {
             return msg;
         }

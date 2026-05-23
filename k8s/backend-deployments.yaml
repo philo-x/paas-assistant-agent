@@ -1,0 +1,98 @@
+# ==========================================
+# Diagnosis Sub-Agent
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diagnosis-sub-agent
+  namespace: paas-ai
+  labels:
+    app: diagnosis-sub-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: diagnosis-sub-agent
+  template:
+    metadata:
+      labels:
+        app: diagnosis-sub-agent
+    spec:
+      containers:
+        - name: diagnosis-sub-agent
+          image: <YOUR_REGISTRY_URL>/diagnosis-sub-agent:1.0.11 # 替换为实际镜像地址
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 10006
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: diagnosis-sub-agent-svc
+  namespace: paas-ai
+spec:
+  selector:
+    app: diagnosis-sub-agent
+  ports:
+    - protocol: TCP
+      port: 10006
+      targetPort: 10006
+  type: ClusterIP
+
+---
+# ==========================================
+# Analyze Sub-Agent
+# ==========================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analyze-sub-agent
+  namespace: paas-ai
+  labels:
+    app: analyze-sub-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analyze-sub-agent
+  template:
+    metadata:
+      labels:
+        app: analyze-sub-agent
+    spec:
+      containers:
+        - name: analyze-sub-agent
+          image: <YOUR_REGISTRY_URL>/analyze-sub-agent:1.0.11 # 替换为实际镜像地址
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 10007
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1024Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analyze-sub-agent-svc
+  namespace: paas-ai
+spec:
+  selector:
+    app: analyze-sub-agent
+  ports:
+    - protocol: TCP
+      port: 10007
+      targetPort: 10007
+  type: ClusterIP

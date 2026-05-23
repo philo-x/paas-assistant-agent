@@ -78,11 +78,9 @@ public class EventStreamTranslator {
         }
 
         if (type == EventType.AGENT_RESULT) {
-            event.getMessage().getContentBlocks(TextBlock.class).forEach(block -> {
-                if (block.getText() != null && !block.getText().isEmpty()) {
-                    thinkingSplitter.processChunk(block.getText());
-                }
-            });
+            // 文本已经在 EventType.REASONING 阶段通过流式 chunk 发送完毕。
+            // 这里如果再次将最终完整的 TextBlock 送入 thinkingSplitter，会导致前端重复拼接整段文本。
+            // 因此直接忽略 AGENT_RESULT 中的文本内容。
             return;
         }
     }

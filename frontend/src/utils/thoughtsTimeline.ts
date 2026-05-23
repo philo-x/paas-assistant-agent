@@ -32,6 +32,11 @@ export interface ThoughtsTimelineLabels {
     unknownAgent: string
     emptyReasoning: string
     errorDescription: string
+    syntheticThinking: string
+    syntheticThinkingCompleted: string
+    syntheticAnalysis: string
+    syntheticAnalysisCompleted: string
+    emptyAnswer: string
   }
 }
 
@@ -108,13 +113,16 @@ const ensureThoughtsMeta = (message: AssistantMessage) => {
   return message.thoughtsMeta
 }
 
-const closeOpenReasoningSteps = (message: AssistantMessage, finishedAt: number) => {
+const closeOpenReasoningSteps = (message: AssistantMessage, finishedAt: number, labels?: ThoughtsTimelineLabels) => {
   message.thinkingTimeline.forEach((step) => {
     if (step.kind === 'reasoning' && step.isOpen) {
       step.description = repairUnclosedBacktick(step.description)
       step.isOpen = false
       step.status = step.status === 'error' ? 'error' : 'success'
       step.finishedAt = step.finishedAt || finishedAt
+      if (labels && step.description === labels.fallbacks.syntheticAnalysis) {
+        step.description = labels.fallbacks.syntheticAnalysisCompleted
+      }
     }
   })
 }
@@ -223,7 +231,12 @@ export const createThoughtsTimelineLabels = (translate: (key: string) => string)
   fallbacks: {
     unknownAgent: translate('chat.timelineFallbacks.unknownAgent'),
     emptyReasoning: translate('chat.timelineFallbacks.emptyReasoning'),
-    errorDescription: translate('chat.timelineFallbacks.errorDescription')
+    errorDescription: translate('chat.timelineFallbacks.errorDescription'),
+    syntheticThinking: translate('chat.timelineFallbacks.syntheticThinking'),
+    syntheticThinkingCompleted: translate('chat.timelineFallbacks.syntheticThinkingCompleted'),
+    syntheticAnalysis: translate('chat.timelineFallbacks.syntheticAnalysis'),
+    syntheticAnalysisCompleted: translate('chat.timelineFallbacks.syntheticAnalysisCompleted'),
+    emptyAnswer: translate('chat.timelineFallbacks.emptyAnswer')
   }
 })
 
@@ -250,11 +263,15 @@ export const applyStructuredThoughtsEvent = (
 
       const lastOpenReasoning = findLastOpenReasoningStep(message)
       if (lastOpenReasoning && lastOpenReasoning.agent === agent) {
-        lastOpenReasoning.description = appendReasoningText(lastOpenReasoning.description, text)
+        if (lastOpenReasoning.description === labels.fallbacks.syntheticAnalysis) {
+          lastOpenReasoning.description = normalizeReasoningDescription(text)
+        } else {
+          lastOpenReasoning.description = appendReasoningText(lastOpenReasoning.description, text)
+        }
         return
       }
 
-      closeOpenReasoningSteps(message, now)
+      closeOpenReasoningSteps(message, now, labels)
       message.thinkingTimeline.push(
         buildTimelineStep({
           sequence,
@@ -271,7 +288,7 @@ export const applyStructuredThoughtsEvent = (
       return
     }
     case 'tool_start': {
-      closeOpenReasoningSteps(message, now)
+      closeOpenReasoningSteps(message, now, labels)
       if (!isDelegationEvent(data)) {
         return
       }
@@ -293,12 +310,36 @@ export const applyStructuredThoughtsEvent = (
       return
     }
     case 'tool_result': {
-      closeOpenReasoningSteps(message, now)
+      closeOpenReasoningSteps(message, now, labels)
       if (isDelegationEvent(data)) {
         markNextReasoningTitle(message, 'supervisor_agent', labels.titles.afterSubAgent)
         return
       }
 
+      // Check if we need to prepend a synthetic thinking step
+      const lastStep = message.thinkingTimeline[message.thinkingTimeline.length - 1]
+      const isSyntheticAnalysis = lastStep && lastStep.kind === 'reasoning' && lastStep.agent === agent && 
+        (lastStep.description === labels.fallbacks.syntheticAnalysis || lastStep.description === labels.fallbacks.syntheticAnalysisCompleted)
+      const hasPrecedingReasoning = lastStep && lastStep.kind === 'reasoning' && lastStep.agent === agent && !isSyntheticAnalysis
+
+      if (!hasPrecedingReasoning) {
+        message.thinkingTimeline.push(
+          buildTimelineStep({
+            sequence: sequence - 0.5,
+            kind: 'reasoning',
+            agent,
+            agentLabel: resolveAgentLabel(agent, labels),
+            title: resolveReasoningTitle(message, agent, labels),
+            description: labels.fallbacks.syntheticThinkingCompleted,
+            status: 'success',
+            startedAt: now,
+            finishedAt: now,
+            isOpen: false
+          })
+        )
+      }
+
+      // Push the tool step itself
       message.thinkingTimeline.push(
         buildTimelineStep({
           sequence,
@@ -314,10 +355,25 @@ export const applyStructuredThoughtsEvent = (
         })
       )
       markNextReasoningTitle(message, agent, labels.titles.afterTool)
+
+      // Post-tool result analysis (synthetic)
+      message.thinkingTimeline.push(
+        buildTimelineStep({
+          sequence: sequence + 0.5,
+          kind: 'reasoning',
+          agent,
+          agentLabel: resolveAgentLabel(agent, labels),
+          title: resolveReasoningTitle(message, agent, labels),
+          description: labels.fallbacks.syntheticAnalysis,
+          status: 'pending',
+          startedAt: now,
+          isOpen: true
+        })
+      )
       return
     }
     case 'error': {
-      closeOpenReasoningSteps(message, now)
+      closeOpenReasoningSteps(message, now, labels)
       message.thinkingTimeline.push(
         buildTimelineStep({
           sequence,
@@ -335,7 +391,7 @@ export const applyStructuredThoughtsEvent = (
       return
     }
     case 'done': {
-      closeOpenReasoningSteps(message, now)
+      closeOpenReasoningSteps(message, now, labels)
       if (message.thoughtsAutoManaged) {
         message.thoughtsExpanded = false
       }

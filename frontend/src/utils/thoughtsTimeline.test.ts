@@ -38,7 +38,12 @@ const labels: ThoughtsTimelineLabels = {
   fallbacks: {
     unknownAgent: 'Agent',
     emptyReasoning: '正在继续处理当前请求。',
-    errorDescription: '处理过程中发生异常，请稍后重试。'
+    errorDescription: '处理过程中发生异常，请稍后重试。',
+    syntheticThinking: '正在思考并选择合适的工具...',
+    syntheticThinkingCompleted: '已决定调用工具进行排查',
+    syntheticAnalysis: '正在分析工具的执行结果...',
+    syntheticAnalysisCompleted: '工具返回结果，分析完毕',
+    emptyAnswer: '诊断未完成。'
   }
 }
 
@@ -206,4 +211,58 @@ describe('applyStructuredThoughtsEvent', () => {
     expect(message.thinkingTimeline[4].isOpen).toBe(false)
     expect(message.thinkingTimeline[5].agent).toBe('supervisor_agent')
   })
+
+  it('generates synthetic thinking and analysis steps when tool result has no preceding reasoning', () => {
+    const message = createAssistantMessage()
+
+    // Simulate tool result without reasoning delta
+    applyStructuredThoughtsEvent(message, createEvent('tool_result', {
+      sequence: 2,
+      agent: 'diagnosis_agent',
+      tool: 'list_k8s_pod',
+      title: '执行 list_k8s_pod',
+      summary: '已完成执行 list_k8s_pod。',
+      status: 'success'
+    }), labels)
+
+    expect(message.thinkingTimeline).toHaveLength(3)
+    expect(message.thinkingTimeline[0].kind).toBe('reasoning')
+    expect(message.thinkingTimeline[0].description).toBe('已决定调用工具进行排查')
+    expect(message.thinkingTimeline[0].isOpen).toBe(false)
+
+    expect(message.thinkingTimeline[1].kind).toBe('tool')
+    expect(message.thinkingTimeline[1].title).toBe('执行 list_k8s_pod')
+
+    expect(message.thinkingTimeline[2].kind).toBe('reasoning')
+    expect(message.thinkingTimeline[2].description).toBe('正在分析工具的执行结果...')
+    expect(message.thinkingTimeline[2].isOpen).toBe(true)
+
+    // Now send a tool_result for a second tool
+    applyStructuredThoughtsEvent(message, createEvent('tool_result', {
+      sequence: 4,
+      agent: 'diagnosis_agent',
+      tool: 'describe_k8s_pod',
+      title: '查看 Pod 详情',
+      summary: '查看 pod-xxx 详情',
+      status: 'success'
+    }), labels)
+
+    // The open synthetic analysis from the first tool is closed and its text becomes 'completed' representation
+    expect(message.thinkingTimeline[2].isOpen).toBe(false)
+    expect(message.thinkingTimeline[2].description).toBe('工具返回结果，分析完毕')
+
+    // Pushed new steps for the second tool
+    expect(message.thinkingTimeline).toHaveLength(6)
+    expect(message.thinkingTimeline[3].kind).toBe('reasoning')
+    expect(message.thinkingTimeline[3].description).toBe('已决定调用工具进行排查')
+    expect(message.thinkingTimeline[3].isOpen).toBe(false)
+
+    expect(message.thinkingTimeline[4].kind).toBe('tool')
+    expect(message.thinkingTimeline[4].title).toBe('查看 Pod 详情')
+
+    expect(message.thinkingTimeline[5].kind).toBe('reasoning')
+    expect(message.thinkingTimeline[5].description).toBe('正在分析工具的执行结果...')
+    expect(message.thinkingTimeline[5].isOpen).toBe(true)
+  })
 })
+

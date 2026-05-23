@@ -18,10 +18,9 @@ package io.agentscope.examples.paasassistant.common.stream;
 
 /**
  * A stateful stream filter that safely removes <thinking>...</thinking> tags from 
- * fragmented text chunks in a reactive stream.
+ * fragmented text chunks in a reactive stream, while KEEPING the text inside.
  */
 public class ThinkingStreamFilter {
-    private boolean inThinking = false;
     private final StringBuilder buffer = new StringBuilder();
 
     public String filterChunk(String chunk) {
@@ -30,53 +29,34 @@ public class ThinkingStreamFilter {
         }
         buffer.append(chunk);
         StringBuilder output = new StringBuilder();
-        
+
         while (buffer.length() > 0) {
-            if (!inThinking) {
-                int startIndex = buffer.indexOf("<thinking>");
-                if (startIndex != -1) {
-                    output.append(buffer.substring(0, startIndex));
-                    inThinking = true;
-                    buffer.delete(0, startIndex + "<thinking>".length());
-                } else {
-                    int partialIndex = findPartialTag(buffer, "<thinking>");
-                    if (partialIndex != -1) {
-                        output.append(buffer.substring(0, partialIndex));
-                        buffer.delete(0, partialIndex);
-                        break; 
-                    } else {
-                        output.append(buffer.toString());
-                        buffer.setLength(0);
-                    }
-                }
+            int lessThanIdx = buffer.indexOf("<");
+            if (lessThanIdx == -1) {
+                output.append(buffer.toString());
+                buffer.setLength(0);
+                break;
+            }
+
+            if (lessThanIdx > 0) {
+                output.append(buffer.substring(0, lessThanIdx));
+                buffer.delete(0, lessThanIdx);
+            }
+
+            if (buffer.toString().startsWith("<thinking>")) {
+                buffer.delete(0, "<thinking>".length());
+            } else if (buffer.toString().startsWith("</thinking>")) {
+                buffer.delete(0, "</thinking>".length());
             } else {
-                int endIndex = buffer.indexOf("</thinking>");
-                if (endIndex != -1) {
-                    inThinking = false;
-                    buffer.delete(0, endIndex + "</thinking>".length());
+                String bStr = buffer.toString();
+                if ("<thinking>".startsWith(bStr) || "</thinking>".startsWith(bStr)) {
+                    break;
                 } else {
-                    int partialIndex = findPartialTag(buffer, "</thinking>");
-                    if (partialIndex != -1) {
-                        buffer.delete(0, partialIndex);
-                        break;
-                    } else {
-                        buffer.setLength(0);
-                    }
+                    output.append("<");
+                    buffer.delete(0, 1);
                 }
             }
         }
         return output.toString();
-    }
-
-    private int findPartialTag(StringBuilder sb, String tag) {
-        for (int i = 1; i < tag.length(); i++) {
-            int startIndex = sb.length() - i;
-            if (startIndex < 0) continue;
-            String suffix = sb.substring(startIndex);
-            if (tag.startsWith(suffix)) {
-                return startIndex;
-            }
-        }
-        return -1;
     }
 }

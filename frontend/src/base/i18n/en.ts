@@ -138,7 +138,12 @@ export default {
     timelineFallbacks: {
       unknownAgent: 'Agent',
       emptyReasoning: 'Continuing to process the current request.',
-      errorDescription: 'An unexpected error occurred while processing the request.'
+      errorDescription: 'An unexpected error occurred while processing the request.',
+      syntheticThinking: 'Thinking and selecting appropriate tool...',
+      syntheticThinkingCompleted: 'Identified next diagnostic step and preparing tool execution',
+      syntheticAnalysis: 'Analyzing the tool execution results...',
+      syntheticAnalysisCompleted: 'Completed analysis of tool execution results and proceeding to next step',
+      emptyAnswer: 'Diagnosis did not complete. The request might have timed out and been cancelled due to excessive resources in the namespace. Please specify a more targeted namespace, or inspect the thinking timeline above for details.'
     },
     toolNames: {
       callAnalyzeAgent: 'Call analyze_agent',

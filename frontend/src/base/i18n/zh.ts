@@ -138,7 +138,12 @@ export default {
     timelineFallbacks: {
       unknownAgent: 'Agent',
       emptyReasoning: '正在继续处理当前请求。',
-      errorDescription: '处理过程中发生异常，请稍后重试。'
+      errorDescription: '处理过程中发生异常，请稍后重试。',
+      syntheticThinking: '正在思考并选择合适的工具...',
+      syntheticThinkingCompleted: '已确定下一步诊断方向，准备调用工具进行排查',
+      syntheticAnalysis: '正在分析工具的执行结果...',
+      syntheticAnalysisCompleted: '已完成工具返回结果的结构化分析，继续下一步诊断动作',
+      emptyAnswer: '诊断未完成。可能由于命名空间资源过多导致请求超时被取消，请更换为更具体的诊断范围或查看思考时间线中的执行轨迹。'
     },
     toolNames: {
       callAnalyzeAgent: '调用 analyze_agent',

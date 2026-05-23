@@ -60,7 +60,7 @@ describe('chat store structured events', () => {
       type: 'assistant',
       answer: ''
     })
-    expect((store.messages[0] as any).thinkingTimeline).toHaveLength(1)
+    expect((store.messages[0] as any).thinkingTimeline).toHaveLength(3)
   })
 
   it('records structured error events as process errors', () => {
