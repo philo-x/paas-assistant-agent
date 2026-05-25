@@ -78,6 +78,9 @@ const performRender = async () => {
     // Auto-fix tables that lack a preceding blank line (a common LLM formatting mistake that breaks marked.js)
     content = content.replace(/([^\n])\n([ \t]*\|.*\|[ \t]*\n[ \t]*\|[-:| \t]+\|)/g, '$1\n\n$2')
 
+    // Remove completely empty code blocks (common LLM hallucination)
+    content = content.replace(/```[a-zA-Z0-9-]*\s*```/g, '')
+
     // Fix: Code blocks that lack a preceding blank line
     content = content.replace(/([^\n])\n([ \t]*```)/g, '$1\n\n$2')
 

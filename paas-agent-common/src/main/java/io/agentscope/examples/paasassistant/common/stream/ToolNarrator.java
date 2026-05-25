@@ -100,4 +100,21 @@ public final class ToolNarrator {
         }
         return chunk.replaceAll("(?s)<thinking>.*?</thinking>", "").trim();
     }
+
+    public static String cleanReActSyntax(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        // Remove native tool calls starting with <function=
+        String result = text.replaceAll("(?m)^<function=.*$", "");
+        
+        // Remove <tool_call> blocks completely
+        result = result.replaceAll("(?s)<tool_call>.*?</tool_call>", "");
+        
+        // Remove ReAct Action/Action Input/Thought completely if it's at the end
+        result = result.replaceAll("(?m)^Action:.*$", "");
+        result = result.replaceAll("(?m)^Action Input:.*$", "");
+        
+        return result.trim();
+    }
 }

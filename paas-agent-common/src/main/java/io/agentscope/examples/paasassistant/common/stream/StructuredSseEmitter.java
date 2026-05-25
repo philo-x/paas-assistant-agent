@@ -43,6 +43,7 @@ public class StructuredSseEmitter {
     private final ObjectMapper objectMapper;
 
     private final AtomicLong sequence = new AtomicLong(1);
+    private final Map<String, String> danglingSurrogates = new java.util.concurrent.ConcurrentHashMap<>();
 
     public StructuredSseEmitter(
             Sinks.Many<ServerSentEvent<String>> sink, ObjectMapper objectMapper) {
@@ -50,7 +51,22 @@ public class StructuredSseEmitter {
         this.objectMapper = objectMapper;
     }
 
+    private String fixSurrogates(String key, String text) {
+        if (text == null || text.isEmpty()) return text;
+        String dangling = danglingSurrogates.remove(key);
+        if (dangling != null) {
+            text = dangling + text;
+        }
+        if (text.length() > 0 && Character.isHighSurrogate(text.charAt(text.length() - 1))) {
+            danglingSurrogates.put(key, text.substring(text.length() - 1));
+            text = text.substring(0, text.length() - 1);
+        }
+        return text;
+    }
+
     public void emitReasoningDelta(String agent, String text) {
+        text = fixSurrogates("reasoning_" + agent, text);
+        if (text.isEmpty()) return;
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("agent", agent);
         payload.put("text", text);
@@ -82,6 +98,8 @@ public class StructuredSseEmitter {
     }
 
     public void emitAnswerDelta(String text) {
+        text = fixSurrogates("answer", text);
+        if (text.isEmpty()) return;
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("text", text);
         emit("answer_delta", payload);
