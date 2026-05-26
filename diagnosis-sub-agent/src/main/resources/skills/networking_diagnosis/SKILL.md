@@ -36,6 +36,17 @@ references:
 
 ## 诊断工作流
 
+### Step 0：自动化服务与路由分析（K8sGPT）
+
+> **💡 最佳实践**：在深入追踪 Endpoints 或手工测试网络连通性前，优先进行自动化分析。
+
+```
+工具：analyze(namespace=<ns>, name=<svc-or-ingress>, filters=["Service", "Ingress", "NetworkPolicy"])
+→ 若 K8sGPT 提示 Selector mismatch（如标签匹配错误）或 Ingress 配置错误，可直接修复，跳过底层探测。
+```
+
+---
+
 ### Step 1：确认 Endpoints 状态
 
 ```
@@ -44,6 +55,8 @@ references:
    → 获取 Service 名称列表
 
    工具：get_pod_linked_endpoints(cluster, namespace, name=<pod>)
+   或使用 kubectl 兜底命令查看 Service 与 Endpoints 列表：
+   工具：kubectl(cluster, cmd="get svc,ep -n <namespace> -o wide")
    → 若 Endpoints 为空 → 跳转 Step 2A（Selector 问题）
    → 若 Endpoints 不空但连接失败 → 跳转 Step 2B（Port 问题）
 
@@ -107,17 +120,15 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 ### Step 2C：DNS 解析失败
 
 ```
-① 在 Source Pod 内测试短名称解析
-   工具：run_command_in_k8s_pod(cluster, namespace, name=<pod>, container=<c>,
-         command="nslookup", args=["<service-name>"])
-   ⚠️ SRE 提醒：如果执行返回 "executable file not found"，说明镜像精简，不可直接调用 nslookup 测试。应改用 Service IP 的直连连通性进行推断。
+① 在 Source Pod 内测试 DNS 解析与 CoreDNS 状态
+   工具：test_k8s_dns_resolve(cluster, namespace, pod=<pod>, host=<service-name>)
+   ⚠️ SRE 提醒：该工具不仅测试直接解析，还会自动读取 resolv.conf 并检测 CoreDNS 状态，能有效规避 distroless 镜像无 nslookup 工具的限制。
 
-② 若失败，测试 FQDN 格式
-   工具：run_command_in_k8s_pod(cluster, namespace, name=<pod>, container=<c>,
-         command="nslookup", args=["<service-name>.<target-ns>.svc.cluster.local"])
+② 测试 FQDN 格式解析
+   工具：test_k8s_dns_resolve(cluster, namespace, pod=<pod>, host=<service-name>.<target-ns>.svc.cluster.local)
    → 若 FQDN 成功但短名称失败 → 跨 Namespace 访问使用了短名称
 
-③ 测试 CoreDNS 是否健康
+③ 若 DNS 解析依然失败，查看 CoreDNS 日志
    工具：list_k8s_pod(cluster, namespace=kube-system)
    → 找 coredns Pod
    工具：get_k8s_pod_logs(cluster, namespace=kube-system, name=<coredns-pod>, tail=50)
@@ -131,12 +142,11 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 ### Step 2D：NetworkPolicy 流量拦截
 
 ```
-① 确认错误类型（timeout vs refused）
-   工具：run_command_in_k8s_pod(cluster, namespace, name=<pod>, container=<c>,
-         command="wget", args=["--timeout=5", "http://<target-ip>:<port>/"])
-   ⚠️ SRE 提醒：如果执行返回 "executable file not found"，说明镜像为 scratch/distroless 等精简镜像。这不代表服务异常，请根据 NetworkPolicy 规则定义和 Labels 匹配进行逻辑判断，不要盲目断定超时。
-   → timeout → NetworkPolicy 静默丢弃
-   → refused → 端口问题，回到 Step 2B
+① 确认网络连通性与错误类型
+   工具：diagnose_k8s_pod_network(cluster, namespace, pod=<pod>, targetIP=<target-ip>, targetPort=<port>)
+   ⚠️ SRE 提醒：该工具会自动运行连接测试，若镜像中缺少 wget/nc 等命令，它会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。
+   → timeout/丢包 → NetworkPolicy 静默丢弃
+   → refused/拒绝 → 端口服务未监听，回到 Step 2B
 
 ② 查看 Target Namespace 的所有 NetworkPolicy
    工具：list_k8s_resource(cluster, namespace=<target-ns>, kind=NetworkPolicy,
@@ -159,6 +169,8 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 ```
 ① 查看 Pod 关联的 Ingress 规则
    工具：get_pod_linked_ingresses(cluster, namespace, name=<pod>)
+   或使用 kubectl 兜底命令查看 Ingress 详情：
+   工具：kubectl(cluster, cmd="get ingress -n <namespace> -o wide")
    → 读取 rules[].http.paths[].path / pathType / backend
 
 ② 验证后端服务实际路由前缀
@@ -212,3 +224,17 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 > **Evidence Chain:** Service selector `{app:frontend}` 与 Pod labels `{app:backend}` 不匹配 → Endpoints 控制器找不到符合条件的 Pod → Service Endpoints 列表为空 → 所有到 Service 的请求无目标，返回 connection refused。  
 > **Confidence:** High — `get_k8s_resource(Service)` 返回 selector={app:frontend}；`list_k8s_pod` 返回 Pod labels={app:backend}；`get_pod_linked_endpoints` 返回 Endpoints 为空。  
 > **Recommended Fix:** 建议运维人员将 Service 的 `spec.selector` 修改为 `{app: backend}` 与 Pod labels 一致，或将 Deployment Pod template labels 修改为 `{app: frontend}`。
+
+---
+
+## 兜底排查机制（kubectl）
+
+在专用 MCP 工具（如 `get_pod_linked_endpoints` 等）受限或无法满足深度排查时，可使用只读 `kubectl` 兜底工具执行命令：
+- 宏观排查 Service、Endpoints 端口与 IP 映射：
+  `工具：kubectl(cluster, cmd="get svc,ep -n <namespace> -o wide")`
+- 检查 Ingress 配置详情：
+  `工具：kubectl(cluster, cmd="get ingress -n <namespace> -o wide")`
+- 检查 Service 的详细配置及 Selector 匹配规则：
+  `工具：kubectl(cluster, cmd="describe service <service-name> -n <namespace>")`
+- 查看网络策略（NetworkPolicy）的实际应用情况：
+  `工具：kubectl(cluster, cmd="get networkpolicy -n <namespace> -o yaml")`

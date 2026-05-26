@@ -90,7 +90,6 @@ public class SanitizingMcpClient extends McpClientWrapper {
                 .build();
     }
 
-    // Destructive prefix list is centrally defined in AgentConstants.DESTRUCTIVE_TOOL_PREFIXES
 
     @Override
     public Mono<McpSchema.CallToolResult> callTool(String name, Map<String, Object> arguments) {

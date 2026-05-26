@@ -26,6 +26,17 @@ references:
 
 ## 诊断工作流
 
+### Step 0：自动化工作负载异常扫描（K8sGPT）
+
+> **💡 最佳实践**：在逐步排查控制器和 Pod 之前，优先让 K8sGPT 扫描常见的副本/调度/HPA错误。
+
+```
+工具：analyze(namespace=<ns>, name=<workload-name>, filters=["Deployment", "StatefulSet", "ReplicaSet", "HorizontalPodAutoscaler"])
+→ 快速识别 AVAILABLE 副本数为零、HPA 找不到 Metrics，或滚动更新卡住等常见问题。
+```
+
+---
+
 ### Step 1：确认工作负载状态
 
 ```
@@ -37,6 +48,8 @@ AVAILABLE = 0 且 UP-TO-DATE 持续不变（发布中） → Step 2B（滚动更
 HPA 相关 → Step 2C（HPA 指标问题）
 流量分配异常（蓝绿/金丝雀） → Step 2D（发布策略诊断）
 StatefulSet 问题 → Step 2E（有状态应用诊断）
+或者使用 kubectl 兜底命令查看工作负载副本数：
+工具：kubectl(cluster, cmd="get deploy,sts,ds -n <namespace> -o wide")
 ```
 
 ---
@@ -54,7 +67,7 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
    （stop_k8s_deployment 会将原始副本数写入注解）
 
 ③ 查看 Deployment 相关事件
-   工具：list_k8s_deploy_event(cluster, namespace, name=<name>)
+   工具：list_k8s_event(cluster, namespace, involvedObjectName=<name>, involvedObjectKind="Deployment")
    → 判断是人为操作还是异常触发
 ```
 
@@ -65,10 +78,14 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
 ```
 ① 查看发布状态
    工具：get_k8s_deployment_rollout_status(cluster, namespace, name=<name>)
+   或使用 kubectl 兜底查询 rollout status：
+   工具：kubectl(cluster, cmd="rollout status deployment/<name> -n <namespace>")
    → 若长时间显示 "Waiting for deployment xxx rollout to finish" → 卡住
 
 ② 查看发布历史（识别新旧版本信息）
    工具：get_k8s_deployment_rollout_history(cluster, namespace, name=<name>)
+   或使用 kubectl 兜底查询 rollout history：
+   工具：kubectl(cluster, cmd="rollout history deployment/<name> -n <namespace>")
    → 记录当前版本号（revision）
 
 ③ 查看 Deployment 详细信息（关键：确认是否超时）
@@ -77,13 +94,13 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
    （K8s 默认 600s 未完成滚动更新将标记此超时错误）
 
 ④ 查看 Deployment Events
-   工具：list_k8s_deploy_event(cluster, namespace, name=<name>)
+   工具：list_k8s_event(cluster, namespace, involvedObjectName=<name>, involvedObjectKind="Deployment")
    → 找 FailedCreate / ImagePullBackOff / Insufficient 等事件
 
 ⑤ 查看新版本 Pod 的具体错误
    工具：list_k8s_pod(cluster, namespace)
    → 找 STATUS 不为 Running 的新版本 Pod
-   工具：list_k8s_pod_event(cluster, namespace, name=<new-pod>)
+   工具：list_k8s_event(cluster, namespace, involvedObjectName=<new-pod>, involvedObjectKind="Pod")
    → 确认卡住原因（镜像错误 / 资源不足 / 配置错误）
 
 ⑥ 检查更新策略配置
@@ -120,6 +137,9 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
    → 读取 spec.metrics 字段，确认是 Resource / Custom / External 指标
    → 查看 HPA 的 Events 记录（通过 describe_k8s_resource(HPA) 或 list_k8s_event）
    ⚠️ SRE 提醒：HPA 缩容有默认 5 分钟（缩容）或根据 behavior 配置的冷却期。如果指标满足条件但未发生动作，检查 Events 中是否提示由于 cooldown 窗口未过而限制了操作，不可仅判定 metrics-server 故障。
+
+⑤ 查看历史监控指标趋势 (以验证 HPA 扩缩容判定是否合理)
+   工具：get_k8s_resource_metrics_history(cluster, query=<promql>)
 ```
 
 > 参考：[HPA 指标配置与 metrics-server 排查](references/hpa_metrics_guide.md)
@@ -186,3 +206,16 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
 > **Evidence Chain:** metrics-server 缺失 → HPA 调用 `metrics.k8s.io` API 失败 → HPA `status.currentMetrics` 为空，TARGETS 显示 `<unknown>` → HPA 无法计算目标副本数，replicas 始终停留在 minReplicas。  
 > **Confidence:** High — `list_k8s_resource(kube-system, kind=Deployment)` 未找到 metrics-server；`get_k8s_deployment_hpa_list` 返回 `TARGETS=<unknown>/50%`。  
 > **Recommended Fix:** 建议运维人员在 kube-system 命名空间安装 metrics-server（官方 components.yaml），本地集群需额外添加 `--kubelet-insecure-tls` 启动参数。
+
+---
+
+## 兜底排查机制（kubectl）
+
+在排查各类应用工作负载（Deployment, StatefulSet, DaemonSet）或 HPA 遇到特定自动化或专用 MCP 工具失效时，可使用只读 `kubectl` 兜底工具执行命令：
+- 宏观排查工作负载副本就绪及配置详情：
+  `工具：kubectl(cluster, cmd="get deploy,sts,ds -n <namespace> -o wide")`
+- 详细排查特定工作负载滚动更新状态与版本历史：
+  `工具：kubectl(cluster, cmd="rollout status deployment/<workload-name> -n <namespace>")`
+  `工具：kubectl(cluster, cmd="rollout history deployment/<workload-name> -n <namespace>")`
+- 排查 HPA 自动缩容状态及限制阈值：
+  `工具：kubectl(cluster, cmd="get hpa -n <namespace> -o yaml")`

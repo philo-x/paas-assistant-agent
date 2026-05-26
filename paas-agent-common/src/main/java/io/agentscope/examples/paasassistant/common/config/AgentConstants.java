@@ -62,7 +62,7 @@ public final class AgentConstants {
     public static final List<String> DESTRUCTIVE_TOOL_PREFIXES = List.of(
             "delete_", "restart_", "scale_", "stop_", "update_", "apply_",
             "cordon_", "drain_", "taint_", "uncordon_", "untaint_",
-            "patch_", "restore_", "undo_", "run_command_"
+            "patch_", "restore_", "undo_"
     );
 
     // -------------------------------------------------------------------------

@@ -302,6 +302,10 @@
               "description": "资源所在的命名空间（集群范围资源可选）/ Namespace of the resource (optional for cluster-scoped resources)",
               "type": "string"
             },
+            "showEvents": {
+              "description": "是否在详情中展示事件信息（默认不展示以节省Token）/ Whether to show event information in the details (default false to save tokens)",
+              "type": "boolean"
+            },
             "version": {
               "description": "资源的API版本 / API version of the resource",
               "type": "string"
@@ -309,6 +313,88 @@
           }
         },
         "name": "describe_k8s_resource"
+      },
+      {
+        "annotations": {
+          "title": "Diagnose CSI Storage",
+          "readOnlyHint": true,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "description": "针对指定的PVC，诊断其CSI存储驱动和挂载卷绑定状态。包括获取VolumeAttachment状态与CSI控制器Pod异常。 / Diagnose CSI driver and VolumeAttachment bind status for a given PVC.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cluster": {
+              "description": "集群名称（使用空字符串表示默认集群）/ Cluster name",
+              "type": "string"
+            },
+            "namespace": {
+              "description": "命名空间 / Namespace",
+              "type": "string"
+            },
+            "pvc_name": {
+              "description": "PVC 名称 / PVC name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "namespace",
+            "pvc_name"
+          ]
+        },
+        "name": "diagnose_k8s_csi_driver"
+      },
+      {
+        "annotations": {
+          "title": "Diagnose Pod Network",
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "description": "诊断Pod网络连通性。优先在容器内测试目标端口，若缺少工具则动态拉起临时诊断Pod进行测试。 / Diagnose pod network connectivity. First tries exec in the target pod, falls back to a temp diag pod if utilities are missing.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cluster": {
+              "description": "集群名称（使用空字符串表示默认集群）/ Cluster name",
+              "type": "string"
+            },
+            "container": {
+              "description": "容器名称 / Container name",
+              "type": "string"
+            },
+            "name": {
+              "description": "源 Pod 名称 / Source Pod name",
+              "type": "string"
+            },
+            "namespace": {
+              "description": "命名空间 / Namespace",
+              "type": "string"
+            },
+            "port": {
+              "description": "目标端口 / Target port",
+              "type": "number"
+            },
+            "target": {
+              "description": "目标 IP, 域名或 FQDN / Target IP, host or FQDN",
+              "type": "string"
+            },
+            "timeout": {
+              "description": "超时时间（秒，默认 5 秒）/ Timeout in seconds (default 5)",
+              "type": "number"
+            }
+          },
+          "required": [
+            "namespace",
+            "name",
+            "target",
+            "port"
+          ]
+        },
+        "name": "diagnose_k8s_pod_network"
       },
       {
         "annotations": {
@@ -423,6 +509,33 @@
       },
       {
         "annotations": {
+          "title": "Get Node OOM Logs",
+          "readOnlyHint": true,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "description": "扫描节点内核日志（dmesg/syslog/messages）中是否有内存溢出（OOM-killer）记录。 / Scan node kernel logs for Out-of-Memory (OOM-killer) events.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cluster": {
+              "description": "集群名称（使用空字符串表示默认集群）/ Cluster name",
+              "type": "string"
+            },
+            "node_name": {
+              "description": "节点名称 / Node name",
+              "type": "string"
+            }
+          },
+          "required": [
+            "node_name"
+          ]
+        },
+        "name": "get_k8s_node_dmesg_oom"
+      },
+      {
+        "annotations": {
           "title": "Get Node IP Usage",
           "readOnlyHint": true,
           "destructiveHint": true,
@@ -482,6 +595,42 @@
           ]
         },
         "name": "get_k8s_node_resource_usage"
+      },
+      {
+        "annotations": {
+          "title": "Get Node System Logs",
+          "readOnlyHint": true,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "description": "获取指定节点的系统组件日志（如 kubelet, containerd 等）。从 Kubelet logs 代理接口拉取。 / Retrieve system service logs (kubelet, containerd, etc.) from Kubelet logs proxy.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cluster": {
+              "description": "集群名称（使用空字符串表示默认集群）/ Cluster name",
+              "type": "string"
+            },
+            "node_name": {
+              "description": "节点名称 / Node name",
+              "type": "string"
+            },
+            "service": {
+              "description": "服务组件名称 (如 kubelet, containerd, docker) / Service unit name (e.g. kubelet, containerd, docker)",
+              "type": "string"
+            },
+            "tail_lines": {
+              "description": "返回最后的日志行数（默认 100）/ Number of tail log lines (default 100)",
+              "type": "number"
+            }
+          },
+          "required": [
+            "node_name",
+            "service"
+          ]
+        },
+        "name": "get_k8s_node_system_logs"
       },
       {
         "annotations": {
@@ -756,6 +905,60 @@
       },
       {
         "annotations": {
+          "title": "Get Metrics History",
+          "readOnlyHint": true,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "description": "获取Pod或Node资源（CPU/Memory）的Prometheus历史指标。 / Get historical CPU/Memory metrics for a Pod or Node from Prometheus.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cluster": {
+              "description": "集群名称（使用空字符串表示默认集群）/ Cluster name",
+              "type": "string"
+            },
+            "duration_minutes": {
+              "description": "查询过去多少分钟的历史（默认 60）/ Query range in minutes (default 60)",
+              "type": "number"
+            },
+            "kind": {
+              "description": "资源类型 (Pod 或 Node) / Resource kind",
+              "type": "string"
+            },
+            "metric_type": {
+              "description": "指标类型 (cpu 或 memory) / Metric type",
+              "type": "string"
+            },
+            "name": {
+              "description": "资源名称 (Pod名或Node名) / Resource name",
+              "type": "string"
+            },
+            "namespace": {
+              "description": "资源所在的命名空间（如果是Node则填空或default）/ Namespace",
+              "type": "string"
+            },
+            "prometheus_namespace": {
+              "description": "Prometheus所在命名空间（可选，自动探测）/ Prometheus namespace (optional)",
+              "type": "string"
+            },
+            "prometheus_service": {
+              "description": "Prometheus服务名称（可选，自动探测）/ Prometheus service (optional)",
+              "type": "string"
+            }
+          },
+          "required": [
+            "namespace",
+            "name",
+            "kind",
+            "metric_type"
+          ]
+        },
+        "name": "get_k8s_resource_metrics_history"
+      },
+      {
+        "annotations": {
           "title": "Get StorageClass PV Count",
           "readOnlyHint": true,
           "destructiveHint": true,
@@ -932,6 +1135,37 @@
       },
       {
         "annotations": {
+          "title": "Execute Kubectl Command",
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "description": "执行任意 kubectl 命令作为兜底工具 / Run any kubectl command as a fallback tool",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "args": {
+              "description": "参数列表（可选，如果指定了 cmd，则优先使用 cmd 并解析） / The arguments list (optional)",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "cluster": {
+              "description": "运行命令的集群（使用空字符串表示默认集群）/ Cluster where the command is executed (use empty string for default cluster)",
+              "type": "string"
+            },
+            "cmd": {
+              "description": "要执行的 kubectl 命令字符串，例如 'get pods -n default' / The kubectl command string to execute, e.g., 'get pods -n default'",
+              "type": "string"
+            }
+          }
+        },
+        "name": "kubectl"
+      },
+      {
+        "annotations": {
           "title": "Label Resource",
           "readOnlyHint": false,
           "destructiveHint": true,
@@ -1026,38 +1260,6 @@
       },
       {
         "annotations": {
-          "title": "List Deployment Events",
-          "readOnlyHint": true,
-          "destructiveHint": true,
-          "idempotentHint": false,
-          "openWorldHint": true
-        },
-        "description": "列出Deployment相关的事件。 kubectl get events -n <namespace> ) ",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "cluster": {
-              "description": "运行事件的集群（使用空字符串表示默认集群）",
-              "type": "string"
-            },
-            "name": {
-              "description": "Deploy名称",
-              "type": "string"
-            },
-            "namespace": {
-              "description": "Deploy所在的命名空间",
-              "type": "string"
-            }
-          },
-          "required": [
-            "namespace",
-            "name"
-          ]
-        },
-        "name": "list_k8s_deploy_event"
-      },
-      {
-        "annotations": {
           "title": "List Events",
           "readOnlyHint": true,
           "destructiveHint": true,
@@ -1070,6 +1272,10 @@
           "properties": {
             "cluster": {
               "description": "运行事件的集群（使用空字符串表示默认集群）/ Cluster where the events are running (use empty string for default cluster)",
+              "type": "string"
+            },
+            "involvedObjectKind": {
+              "description": "按涉及对象类型过滤事件 (如 Pod, Deployment, Node) / Filter events by involved object kind (e.g. Pod, Deployment, Node)",
               "type": "string"
             },
             "involvedObjectName": {
@@ -1154,38 +1360,6 @@
           ]
         },
         "name": "list_k8s_pod"
-      },
-      {
-        "annotations": {
-          "title": "List Pod Events",
-          "readOnlyHint": true,
-          "destructiveHint": true,
-          "idempotentHint": false,
-          "openWorldHint": true
-        },
-        "description": "列出Pod相关的事件。 kubectl get events -n <namespace> ) ",
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "cluster": {
-              "description": "运行事件的集群（使用空字符串表示默认集群）",
-              "type": "string"
-            },
-            "name": {
-              "description": "Pod名称",
-              "type": "string"
-            },
-            "namespace": {
-              "description": "Pod所在的命名空间",
-              "type": "string"
-            }
-          },
-          "required": [
-            "namespace",
-            "name"
-          ]
-        },
-        "name": "list_k8s_pod_event"
       },
       {
         "annotations": {
@@ -1669,6 +1843,47 @@
           ]
         },
         "name": "taint_k8s_node"
+      },
+      {
+        "annotations": {
+          "title": "Test DNS Resolve",
+          "readOnlyHint": true,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": true
+        },
+        "description": "在Pod内部进行DNS解析测试，检查解析链条并诊断CoreDNS服务状态。 / Test DNS resolution inside Pod, check resolv.conf, and diagnose CoreDNS health.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "cluster": {
+              "description": "集群名称（使用空字符串表示默认集群）/ Cluster name",
+              "type": "string"
+            },
+            "container": {
+              "description": "容器名称 / Container name",
+              "type": "string"
+            },
+            "domain": {
+              "description": "要解析的目标域名 (如 kubernetes.default.svc.cluster.local) / Target domain to resolve",
+              "type": "string"
+            },
+            "name": {
+              "description": "源 Pod 名称 / Source Pod name",
+              "type": "string"
+            },
+            "namespace": {
+              "description": "命名空间 / Namespace",
+              "type": "string"
+            }
+          },
+          "required": [
+            "namespace",
+            "name",
+            "domain"
+          ]
+        },
+        "name": "test_k8s_dns_resolve"
       },
       {
         "annotations": {

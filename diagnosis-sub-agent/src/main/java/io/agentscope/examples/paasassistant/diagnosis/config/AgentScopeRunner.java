@@ -100,6 +100,9 @@ public class AgentScopeRunner {
     @Value("${agentscope.mem0.infer-enabled:true}")
     boolean mem0InferEnabled;
 
+    @Value("${agentscope.mcp.k8sgpt-mcp-url:http://localhost:8089/mcp}")
+    String k8sgptMcpUrl;
+
     @Value("${agentscope.mcp.k8s-mcp-url:http://localhost:9096/mcp}")
     String k8sMcpUrl;
 
@@ -136,6 +139,7 @@ public class AgentScopeRunner {
                 mem0BaseUrl,
                 mem0ApiType,
                 mem0InferEnabled,
+                k8sgptMcpUrl,
                 k8sMcpUrl,
                 mcpToolTimeout);
     }
@@ -183,6 +187,7 @@ public class AgentScopeRunner {
         private final String mem0ApiType;
         private final boolean mem0InferEnabled;
         private final String k8sMcpUrl;
+        private final String k8sgptMcpUrl;
         private final Duration mcpToolTimeout;
         private volatile boolean mcpInitialized = false;
 
@@ -198,6 +203,7 @@ public class AgentScopeRunner {
                 String mem0BaseUrl,
                 String mem0ApiType,
                 boolean mem0InferEnabled,
+                String k8sgptMcpUrl,
                 String k8sMcpUrl,
                 Duration mcpToolTimeout) {
             this.agentName = agentName;
@@ -212,6 +218,7 @@ public class AgentScopeRunner {
             this.mem0ApiType = mem0ApiType;
             this.mem0InferEnabled = mem0InferEnabled;
             this.k8sMcpUrl = k8sMcpUrl;
+            this.k8sgptMcpUrl = k8sgptMcpUrl;
             this.mcpToolTimeout = mcpToolTimeout;
         }
 
@@ -247,6 +254,22 @@ public class AgentScopeRunner {
                 synchronized (this) {
                     if (!mcpInitialized) {
                         try {
+                            // k8sgpt mcp 工具注册
+                            McpClientWrapper k8sgptMcpClient = McpClientBuilder.create("k8sgpt-mcp-server")
+                                    .streamableHttpTransport(k8sgptMcpUrl)
+                                    .timeout(mcpToolTimeout)
+                                    .buildSync();
+                            // 1. 资源问题快速分析
+                            toolkit.createToolGroup("k8s_resource_analyze", "k8s资源问题快速分析", true);
+                            toolkit.registration().mcpClient(k8sgptMcpClient)
+                                    .enableTools(List.of(
+                                            "analyze",
+                                            "list-filters",
+                                            "add-filters"))
+                                    .group("k8s_resource_analyze")
+                                    .apply();
+
+
                             // Register standard local MCP service via SSE
                             McpClientWrapper komMcpClient = McpClientBuilder.create("kom-mcp-server")
                                     .streamableHttpTransport(k8sMcpUrl)
@@ -257,50 +280,50 @@ public class AgentScopeRunner {
 
 
                             // 1. 集群管理 (Cluster Management)
-                            toolkit.createToolGroup("cluster_management", "Kubernetes集群的列表管理", true);
+                            toolkit.createToolGroup("cluster_management", "Kubernetes多集群管理，支持列出/查询可用K8s集群列表", true);
                             toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of("list_k8s_clusters"))
                                     .group("cluster_management").apply();
 
                             // 2. 节点管理 (Node)
-                            toolkit.createToolGroup("node_management", "节点状态与资源占用管理", false);
+                            toolkit.createToolGroup("node_management", "Kubernetes节点管理，包含节点IP/资源占用/运行Pod数量查询，支持系统日志检索和内核dmesg OOM排查", false);
                             toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
-                                            "get_k8s_node_ip_usage", "get_k8s_node_resource_usage",
-                                            "get_k8s_pod_count_running_on_node", "get_k8s_top_node",
-                                            "list_k8s_node"))
+                                            "list_k8s_node","get_k8s_node_ip_usage",
+                                            "get_k8s_top_node", "get_k8s_node_resource_usage",
+                                            "get_k8s_pod_count_running_on_node",
+                                             "get_k8s_node_system_logs", "get_k8s_node_dmesg_oom"))
                                     .group("node_management").apply();
 
                             // 3. 部署管理 (Deployment)
-                            toolkit.createToolGroup("deployment_management", "Deployment的状态与事件管理", true);
+                            toolkit.createToolGroup("deployment_management", "工作负载与部署管理，包含Deployment的Rollout历史与状态查询，HPA配置列表及资源历史指标(PromQL历史曲线)", true);
                             toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
-                                            "get_k8s_deployment_hpa_list", "get_k8s_deployment_rollout_history",
-                                            "get_k8s_deployment_rollout_status", "list_k8s_deploy_event"))
+                                            "get_k8s_deployment_rollout_history", "get_k8s_deployment_rollout_status",
+                                            "get_k8s_deployment_hpa_list","get_k8s_resource_metrics_history"))
                                     .group("deployment_management").apply();
 
 
                             // 4. Pod管理
-                            toolkit.createToolGroup("pod_management", "Pod的生命周期、日志、执行与关联资源管理", true);
+                            toolkit.createToolGroup("pod_management", "Pod生命周期与容器内诊断管理，支持Pod日志拉取、环境变量与关联Services/Endpoints查询、容器内命令执行与文件列表检索", true);
                             toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
-                                            "describe_k8s_pod",
-                                            "get_k8s_pod_linked_env", "get_k8s_pod_linked_services",
-                                            "get_k8s_pod_logs", "get_k8s_pod_resource_usage",
-                                            "get_k8s_top_pod", "get_pod_linked_endpoints",
-                                            "get_pod_linked_env_from_yaml", "list_files_in_k8s_pod",
-                                            "list_k8s_pod", "list_k8s_pod_event", "list_pod_all_files",
+                                            "describe_k8s_pod","list_k8s_pod","list_k8s_pod_event",
+                                            "get_k8s_pod_logs","get_k8s_pod_linked_env","get_pod_linked_env_from_yaml",
+                                             "get_k8s_pod_linked_services","get_pod_linked_endpoints",
+                                            "get_k8s_pod_resource_usage","get_k8s_top_pod",
+                                             "list_files_in_k8s_pod","list_pod_all_files",
                                             "run_command_in_k8s_pod"))
                                     .group("pod_management").apply();
 
                             // 5. 事件管理 (Event)
-                            toolkit.createToolGroup("event_management", "Kubernetes集群事件查询", true);
+                            toolkit.createToolGroup("event_management", "Kubernetes事件诊断管理，支持通过命名空间和涉及对象名称/类型过滤检索集群事件", true);
                             toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of("list_k8s_event"))
                                     .group("event_management").apply();
 
-                            // 6. 动态资源管理 (Dynamic Resource/CRD)
-                            toolkit.createToolGroup("dynamic_resource_management", "Kubernetes任意资源(含CRD)的动态查询", false);
+                            // 6. 资源管理 (Dynamic Resource/CRD)
+                            toolkit.createToolGroup("dynamic_resource_management", "Kubernetes任意资源与CRD动态诊断管理，支持命名空间列表查询以及任意特定类型K8s资源(如Quota等)的Get/List/Describe", false);
                             toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
                                             "describe_k8s_resource", "get_k8s_resource",
@@ -308,18 +331,27 @@ public class AgentScopeRunner {
                                     .group("dynamic_resource_management").apply();
 
                             // 7. 存储管理 (Storage)
-                            toolkit.createToolGroup("storage_management", "PV、PVC与StorageClass管理", false);
+                            toolkit.createToolGroup("storage_management", "持久化存储与PV/PVC管理，支持Pod关联存储卷绑定状态、StorageClass的PV/PVC数量统计及CSI驱动挂载卡死故障诊断", false);
                             toolkit.registration().mcpClient(sanitizedK8sClient)
                                     .enableTools(List.of(
                                             "get_k8s_pod_linked_pv", "get_k8s_pod_linked_pvc",
-                                            "get_k8s_storageclass_pv_count", "get_k8s_storageclass_pvc_count"))
+                                            "get_k8s_storageclass_pv_count", "get_k8s_storageclass_pvc_count",
+                                            "diagnose_k8s_csi_driver"))
                                     .group("storage_management").apply();
 
-                            // 8. Ingress管理
-                            toolkit.createToolGroup("ingress_management", "Ingress路由管理", false);
+                            // 8. Ingress与网络路由管理
+                            toolkit.createToolGroup("ingress_management", "网络连通性与路由管理，支持Pod关联Ingress路由查询、Pod内网络连通性探测(nc/curl/wget/临时诊断Pod测试)及CoreDNS域名解析测试", false);
                             toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of("get_pod_linked_ingresses"))
+                                    .enableTools(List.of(
+                                            "get_pod_linked_ingresses", "diagnose_k8s_pod_network",
+                                            "test_k8s_dns_resolve"))
                                     .group("ingress_management").apply();
+
+                            // 9. Kubectl 兜底管理
+                            toolkit.createToolGroup("kubectl_management", "Kubectl只读兜底命令行管理，支持在专用MCP工具受限时执行只读命令(如get/describe/logs -p等)", false);
+                            toolkit.registration().mcpClient(sanitizedK8sClient)
+                                    .enableTools(List.of("kubectl"))
+                                    .group("kubectl_management").apply();
 
                             // 注册 Meta Tool，允许 LLM 在运行时动态激活或停用上述工具组
                             toolkit.registerMetaTool();

@@ -22,6 +22,17 @@ references:
 
 ## 诊断工作流
 
+### Step 0：命名空间自动化初步巡检（K8sGPT）
+
+> **💡 最佳实践**：怀疑 Namespace 配额或系统异常时，直接调用 K8sGPT 获取顶层错误信息。
+
+```
+工具：analyze(namespace=<ns>, filters=["Pod", "ReplicaSet", "StatefulSet"])
+→ 当怀疑 Namespace 的 Quota 满导致 Pod 创建失败时，直接针对该 namespace 运行（无需指定特定 name），K8sGPT 会自动抓取到控制器因超出 ResourceQuota 而报的 FailedCreate 事件。
+```
+
+---
+
 ### Step 1：确认 Namespace 列表
 
 ```
@@ -41,6 +52,8 @@ references:
 ② 查看具体配额的使用情况
    工具：get_k8s_resource(cluster, namespace, kind=ResourceQuota,
          name=<quota>, version=v1)
+   或使用 kubectl 兜底命令查看 Quota 详情：
+   工具：kubectl(cluster, cmd="describe resourcequota <quota> -n <namespace>")
    → 对比 status.used vs status.hard
    → Used 接近或等于 Hard → 配额即将/已耗尽
 
@@ -72,6 +85,8 @@ references:
 
    → 对每个相关 Namespace 执行：
    工具：list_k8s_pod(cluster, namespace=<ns>)
+   或使用 kubectl 兜底命令全局检索 Pod（全命名空间）：
+   工具：kubectl(cluster, cmd="get pods -A -o wide")
    → 找到实际运行的 Pod
 
 ② 确认跨 Namespace 访问使用了正确的 FQDN 格式
@@ -98,3 +113,15 @@ references:
 > **Evidence Chain:** ResourceQuota `hard.requests.cpu="4"` 配置 → 当前 `used.requests.cpu="3.8"` → 新 Pod 申请 500m → Admission Controller 检测到超限，拒绝创建 → Pod 无法启动，上级控制器 ReplicaSet 的 Events 显示 `FailedCreate` 且包含 "exceeded quota"。  
 > **Confidence:** High — `get_k8s_resource(ResourceQuota)` 返回 `used=3.8/hard=4`；对 ReplicaSet 的 `list_k8s_event` 返回 `FailedCreate` 且 Message 包含 "forbidden: exceeded quota"。  
 > **Recommended Fix:** 建议运维人员选择以下方案之一：① 将新 Deployment 的 `resources.requests.cpu` 减小至剩余可用量（如 100m）；② 联系平台管理员申请扩大该 Namespace 的 ResourceQuota（需说明业务诉求）；③ 排查并清理 Namespace 内已不再使用的 Deployment/Pod 以释放配额。
+
+---
+
+## 兜底排查机制（kubectl）
+
+在进行命名空间层面的资源或隔离诊断遇到工具受限时，可使用只读 `kubectl` 兜底工具执行命令：
+- 宏观排查全局 Namespace 列表及状态：
+  `工具：kubectl(cluster, cmd="get namespaces")`
+- 全局跨 Namespace 查看 Pod 信息：
+  `工具：kubectl(cluster, cmd="get pods -A -o wide")`
+- 查看资源配额（ResourceQuota）详细约束与实际额度：
+  `工具：kubectl(cluster, cmd="describe resourcequota <quota-name> -n <namespace>")`

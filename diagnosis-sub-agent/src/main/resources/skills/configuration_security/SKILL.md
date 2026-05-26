@@ -27,6 +27,17 @@ references:
 
 ## 诊断工作流
 
+### Step 0：配置与安全自动化筛查（K8sGPT）
+
+> **💡 最佳实践**：在繁杂的 Events 和 RBAC 绑定关系中迷失前，先尝试让 K8sGPT 一键发现缺失的配置或被拦截的准入控制。
+
+```
+工具：analyze(namespace=<ns>, name=<pod-or-workload>, filters=["Pod", "MutatingWebhookConfiguration", "ValidatingWebhookConfiguration"])
+→ K8sGPT 可以快速识别 ConfigMap/Secret Key 缺失、Webhook 拦截或者部分权限安全导致的启动失败，作为手工检索 Events 之前的有效补充。
+```
+
+---
+
 ### Step 1：识别问题类型
 
 ```
@@ -52,6 +63,8 @@ references:
 ② 查看该 SA 绑定的 RoleBinding
    工具：list_k8s_resource(cluster, namespace, kind=RoleBinding,
          group=rbac.authorization.k8s.io, version=v1)
+   或使用 kubectl 兜底命令批量查询 RoleBinding 和 ClusterRoleBinding：
+   工具：kubectl(cluster, cmd="get rolebinding,clusterrolebinding -n <namespace> -o wide")
    → 找 subjects 中包含该 ServiceAccount 的 RoleBinding
    ⚠️ SRE 提醒：在刚刚应用新 YAML（如刚刚创建/更新了 RoleBinding）的瞬间，API-Server 的鉴权或 Kubelet 鉴权缓存可能存在 10-30 秒的短时间延迟。若发现 RoleBinding 配置正确但仍然偶发/瞬间报 403，需考虑缓存同步延迟因素。
 
@@ -87,6 +100,8 @@ references:
 ② 查看 ConfigMap 实际包含的键名
    工具：get_k8s_resource(cluster, namespace, kind=ConfigMap,
          name=<cm>, version=v1)
+   或使用 kubectl 兜底命令查看 ConfigMap 详情：
+   工具：kubectl(cluster, cmd="get configmap <cm> -n <namespace> -o yaml")
    → 读取 data 字段的所有 key
 
 ③ 对比 Pod 引用的 key 与 ConfigMap 实际 key 是否一致
@@ -173,3 +188,16 @@ references:
 > **Evidence Chain:** Pod spec 引用 `configMapKeyRef.key="database_host"` → K8s Kubelet 在启动容器前验证 ConfigMap 键存在性失败 → 容器配置注入失败 → Pod 进入 `CreateContainerConfigError` 状态，无法启动。  
 > **Confidence:** High — `describe_k8s_pod` Events 含 "couldn't find key database_host in ConfigMap default/app-config"；`get_k8s_resource(ConfigMap, app-config)` data 字段中无 database_host 键。  
 > **Recommended Fix:** 建议运维人员在 ConfigMap "app-config" 的 `data` 字段中补充 `database_host: "<正确的数据库地址>"`，补充后需重启 Pod（通过 rollout restart）使变更生效。
+
+---
+
+## 兜底排查机制（kubectl）
+
+在排查安全性准入或 RBAC/配置项时遇到专用 MCP 工具失效时，可使用只读 `kubectl` 兜底工具执行命令：
+- 宏观排查 Namespace 内的 RBAC 绑定关系：
+  `工具：kubectl(cluster, cmd="get role,rolebinding,serviceaccount -n <namespace> -o wide")`
+- 详细查看 ClusterRoleBinding 和全局权限（只读）：
+  `工具：kubectl(cluster, cmd="get clusterrolebinding -o wide")`
+- 检查 ConfigMap / Secret 的数据键名（只读查看，禁止在报告中明文打印 Secret 具体值）：
+  `工具：kubectl(cluster, cmd="get configmap <cm-name> -n <namespace> -o yaml")`
+  `工具：kubectl(cluster, cmd="get secret <secret-name> -n <namespace> -o yaml")`

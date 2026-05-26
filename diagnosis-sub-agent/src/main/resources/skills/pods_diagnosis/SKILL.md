@@ -26,10 +26,23 @@ references:
 
 ## 诊断工作流
 
+### Step 0：自动化诊断（K8sGPT）
+
+> **💡 最佳实践**：在进行繁琐的手工抓取日志和事件前，优先让 K8sGPT 进行自动化扫描定界。
+
+```
+工具：analyze(namespace=<ns>, name=<pod>, filters=["Pod"])
+→ 若输出结果已包含明确错误原因（如 CrashLoopBackOff 退出码解释、ImagePullBackOff 原因），可直接参考该结论，跳过后续部分手工排查步骤。
+```
+
+---
+
 ### Step 1：确认 Pod 状态
 
 ```
 工具：list_k8s_pod(cluster, namespace)
+或使用 kubectl 兜底工具查看宽表以获取 Pod IP 和主机节点名：
+工具：kubectl(cluster, cmd="get pods -n <namespace> -o wide")
 → 观察 STATUS / READY / RESTARTS 列
 
 STATUS = Pending
@@ -60,7 +73,7 @@ Running 但 Endpoints 为空
 
 ```
 ① 获取 Pod Events（获取拉取失败的具体错误）
-   工具：list_k8s_pod_event(cluster, namespace, name=<pod>)
+   工具：list_k8s_event(cluster, namespace, involvedObjectName=<pod>, involvedObjectKind="Pod")
    → 读取 "Failed to pull image" 事件的 Message 字段
 
 ② 确认镜像全名（含 registry 地址和 tag）
@@ -84,9 +97,13 @@ Running 但 Endpoints 为空
 ```
 ① 查看当前日志（容器刚重启后的输出）
    工具：get_k8s_pod_logs(cluster, namespace, name=<pod>, tail=100)
+   或使用 kubectl 兜底：
+   工具：kubectl(cluster, cmd="logs <pod> -n <namespace> --tail=100")
 
 ② 查看上次崩溃日志（最关键！）
    工具：get_k8s_pod_logs(cluster, namespace, name=<pod>, previous=true, tail=100)
+   或使用 kubectl 兜底：
+   工具：kubectl(cluster, cmd="logs <pod> -n <namespace> -p --tail=100")
    ⚠️ SRE 提醒：若 Exit Code 为 137 (OOMKilled)，Linux Kernel 的 OOM Killer 是强行发送 SIGKILL 瞬间杀死进程，应用通常来不及输出任何 "Out of Memory" 日志。此时 previous 日志可能完全没有报错信息，这是正常现象，不要因此困惑。
 
 ③ 查看容器 Exit Code 和 Last State
@@ -150,7 +167,7 @@ Running 但 Endpoints 为空
 
 ```
 ① 确认是 Liveness Probe 触发重启
-   工具：list_k8s_pod_event(cluster, namespace, name=<pod>)
+   工具：list_k8s_event(cluster, namespace, involvedObjectName=<pod>, involvedObjectKind="Pod")
    → 确认 Events 含 "Liveness probe failed"，记录具体错误信息
 
 ② 查看 Liveness Probe 配置
@@ -177,7 +194,7 @@ Running 但 Endpoints 为空
    工具：get_pod_linked_endpoints(cluster, namespace, name=<pod>)
 
 ② 若 Endpoints 为空，查看 Readiness 状态
-   工具：list_k8s_pod_event(cluster, namespace, name=<pod>)
+   工具：list_k8s_event(cluster, namespace, involvedObjectName=<pod>, involvedObjectKind="Pod")
    → 找 "Readiness probe failed" 事件
 
 ③ 查看 Readiness Probe 配置
@@ -208,5 +225,17 @@ Running 但 Endpoints 为空
 **示例（Liveness Probe 路径错误）**：
 > **Root Cause:** Deployment `livenessProbe.httpGet.path` 配置为 `/health`，但应用实际暴露的健康检查路径为 `/healthz`。  
 > **Evidence Chain:** `livenessProbe.path=/health` 配置写入 → kubelet 每 10 秒 GET /health 收到 404 → 达到 `failureThreshold=3` 后 kubelet 重启容器 → 容器反复重启，RESTARTS 持续递增，用户观察到 CrashLoopBackOff。  
-> **Confidence:** High — `list_k8s_pod_event` 返回 "Liveness probe failed: HTTP probe failed with statuscode: 404"；`run_command_in_k8s_pod` 验证 /healthz 返回 200，/health 返回 404。  
+> **Confidence:** High — `list_k8s_event` 返回 "Liveness probe failed: HTTP probe failed with statuscode: 404" ; `run_command_in_k8s_pod` 验证 /healthz 返回 200，/health 返回 404。  
 > **Recommended Fix:** 建议运维人员将 Deployment 的 `livenessProbe.httpGet.path` 修改为 `/healthz`，同时检查 `initialDelaySeconds` 是否留有足够启动预热时间（建议 ≥ 30s）。
+
+---
+
+## 兜底排查机制（kubectl）
+
+在上述专用 MCP 工具（如 `get_k8s_pod_logs` 或 `describe_k8s_pod`）不可用、执行出错或有局限性时，可使用只读 `kubectl` 兜底工具执行命令：
+- 宏观排查或检查 Pod 运行所在 IP 与 Node 节点：
+  `工具：kubectl(cluster, cmd="get pods -n <namespace> -o wide")`
+- 查看 Pod 运行事件与具体条件详情：
+  `工具：kubectl(cluster, cmd="describe pod <pod-name> -n <namespace>")`
+- 获取容器崩溃前的 previous 日志：
+  `工具：kubectl(cluster, cmd="logs <pod-name> -n <namespace> -c <container-name> -p --tail=100")`

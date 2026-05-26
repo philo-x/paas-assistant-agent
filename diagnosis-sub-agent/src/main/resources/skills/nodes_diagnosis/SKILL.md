@@ -25,10 +25,23 @@ references:
 
 ## 诊断工作流
 
+### Step 0：节点与调度约束自动化检查（K8sGPT）
+
+> **💡 最佳实践**：在梳理复杂的亲和性、污点和 PDB 前，先让 K8sGPT 给出高度概括的诊断结论。
+
+```
+工具：analyze(filters=["Node", "PodDisruptionBudget", "Pod"])
+→ 利用 K8sGPT 一键分析 Node 的 NotReady 原因，以及 PDB 阻塞和 Pod 调度失败（资源/污点不满足）的综合情况。（通常节点故障不需要指定 namespace，若针对特定未调度 Pod 可带上 namespace 参数）
+```
+
+---
+
 ### Step 1：获取节点全局视图
 
 ```
 工具：list_k8s_node(cluster)
+或使用 kubectl 兜底命令查看节点宽表信息（如内网/外网 IP、操作系统内核）：
+工具：kubectl(cluster, cmd="get nodes -o wide")
 → 观察所有节点的 STATUS / ROLES / VERSION
 → 若有节点 NotReady → 跳转 Step 4（节点健康诊断）
 → 若所有节点 Ready → 问题在调度层 → 继续 Step 2
@@ -37,7 +50,7 @@ references:
 ### Step 2：识别 Pending Pod 的调度失败原因
 
 ```
-工具：list_k8s_pod_event(cluster, namespace, name=<pending-pod>)
+工具：list_k8s_event(cluster, namespace, involvedObjectName=<pending-pod>, involvedObjectKind="Pod")
 → 读取 Events 区块，找到调度失败关键字
 
 "Insufficient cpu" 或 "Insufficient memory"
@@ -64,6 +77,9 @@ references:
 
 ② 获取集群节点资源用量排名
    工具：get_k8s_top_node(cluster)
+   或使用 kubectl top node/pod 兜底监控：
+   工具：kubectl(cluster, cmd="top nodes")
+   工具：kubectl(cluster, cmd="top pods -A")
    → 识别哪些节点资源已接近饱和
 
 ③ 查看单节点详细可分配资源
@@ -160,7 +176,11 @@ references:
    → 若 IP 池耗尽 → 新 Pod 无法调度
 
 ④ 查看节点上的 Events
-   工具：list_k8s_event(cluster, namespace=<namespace>, involvedObjectName=<node>)
+   工具：list_k8s_event(cluster, namespace=<namespace>, involvedObjectName=<node>, involvedObjectKind="Node")
+
+⑤ 查看节点系统日志或 OOM 日志 (特别是 NotReady 节点)
+   工具：get_k8s_node_system_logs(cluster, name=<node>, pattern="error|fail|kubelet")
+   工具：get_k8s_node_dmesg_oom(cluster, name=<node>)
 ```
 
 > 参考：[Node Condition 类型与处置指南](references/node_condition_guide.md)
@@ -185,3 +205,16 @@ references:
 > **Evidence Chain:** `spec.resources.requests.cpu=8000m` 写入 → Scheduler 遍历所有节点均返回 Insufficient cpu → Pod 无法完成调度 → Pod 持续处于 Pending 状态。  
 > **Confidence:** High — `get_k8s_node_resource_usage` 返回最大节点 Allocatable CPU = 7800m；`describe_k8s_pod` 返回 Pod requests.cpu = 8000m，差值直接导致调度失败。  
 > **Recommended Fix:** 建议运维人员将 Deployment `spec.template.spec.containers[].resources.requests.cpu` 修改为节点可分配量以内的值（如 `2000m`），或向基础设施团队申请扩容节点。
+
+---
+
+## 兜底排查机制（kubectl）
+
+当特定的节点或资源指标 MCP 工具受限或无法上报最新状态时，可使用只读 `kubectl` 兜底工具执行命令：
+- 查看节点宽表及全局网络/操作系统属性：
+  `工具：kubectl(cluster, cmd="get nodes -o wide")`
+- 监控集群实时的节点 and Pod 资源开销：
+  `工具：kubectl(cluster, cmd="top nodes")`
+  `工具：kubectl(cluster, cmd="top pods -A")`
+- 查看节点的详细配置与脏污/条件详情：
+  `工具：kubectl(cluster, cmd="describe node <node-name>")`
