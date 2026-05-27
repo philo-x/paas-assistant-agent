@@ -21,8 +21,8 @@ public class TruncationHook implements Hook {
 
     private static final Logger logger = LoggerFactory.getLogger(TruncationHook.class);
 
-    // Limit output to ~10000 characters
-    private static final int MAX_OUTPUT_LENGTH = 50000;
+    // Limit output to ~100000 characters
+    private static final int MAX_OUTPUT_LENGTH = 200000;
 
     @Override
     @SuppressWarnings("unchecked")

@@ -2,8 +2,6 @@ k8sgpt serve --port 8082 --mcp --mcp-http --mcp-port 8089
 kubectl -n mem0 port-forward svc/mem0-api 8888:8000
 kubectl -n mem0 port-forward svc/mem0-dashboard 3000:3000
 
-docker build --build-arg MODULE=guide-sub-agent --build-arg PORT=8081 \
--t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-guide:2.0.0 .
 
 docker build --build-arg MODULE=diagnosis-sub-agent --build-arg PORT=8082 \
 -t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-diagnosis:2.0.0 .
@@ -12,6 +10,9 @@ docker build --build-arg MODULE=analyze-sub-agent --build-arg PORT=8083 \
 -t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-analyze:2.0.0 .
 
 docker build -t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-frontend:2.0.0 .
+
+docker build --build-arg MODULE=guide-sub-agent --build-arg PORT=8081 \
+-t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-guide:2.0.0 .
 
 
 
