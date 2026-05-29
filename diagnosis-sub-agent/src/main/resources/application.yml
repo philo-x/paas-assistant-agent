@@ -97,7 +97,7 @@ agent:
       | `namespaces_diagnosis` | Namespaces | Pod 创建失败 exceeded quota、Namespace 隔离导致资源找不到 |
       | `pods_diagnosis` | Pods | CrashLoopBackOff、ImagePullBackOff、Init:0/N、Liveness probe failed、Endpoints 为空但 Pod Running |
       | `workloads_diagnosis` | Workloads | Deployment AVAILABLE=0、滚动更新卡住、HPA TARGETS unknown、蓝绿/金丝雀流量异常 |
-      | `networking_diagnosis` | Networking | Endpoints 为空、connection refused/timeout、DNS 失败、Ingress 404、NetworkPolicy 拦截 |
+      | `networking_diagnosis` | Networking | Endpoints 为空、connection refused/timeout、DNS 失败、ALB2 404、NetworkPolicy 拦截 |
       | `storage_diagnosis` | Storage | PVC Pending、ContainerCreating 挂载失败、Permission denied 写卷、数据丢失 |
       | `configuration_security` | Configuration | 403 Forbidden、ConfigMap key 缺失、runAsNonRoot 冲突、Pod 被准入控制器拒绝 |
 

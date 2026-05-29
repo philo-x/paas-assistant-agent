@@ -30,7 +30,6 @@
 | `count/configmaps` | ConfigMap 数量上限 |
 | `count/secrets` | Secret 数量上限 |
 | `count/persistentvolumeclaims` | PVC 数量上限 |
-| `count/ingresses.networking.k8s.io` | Ingress 数量上限 |
 
 ---
 

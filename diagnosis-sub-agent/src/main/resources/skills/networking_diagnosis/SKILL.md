@@ -1,11 +1,11 @@
 ---
 name: networking_diagnosis
-version: "1.0"
+version: "1.2"
 category: Networking
 description: >
-  诊断 Kubernetes Service 连通性、DNS 解析、Ingress 路由及 NetworkPolicy 流量控制问题。
+  诊断 Kubernetes Service 连通性、DNS 解析、ALB2 负载分流、ALB2 Rule 优先级冲突及 NetworkPolicy 流量控制问题。
   包括 Selector 不匹配、targetPort 错误、跨 Namespace DNS 失败、
-  Ingress 路径 404 及 NetworkPolicy 静默丢包等场景。
+  ALB2 路径 404/502、ALB2 监听配置错误、Rule 优先级抢占及 NetworkPolicy 静默丢包等场景。
   本 Skill 为只读诊断，不执行任何变更。
 scope: read-only
 triggers:
@@ -13,13 +13,20 @@ triggers:
   - "访问 Service 返回 connection refused"
   - "Pod 间通信返回 connection timed out（非 refused）"
   - "DNS 解析失败（nslookup 无结果）"
-  - "Ingress 路由返回 404 Not Found"
   - "LoadBalancer Service 的 EXTERNAL-IP 长期为 pending"
   - "有状态应用 Pod 之间无法通过 DNS 互相发现"
   - "用户 Session 频繁丢失（请求被路由到不同 Pod）"
+  - "ALB2 路由返回 502 Bad Gateway"
+  - "ALB2 路由返回 404 Not Found"
+  - "ALB2 路由返回 504 Gateway Timeout"
+  - "ALB2 Rule 优先级冲突导致路由被抢占"
+  - "同域名下不同用户的 Rule 路径匹配冲突"
+  - "请求被路由到错误的后端 Service（非预期 Rule 匹配）"
 references:
-  - references/dns_naming_conventions.md      # K8s DNS 命名规则与 FQDN 格式
-  - references/networkpolicy_syntax_guide.md  # NetworkPolicy 规则语法与调试
+  - references/dns_naming_conventions.md       # K8s DNS 命名规则与 FQDN 格式
+  - references/networkpolicy_syntax_guide.md   # NetworkPolicy 规则语法与调试
+  - references/alb2_resource_guide.md          # ALB2、Frontend 与 Rule 资源调试
+  - references/alb2_rule_priority_guide.md     # ALB2 Rule 优先级机制与路径冲突
 ---
 
 # networking_diagnosis — 网络与服务诊断
@@ -41,8 +48,8 @@ references:
 > **💡 最佳实践**：在深入追踪 Endpoints 或手工测试网络连通性前，优先进行自动化分析。
 
 ```
-工具：analyze(namespace=<ns>, name=<svc-or-ingress>, filters=["Service", "Ingress", "NetworkPolicy"])
-→ 若 K8sGPT 提示 Selector mismatch（如标签匹配错误）或 Ingress 配置错误，可直接修复，跳过底层探测。
+工具：analyze(namespace=<ns>, name=<svc>, filters=["Service", "NetworkPolicy"])
+→ 若 K8sGPT 提示 Selector mismatch（如标签匹配错误），可直接修复，跳过底层探测。
 ```
 
 ---
@@ -135,8 +142,6 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
    → 查找错误日志
 ```
 
-> 参考：[DNS 命名规则与 FQDN 格式](references/dns_naming_conventions.md)
-
 ---
 
 ### Step 2D：NetworkPolicy 流量拦截
@@ -160,37 +165,10 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
    → 判断允许规则的 podSelector 是否覆盖 Source Pod 的 Labels
 ```
 
-> 参考：[NetworkPolicy 规则语法](references/networkpolicy_syntax_guide.md)
 
 ---
 
-### Step 2E：Ingress 路径 404
-
-```
-① 查看 Pod 关联的 Ingress 规则
-   工具：get_pod_linked_ingresses(cluster, namespace, name=<pod>)
-   或使用 kubectl 兜底命令查看 Ingress 详情：
-   工具：kubectl(cluster, cmd="get ingress -n <namespace> -o wide")
-   → 读取 rules[].http.paths[].path / pathType / backend
-
-② 验证后端服务实际路由前缀
-   工具：run_command_in_k8s_pod(cluster, namespace, name=<pod>, container=<c>,
-         command="wget", args=["-qO-", "http://localhost:<port>/<actual-path>"])
-   ⚠️ SRE 提醒：如果执行返回 "executable file not found"，说明镜像缺失 wget，请改用间接指标（如 Endpoints 状态或 Readiness 记录）判断。
-   → 与 Ingress path 对比
-
-③ 确认 IngressClass 是否正确
-   工具：get_k8s_resource(cluster, namespace, kind=Ingress,
-         group=networking.k8s.io, version=v1, name=<ingress>)
-   → 读取 metadata.annotations["kubernetes.io/ingress.class"]
-   工具：list_k8s_resource(cluster, kind=IngressClass,
-         group=networking.k8s.io, version=v1)
-   → 确认是否有 default IngressClass
-```
-
----
-
-### Step 2F：StatefulSet Headless Service 诊断
+### Step 2E：StatefulSet Headless Service 诊断
 
 ```
 ① 确认 Service 类型
@@ -205,6 +183,77 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
    ⚠️ SRE 提醒：如果执行返回 "executable file not found"，说明镜像缺失 nslookup，请用 Service IP 连通性进行推断。
    → 若解析失败且 Service 非 Headless → 确认问题根因
 ```
+
+---
+
+### Step 2F：多 ALB2 隔离监听与路由诊断
+
+```
+① 确认当前业务中心或服务所属的位置/ALB2 实例名称
+   例如，确认该业务服务应由哪个 ALB2 实例（如 `center5-100-115-99-170`）承载。
+   工具：kubectl(cluster, cmd="get alb2 -n cpaas-system")
+   → 结合集群服务部署拓扑，确定正确的负责此流量的 ALB2。
+
+② 校验配置的 Rule 是否绑定在正确的 ALB2 实例上
+   工具：kubectl(cluster, cmd="get rule <rule-name> -n cpaas-system -o yaml")
+   → 检查 `metadata.labels["alb2.cpaas.io/name"]` 的值。
+   → 若该标签指示的 ALB2 名称与实际承载该业务流量的 ALB2 不一致：
+     - 根因：Rule 被错误配置关联到了其他业务中心的 ALB2 实例上，导致流量走不到对应后端 Pod。
+
+③ 校验该 ALB2 实例对应的监听端口（Frontend）
+   工具：kubectl(cluster, cmd="get frontends -n cpaas-system -l alb2.cpaas.io/name=<correct-alb2-name>")
+   → 检查请求使用的端口（如 80 或 443）对应的 Frontend 是否存在且状态正常。
+   → 若 Frontend 不存在：表示未在该 ALB2 实例上开启该端口监听。
+
+④ 查看监听端口挂载的路由转发规则（Rule）
+   工具：kubectl(cluster, cmd="get rules -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> -o wide")
+   → 确认当前 Frontend 下是否有 Rule 匹配请求的 Host 域名或 Path 路径。
+   → 若无匹配 Rule ➔ 根因：在该 ALB2 上该端口的路由规则未配置或 DSL 匹配不当（返回 404）。
+   → 若有匹配但请求仍未到达 Pod ➔ 跳转 Step 2G（检查是否被其他高优先级 Rule 抢占）。
+
+⑤ 校验 Rule 后端 Service 的 Namespace 配置
+   工具：kubectl(cluster, cmd="get rule <rule-name> -n cpaas-system -o jsonpath='{.spec.serviceGroup.services}'")
+   → 检查 `namespace` 字段是否与后端 Service 实际所在的 Namespace 一致。
+   → 若 namespace 配置错误 ➔ 根因：Rule 跨 Namespace 指向了不存在的 Service。
+
+⑥ 检查控制面同步与后端服务 (502 / 504 / 404)
+   - 若返回 502/504，检查 Rule 绑定的后端 Service 及 Endpoints
+     工具：kubectl(cluster, cmd="get ep <service-name> -n <service-namespace>")
+     → 若 Endpoints 为空或后端 Pod 未就绪 ➔ 根因：后端服务异常（返回 502）。
+   - 检查对应的 ALB2 控制器同步日志：
+     工具：kubectl(cluster, cmd="logs -n cpaas-system -l alb2.cpaas.io/name=<correct-alb2-name> -c alb2")
+```
+
+> 参考：[ALB2、Frontend 与 Rule 调试指南](references/alb2_resource_guide.md)
+
+---
+
+### Step 2G：ALB2 Rule 优先级与路径冲突诊断
+
+⚠️ **SRE 提醒：这是多业务中心共享 ALB2 Frontend 时最常见的隐性故障**。当同一 Frontend 下存在多个 Rule 匹配同一域名时，`spec.priority` 数值较小的 Rule 会优先匹配。如果宽泛路径（如 `/`）的 Rule 优先级高于精确路径（如 `/manager/(.*)`），则精确路径的流量会被宽泛路径截获。
+
+```
+① 获取同一 Frontend 下所有共享相同域名的 Rule 及其优先级
+   工具：kubectl(cluster, cmd="get rules -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> -o custom-columns='NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,DSL:.spec.dsl'")
+   → 按 priority 从小到大排序，列出所有 Rule 的域名和路径匹配条件。
+
+② 识别路径覆盖冲突
+   → 在排序结果中，找到与用户请求域名相同的所有 Rule。
+   → 检查是否有 priority 值更小（优先级更高）的 Rule 使用了宽泛路径匹配（如 `STARTS_WITH /` 或无 URL 条件），
+     使得它覆盖了用户期望命中的精确路径 Rule（如 `REGEX /manager/(.*)`）。
+   → 若存在此冲突 ➔ 根因：高优先级的宽泛路径 Rule 截获了原本应该匹配精确路径 Rule 的流量。
+
+③ 确认被抢占流量的实际去向
+   工具：kubectl(cluster, cmd="get rule <high-priority-rule-name> -n cpaas-system -o yaml")
+   → 读取 spec.serviceGroup.services 确认流量实际被路由到了哪个 Service。
+   → 对比用户期望的目标 Service，确认流量走向不一致。
+
+④ 给出调整建议
+   → 若冲突确认，建议将精确路径 Rule 的 priority 调低（数值更小），使其优先于宽泛路径 Rule 被匹配。
+   → 或建议将宽泛路径 Rule 的 priority 调高（数值更大），降低其匹配优先级。
+```
+
+> 参考：[ALB2 Rule 优先级机制与路径冲突排查指南](references/alb2_rule_priority_guide.md)
 
 ---
 
@@ -225,6 +274,24 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 > **Confidence:** High — `get_k8s_resource(Service)` 返回 selector={app:frontend}；`list_k8s_pod` 返回 Pod labels={app:backend}；`get_pod_linked_endpoints` 返回 Endpoints 为空。  
 > **Recommended Fix:** 建议运维人员将 Service 的 `spec.selector` 修改为 `{app: backend}` 与 Pod labels 一致，或将 Deployment Pod template labels 修改为 `{app: frontend}`。
 
+**示例（ALB2 路由规则指向了空 Endpoints）**：
+> **Root Cause:** Rule `center5-100-115-99-170-00080-xx-hash` 配置的后端服务 `nupp-xxl-job` 的 Endpoints 列表为空（所有后端 Pod 处于未就绪状态或探针失败）。  
+> **Evidence Chain:** 访问特定 Host 路由到 ALB2 端口 80 (Frontend) → 匹配到 Rule → Rule 查找后端服务 `nupp-xxl-job` → 服务无可用 Endpoints → 转发失败，ALB2 返回 502 Bad Gateway。  
+> **Confidence:** High — `kubectl get rule` 返回绑定的 Service 为 `nupp-xxl-job`；`kubectl get ep nupp-xxl-job` 返回 Endpoints 为空；Pod 描述显示其 Readiness 探针失败。  
+> **Recommended Fix:** 建议排查后端服务 `nupp-xxl-job` 对应的 Pod 为什么无法通过 Readiness 探针。
+
+**示例（多 ALB 隔离场景下 Rule 配错 ALB2 实例）**：
+> **Root Cause:** 业务流量实际流向的负载均衡器是 `center5-100-115-99-170`，但用户配置的路由规则 `center1-100-115-99-116-00080-xx-hash` 被错误绑定到了 `center1-100-115-99-116` 实例（即 `alb2.cpaas.io/name` 标签关联错误）。  
+> **Evidence Chain:** 用户请求发送给 `center5` 绑定的外部 IP ➔ `center5` 控制器解析其下所有的 rules ➔ 未找到与请求 Host/Path 相匹配的 Rule ➔ 流量被 `center5` 丢弃或返回 404，未送达后端 Pod。  
+> **Confidence:** High — `kubectl get rules` 表明该匹配 Rule 的 `alb2.cpaas.io/name` 标签指向了 `center1`，而当前域名的 VIP/Service 实际对应的负载均衡器是 `center5`。  
+> **Recommended Fix:** 建议用户修改该 Rule 资源或重新创建，使其 `metadata.labels["alb2.cpaas.io/name"]` 关联正确的 ALB2 实例 `center5-100-115-99-170`。
+
+**示例（Rule 优先级冲突导致路由被宽泛路径抢占）**：
+> **Root Cause:** 同一 Frontend (`center5-100-115-99-170-00080`) 下，用户 A 的 Rule（`spec.dsl: (STARTS_WITH URL /)`，`priority: 1`）优先级高于用户 B 的 Rule（`spec.dsl: (REGEX URL /manager/(.*))`，`priority: 5`）。由于 ALB2 按 priority 从小到大匹配，所有请求（包括 `/manager/*` 路径）均被 Rule A 优先截获并路由到用户 A 的后端 Service。  
+> **Evidence Chain:** 用户 B 访问 `app.example.com/manager/dashboard` ➔ ALB2 按 priority 排序评估 Rules ➔ Rule A（priority=1，`STARTS_WITH /`）首先匹配成功 ➔ 请求被路由到用户 A 的 `svc-a` ➔ 用户 B 的 Rule B（priority=5）从未被评估 ➔ 用户 B 观察到应用访问异常（返回非预期内容或 404）。  
+> **Confidence:** High — `kubectl get rules` 按 priority 排序显示 Rule A（priority=1）在 Rule B（priority=5）之前；两者 domain 相同；Rule A 的 `STARTS_WITH /` 覆盖了 Rule B 的 `/manager/(.*)` 路径。  
+> **Recommended Fix:** 建议将用户 B 的精确路径 Rule 的 `spec.priority` 调低至小于 1（如设为 0），使其优先于宽泛路径 Rule 被匹配；或将用户 A 的宽泛路径 Rule 的 `spec.priority` 调高（如设为 10），降低其匹配优先级。
+
 ---
 
 ## 兜底排查机制（kubectl）
@@ -232,9 +299,15 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 在专用 MCP 工具（如 `get_pod_linked_endpoints` 等）受限或无法满足深度排查时，可使用只读 `kubectl` 兜底工具执行命令：
 - 宏观排查 Service、Endpoints 端口与 IP 映射：
   `工具：kubectl(cluster, cmd="get svc,ep -n <namespace> -o wide")`
-- 检查 Ingress 配置详情：
-  `工具：kubectl(cluster, cmd="get ingress -n <namespace> -o wide")`
 - 检查 Service 的详细配置及 Selector 匹配规则：
   `工具：kubectl(cluster, cmd="describe service <service-name> -n <namespace>")`
 - 查看网络策略（NetworkPolicy）的实际应用情况：
   `工具：kubectl(cluster, cmd="get networkpolicy -n <namespace> -o yaml")`
+- 排查 ALB2、Frontend 和 Rule 自定义资源配置关系：
+  `工具：kubectl(cluster, cmd="get alb2,frontend,rule -n cpaas-system -o wide")`
+  `工具：kubectl(cluster, cmd="get rule <rule-name> -n cpaas-system -o yaml")`
+- 按优先级排序查看同一 Frontend 下所有 Rule 的域名、路径与优先级（用于排查优先级冲突）：
+  `工具：kubectl(cluster, cmd="get rules -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> -o custom-columns='NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,DSL:.spec.dsl'")`
+- 查看 Rule 的后端 Service 配置（含跨 Namespace 信息）：
+  `工具：kubectl(cluster, cmd="get rule <rule-name> -n cpaas-system -o jsonpath='{.spec.serviceGroup.services}'")`
+
