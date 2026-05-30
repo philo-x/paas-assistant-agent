@@ -42,8 +42,6 @@ references:
 ```
 ① 查看 PVC 状态
    工具：list_k8s_resource(cluster, namespace, kind=PersistentVolumeClaim, version=v1)
-   或使用 kubectl 兜底命令宏观对比 PV、PVC 的绑定与可用状态：
-   工具：kubectl(cluster, cmd="get pvc,pv -n <namespace> -o wide")
    → STATUS = Pending → Step 2A（PVC 绑定失败）
    → STATUS = Bound → PVC 正常，问题在挂载层 → Step 2B
 
@@ -96,8 +94,6 @@ references:
 
 ② 诊断 CSI 驱动故障及挂载卡死
    工具：diagnose_k8s_csi_driver(cluster, namespace, pvc=<pvc>)
-   或使用 kubectl 兜底命令查看卷挂载关联（VolumeAttachment）：
-   工具: kubectl(cluster, cmd="get volumeattachment -o wide")
    → 该工具可以深度探测 PVC 关联的 PV, VolumeAttachment 状况以及 CSI Controller Pod 日志/事件，精确定位 CSI 故障。
 
 ③ 若存在 Multi-Attach 错误，查看 VolumeAttachment 状态
@@ -124,16 +120,17 @@ references:
 ### Step 2C：Volume 文件权限问题
 
 ```
-① 在容器内查看挂载目录的实际权限
-   工具：run_command_in_k8s_pod(cluster, namespace, name=<pod>, container=<c>,
-         command="ls", args=["-la", "<mountPath>"])
-   ⚠️ SRE 提醒：如果执行返回 "executable file not found"，说明镜像缺失 ls 工具，请使用间接证据（如 SecurityContext 和 PV/PVC 默认权限定义）进行推断。
-   → 若显示 root:root / 700，而容器以 uid=1000 运行 → 无写入权限
-
-② 查看容器 SecurityContext 配置
+① 检查容器安全上下文（SecurityContext）
    工具：describe_k8s_pod(cluster, namespace, name=<pod>)
    → 读取 Security Context 字段（runAsUser / fsGroup / runAsGroup）
-   → 若缺少 fsGroup → kubelet 不会自动修改挂载卷的 GID
+   
+   ⚠️ SRE 判定逻辑：
+   - 若 `runAsUser` 配置为非 root 用户（例如 uid=1000），且 `fsGroup` 缺失，同时挂载卷默认权限非 777，可能导致容器进程因无权限写入挂载卷而报 `Permission denied`。此为高置信度的无侵入式静态推断候选原因。
+   - 若缺失 fsGroup 且未配置 runAsUser，则检查容器的日志和运行错误。
+
+② 结合 Pod 运行日志进行印证
+   工具：get_k8s_pod_logs(cluster, namespace, name=<pod>, tail=50)
+   → 查找 `Permission denied` 相关的写入错误日志以进行确证。
 ```
 
 **fsGroup 机制说明**：

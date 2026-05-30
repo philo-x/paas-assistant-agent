@@ -75,10 +75,9 @@ exec:
 结果：Liveness 返回 404，触发重启。
 
 诊断：
-  run_command_in_k8s_pod(command="wget", args=["-O-", "http://localhost:8080/health"])
-  → 404 Not Found
-  run_command_in_k8s_pod(command="wget", args=["-O-", "http://localhost:8080/api/health"])
-  → 200 OK
+  1. 通过 `list_k8s_event` 查找该 Pod 涉及的 "Liveness probe failed" 事件详细描述。kubelet 会记录具体的 HTTP 返回状态码（例如："HTTP probe failed with statuscode: 404"），这是高置信度且非侵入式的判定方式。
+  2. 使用非侵入式网络连通性诊断工具测试端口：
+     `diagnose_k8s_pod_network(cluster, namespace, pod=<pod>, targetIP="127.0.0.1", targetPort=8080)`
 修复建议：将 httpGet.path 修改为 /api/health
 ```
 

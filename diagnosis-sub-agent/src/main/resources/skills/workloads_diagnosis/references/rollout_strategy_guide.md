@@ -51,5 +51,5 @@ strategy:
 | 新 Pod ImagePullBackOff | 镜像 Tag 不存在 | `list_k8s_pod_event` |
 | 新 Pod Pending | 资源不足（配合 nodes_diagnosis） | `list_k8s_pod_event` |
 | 新 Pod CrashLoopBackOff | 新版本应用崩溃 | `get_k8s_pod_logs(previous=true)` |
-| 新 Pod Readiness 一直 false | Readiness Probe 失败 | `list_k8s_pod_event` + `run_command_in_k8s_pod` |
+| 新 Pod Readiness 一直 false | Readiness Probe 失败 | `list_k8s_pod_event` + `diagnose_k8s_pod_network` / `run_command_in_k8s_pod` |
 | Deployment Progress Deadline 超时 | `progressDeadlineSeconds` 配置过短 | `get_k8s_resource(kind=Deployment)` 读取该字段 |

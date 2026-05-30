@@ -48,8 +48,6 @@ AVAILABLE = 0 且 UP-TO-DATE 持续不变（发布中） → Step 2B（滚动更
 HPA 相关 → Step 2C（HPA 指标问题）
 流量分配异常（蓝绿/金丝雀） → Step 2D（发布策略诊断）
 StatefulSet 问题 → Step 2E（有状态应用诊断）
-或者使用 kubectl 兜底命令查看工作负载副本数：
-工具：kubectl(cluster, cmd="get deploy,sts,ds -n <namespace> -o wide")
 ```
 
 ---
@@ -78,14 +76,10 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
 ```
 ① 查看发布状态
    工具：get_k8s_deployment_rollout_status(cluster, namespace, name=<name>)
-   或使用 kubectl 兜底查询 rollout status：
-   工具：kubectl(cluster, cmd="rollout status deployment/<name> -n <namespace>")
    → 若长时间显示 "Waiting for deployment xxx rollout to finish" → 卡住
 
 ② 查看发布历史（识别新旧版本信息）
    工具：get_k8s_deployment_rollout_history(cluster, namespace, name=<name>)
-   或使用 kubectl 兜底查询 rollout history：
-   工具：kubectl(cluster, cmd="rollout history deployment/<name> -n <namespace>")
    → 记录当前版本号（revision）
 
 ③ 查看 Deployment 详细信息（关键：确认是否超时）

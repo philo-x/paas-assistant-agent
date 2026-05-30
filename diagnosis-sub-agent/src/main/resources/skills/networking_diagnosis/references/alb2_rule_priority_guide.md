@@ -126,7 +126,12 @@ spec.dslx:
 
 ```
 当用户报告 "我的应用 URL 访问异常，但 Rule 配置明明正确" 时，应怀疑优先级冲突。
-关键信号：
+
+优先使用自动诊断工具：
+  工具：diagnose_alb2_rule_conflict(cluster, namespace, frontend_name)
+  → 分析 warnings 列表中是否存在覆盖/屏蔽警告。
+
+手动核对时的关键信号：
   - 请求被路由到了非预期的后端 Service
   - 同 Frontend 下存在多个 Rule，且其中一个使用了宽泛匹配条件
   - 宽泛条件 Rule 的 priority 值 < 精确条件 Rule 的 priority 值
@@ -137,6 +142,11 @@ spec.dslx:
 
 ## 4. 冲突排查命令
 
+### 4.1 首选专用 MCP 工具
+* 自动分析 Frontend 下规则冲突与遮蔽：`diagnose_alb2_rule_conflict(cluster, namespace, frontend_name)`
+* 排序获取 Frontend 下的所有 Rule（带后端诊断）：`list_alb2_routing_rules(cluster, namespace, alb2_name, frontend_name)`
+
+### 4.2 备用 kubectl 命令
 > 💡 **MCP 工具使用提示**：在 MCP 环境下调用 `kubectl` 工具时，若执行带有 jsonpath、custom-columns 等包含特殊符号/引号的复杂查询，请**务必将参数以数组形式传递给 `args` 参数**（例如 `args=["get", "rules.crd.alauda.io", "-o", "jsonpath={...}"]`）以避免引号解析和反斜杠转义错误，不能直接使用 `cmd` 参数。此外，MCP 模式下不支持管道符 `|` 及外部命令。
 
 ```bash

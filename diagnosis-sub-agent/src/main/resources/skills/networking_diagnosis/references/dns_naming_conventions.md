@@ -26,22 +26,11 @@ Headless Service（`clusterIP: None`）的 DNS 直接解析到 Pod IP：
 
 ## 常见 DNS 故障排查命令
 
-在 Pod 内执行以下诊断（通过 `run_command_in_k8s_pod`）。
-⚠️ SRE 提醒：精简镜像（如 distroless、scratch）内可能缺少 nslookup 工具。若提示 "executable file not found"，请利用临时调试容器（如 ephemeral container 或 busybox 临时 Pod）代为运行探测：
-
-```bash
-# 测试短名称
-nslookup my-svc
-
-# 测试 FQDN（跨 Namespace）
-nslookup my-svc.other-ns.svc.cluster.local
-
-# 确认 DNS 服务器地址（应为 CoreDNS ClusterIP，通常是 10.96.0.10）
-cat /etc/resolv.conf
-
-# 测试 CoreDNS 是否响应
-nslookup kubernetes.default.svc.cluster.local
-```
+使用专用的 DNS 解析测试工具，它能够自动绕过容器精简镜像的命令限制：
+* **解析测试**：
+  `test_k8s_dns_resolve(cluster, namespace, pod=<pod-name>, host="<target-host>")`
+  
+⚠️ SRE 提醒：请勿直接通过 `run_command_in_k8s_pod` 运行容器内的 `nslookup` 或 `cat` 命令，因为精简应用镜像中极大概率不具备这些工具。请统一使用 `test_k8s_dns_resolve` 进行非侵入式探测。
 
 ---
 

@@ -5,7 +5,7 @@ category: Networking
 description: >
   诊断 Kubernetes Service 连通性、DNS 解析、ALB2 负载分流、ALB2 Rule 优先级冲突及 NetworkPolicy 流量控制问题。
   包括 Selector 不匹配、targetPort 错误、跨 Namespace DNS 失败、
-  ALB2 路径 404/502、ALB2 监听配置错误、Rule 优先级抢占及 NetworkPolicy 静默丢包等场景。
+  ALB2 路径 404/502、ALB2 监听配置错误、Rule 优先级抢占及 NetworkPolicy 等静默丢包场景。
   本 Skill 为只读诊断，不执行任何变更。
 scope: read-only
 triggers:
@@ -38,7 +38,7 @@ references:
 | 错误表现 | 区分含义 |
 |---------|---------|
 | `connection refused` | 连接被对端**主动拒绝**（Port 不匹配/服务未监听） |
-| `connection timed out` | 连接被**静默丢弃**（NetworkPolicy 拦截） |
+| `connection timed out` | 连接被**静默丢弃**（网络丢包，如 NetworkPolicy 拦截、安全组/防火墙阻断、CNI 路由异常等） |
 | DNS 解析失败 | 名称错误 / Namespace 不匹配 / CoreDNS 异常 |
 
 ## 诊断工作流
@@ -115,10 +115,9 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
    工具：describe_k8s_pod(cluster, namespace, name=<pod>)
    → 读取 Containers.Ports
 
-③ 在 Pod 内直接测试应用监听端口
-   工具：run_command_in_k8s_pod(cluster, namespace, name=<pod>, container=<c>,
-         command="wget", args=["-qO-", "--timeout=3", "http://localhost:<port>/"])
-   ⚠️ SRE 提醒：如果执行返回 "executable file not found"，表明镜像为 scratch/distroless 等精简镜像。这不是应用错误，请使用间接证据（如容器声明的端口、容器日志中是否正常 bind 端口）进行推断。
+③ 测试应用监听端口
+   工具：diagnose_k8s_pod_network(cluster, namespace, pod=<pod>, targetIP="127.0.0.1", targetPort=<port>)
+   ⚠️ SRE 提醒：该工具会运行端口连接测试。若目标镜像中缺少 wget/nc 等命令，该工具会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。不需要使用 run_command_in_k8s_pod。
    → 逐一测试不同端口，找到实际监听端口
 ```
 
@@ -150,7 +149,7 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 ① 确认网络连通性与错误类型
    工具：diagnose_k8s_pod_network(cluster, namespace, pod=<pod>, targetIP=<target-ip>, targetPort=<port>)
    ⚠️ SRE 提醒：该工具会自动运行连接测试，若镜像中缺少 wget/nc 等命令，它会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。
-   → timeout/丢包 → NetworkPolicy 静默丢弃
+   → timeout/丢包 → 网络静默丢包（需考虑 NetworkPolicy 拦截、云安全组/防火墙阻断或 CNI 路由异常等原因）
    → refused/拒绝 → 端口服务未监听，回到 Step 2B
 
 ② 查看 Target Namespace 的所有 NetworkPolicy
@@ -177,10 +176,8 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
    → 若非 None → 不是 Headless Service，Pod 间 DNS 无法直接解析
 
 ② 验证 Pod 间 DNS 解析（Headless Service 模式）
-   工具：run_command_in_k8s_pod(cluster, namespace, name=<pod-0>, container=<c>,
-         command="nslookup",
-         args=["<pod-1>.<headless-svc>.<ns>.svc.cluster.local"])
-   ⚠️ SRE 提醒：如果执行返回 "executable file not found"，说明镜像缺失 nslookup，请用 Service IP 连通性进行推断。
+   工具：test_k8s_dns_resolve(cluster, namespace, pod=<pod-0>, host="<pod-1>.<headless-svc>.<ns>.svc.cluster.local")
+   ⚠️ SRE 提醒：该工具会自动读取 resolv.conf 并检测 CoreDNS 状态，不依赖 Pod 内的 nslookup 命令行工具，可彻底解决 scratch/distroless 镜像限制。
    → 若解析失败且 Service 非 Headless → 确认问题根因
 ```
 
@@ -188,57 +185,39 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 
 ### Step 2F：多 ALB2 隔离监听与路由诊断
 
+> **💡 最佳实践**：请优先使用专用的 `alb2` MCP 诊断工具，仅在工具不可用时，使用底部的 `kubectl` 兜底机制。
+
 ```
 ① 确认当前业务中心或服务所属的位置/ALB2 实例名称
    例如，确认该业务服务应由哪个 ALB2 实例（如 `center5-100-115-99-170`）承载。
-   工具：kubectl(cluster, cmd="get alb2 -n cpaas-system")
-   → 结合集群服务部署拓扑，确定正确的负责此流量的 ALB2。
+   工具：list_alb2_resources(cluster, namespace="cpaas-system")
+   → 确认目标 ALB2 实例是否存在、Ready 字段是否为 true。若 Ready 为 false，查看 message 获取异常原因。
 
 ② 反查 Service 暴露关系（识别 TCP 直连模式与 HTTP 路由规则模式）
    ⚠️ SRE 提醒：服务在 ALB2 上暴露有两种可能模式：
    - TCP/UDP 直连模式：Frontend 资源可能直接包含端口映射，或 Frontend 直接关联 Service；
    - HTTP/HTTPS 反向代理模式：多个后端 Service 共享 80/443 端口，通过自定义路由规则（Rule）转发。
-     因此，不能仅凭“未在 Frontend 中直接关联此服务”就断定服务未暴露，必须全面检索指向该 Service 的所有 Rule。
 
-   反查命令：
-   工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "-n", "cpaas-system", "-l", "alb2.cpaas.io/name=<alb2-name>", "--sort-by=.spec.priority", "-o", "custom-columns=NAME:.metadata.name,FRONTEND:.metadata.labels.alb2\\.cpaas\\.io/frontend,PRIORITY:.spec.priority,DOMAIN:.spec.domain,SVC_NS:.spec.serviceGroup.services[*].namespace,SVC_NAME:.spec.serviceGroup.services[*].name,SVC_PORT:.spec.serviceGroup.services[*].port,WEIGHT:.spec.serviceGroup.services[*].weight"])
-   → 检索输出结果中是否包含目标 Service 的名字：
-     - 若找到匹配的 Rule：读取其 FRONTEND 列（格式为 `[ALB2 名称]-[五位端口号]`，如 `alb-xxx-00080` 代表 80 端口）获取其暴露的端口号；
-     - 若未在任何 Rule 或直连 Frontend 中找到：才可确认为未配置暴露。
+   反查方法：
+   工具：find_alb2_resources_by_service(cluster, service_name=<svc-name>, service_namespace=<svc-ns>)
+   → 分析返回 of mappings 列表：
+     - 若 `foundCount == 0` ➔ 根因：此 Service 尚未在任何 ALB2 实例中配置暴露规则。
+     - 检查匹配项的 `alb2Name` 是否与实际承载业务的负载均衡器名称一致。若不一致 ➔ 根因：Rule 被错误绑定到了其他 ALB2 实例（多 ALB 隔离环境下的绑定偏离）。
+     - 记录正确的 `frontendName`（如 `center5-100-115-99-170-00080`）、`port`、`protocol` 及 `proxyType` (L4 或 L7)。
 
-③ 校验配置的 Rule 是否绑定在正确的 ALB2 实例上
-   工具：kubectl(cluster, cmd="get rules.crd.alauda.io <rule-name> -n cpaas-system -o yaml")
-   → 检查 `metadata.labels["alb2.cpaas.io/name"]` 的值。
-   → 若该标签指示的 ALB2 名称与实际承载该业务流量的 ALB2 不一致：
-     - 根因：Rule 被错误配置关联到了其他业务中心的 ALB2 实例上，导致流量走不到对应后端 Pod。
+③ 确认当前 Rule 所绑定的 Frontend 及端口配置
+   （已在 Step ② 自动验证。如果客户端请求的协议/端口与 mapping 中的 port/protocol 不匹配，说明端口绑定错误或 Frontend 未开启相应监听）
 
-④ 校验该 ALB2 实例对应的监听端口（Frontend）
-   工具：kubectl(cluster, args=["get", "frontends.crd.alauda.io", "-n", "cpaas-system", "-l", "alb2.cpaas.io/name=<correct-alb2-name>", "-o", "custom-columns=NAME:.metadata.name,PORT:.spec.port,PROTOCOL:.spec.protocol,BACKEND_PROTOCOL:.spec.backendProtocol"])
-   → 检查请求使用的端口（如 80 或 443）对应的 Frontend 是否存在且状态正常。
-   → 若 Frontend 不存在：表示未在该 ALB2 实例上开启该端口监听。
-   需要看详情时：
-   工具：kubectl(cluster, cmd="get frontends.crd.alauda.io <frontend-name> -n cpaas-system -o yaml")
+④ 查看监听端口挂载的路由转发规则（Rule）及后端健康状态
+   工具：list_alb2_routing_rules(cluster, namespace="cpaas-system", alb2_name=<alb2-name>, frontend_name=<frontend-name>)
+   → 分析列表中与客户端 Host/Path 匹配 of Rule 的 backends 诊断数据：
+     - 检查 `serviceExists` 是否为 true。若为 false ➔ 根因：Rule 绑定的 Service 在 K8s 中已被删除。
+     - 检查 `endpointsCount`。若为 0 ➔ 根因：后端 Pod 未就绪，无可用 Endpoints (ALB2 会返回 502 Bad Gateway)。
+     - 若后端状态正常，但仍未匹配 ➔ 跳转 Step 2G 静态分析规则优先级冲突。
 
-⑤ 查看监听端口挂载的路由转发规则（Rule）
-   工具：kubectl(cluster, cmd="get rules -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> -o wide")
-   → 确认当前 Frontend 下是否有 Rule 匹配请求的 Host 域名或 Path 路径。
-   → 若无匹配 Rule ➔ 根因：在该 ALB2 上该端口的路由规则未配置或 DSL 匹配不当（返回 404）。
-   → 若有匹配但请求仍未到达 Pod ➔ 跳转 Step 2G（检查是否被其他高优先级 Rule 抢占）。
-
-⑥ 校验 Rule 后端 Service 的 Namespace 与 Port 配置
-   工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "<rule-name>", "-n", "cpaas-system", "-o", "jsonpath={.spec.serviceGroup.services}"])
-   → 检查 `namespace` 字段是否与后端 Service 实际所在的 Namespace 一致。
-   → 检查 `port` 字段是否为后端 Service 实际暴露并监听的端口。
-   → 若 namespace 配置错误 ➔ 根因：Rule 跨 Namespace 指向了不存在的 Service。
-   → 若 port 配置错误 ➔ 根因：Rule 指向了 Service 未暴露的端口，导致路由失败。
-
-⑦ 检查控制面同步与后端服务 (502 / 504 / 404)
-   - 若返回 502/504，检查 Rule 绑定的后端 Service 及 Endpoints
-     工具：kubectl(cluster, cmd="get ep <service-name> -n <service-namespace>")
-     → 若 Endpoints 为空或后端 Pod 未就绪 ➔ 根因：后端服务异常（返回 502）。
-   - 检查对应的 ALB2 控制器同步日志（为防 label 不匹配，建议先 get pod 并列出 labels，再针对性查询，并增加 --tail 限制以防输出过大）：
-     工具：kubectl(cluster, cmd="get pod -n cpaas-system --show-labels")
-     工具：kubectl(cluster, cmd="logs -n cpaas-system <correct-pod-name> -c alb2 --tail=100")
+⑤ 检查 ALB2 控制器日志 ( Nginx Reload 异常、证书加载异常等 )
+   工具：get_alb2_controller_logs(cluster, alb2_name=<alb2-name>, tail_lines=200)
+   → 分析过滤后的 Reload 报错、证书加载或 invalid config 等告警信息。
 ```
 
 > 参考：[ALB2、Frontend 与 Rule 调试指南](references/alb2_resource_guide.md)
@@ -250,23 +229,15 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 ⚠️ **SRE 提醒：这是多业务中心共享 ALB2 Frontend 时最常见的隐性故障**。当同一 Frontend 下存在多个 Rule 匹配同一域名时，`spec.priority` 数值较小的 Rule 会优先匹配。如果宽泛路径（如 `/`）的 Rule 优先级高于精确路径（如 `/manager/(.*)`），则精确路径的流量会被宽泛路径截获。
 
 ```
-① 获取同一 Frontend 下所有共享相同域名的 Rule 及其优先级
-   工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "-n", "cpaas-system", "-l", "alb2.cpaas.io/frontend=<frontend-name>", "--sort-by=.spec.priority", "-o", "custom-columns=NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,URL:.spec.url,DSL:.spec.dsl,SVC_NS:.spec.serviceGroup.services[*].namespace,SVC_NAME:.spec.serviceGroup.services[*].name,SVC_PORT:.spec.serviceGroup.services[*].port"])
-   → 按 priority 从小到大排序，列出所有 Rule 的域名和路径匹配条件。
+① 执行规则冲突自动静态分析
+   工具：diagnose_alb2_rule_conflict(cluster, namespace="cpaas-system", frontend_name=<frontend-name>)
+   → 分析返回 of warnings 列表：
+     - 若检测到 `DuplicateMatching` ➔ 关键冲突：两个 Rule 拥有完全相同的匹配条件，低优先级规则永远失效。
+     - 若检测到 `WildcardShadowing` 或 `PrefixShadowing` ➔ 抢占冲突：有高优先级（数值较小）的宽泛路径规则（如 `/` 或 `/parent`）劫持了子路径流量，导致目标精确路径规则失效。
 
-② 识别路径覆盖冲突
-   → 在排序结果中，找到与用户请求域名相同的所有 Rule。
-   → 检查是否有 priority 值更小（优先级更高）的 Rule 使用了宽泛路径匹配（如 `STARTS_WITH /` 或无 URL 条件），
-     使得它覆盖了用户期望命中的精确路径 Rule（如 `REGEX /manager/(.*)`）。
-   → 若存在此冲突 ➔ 根因：高优先级的宽泛路径 Rule 截获了原本应该匹配精确路径 Rule 的流量。
-
-③ 确认被抢占流量的实际去向
-   工具：kubectl(cluster, cmd="get rules.crd.alauda.io <high-priority-rule-name> -n cpaas-system -o yaml")
-   → 读取 spec.serviceGroup.services 确认流量实际被路由到了哪个 Service。
-   → 对比用户期望的目标 Service，确认流量走向不一致。
-
-④ 给出调整建议
-   → 若冲突确认，建议将精确路径 Rule 的 `spec.priority` 调低（数值更小），使其优先于宽泛路径 Rule 被匹配；或将宽泛路径 Rule 的 `spec.priority` 调高（数值更大），降低其匹配优先级。
+② 确认被抢占流量的去向与修复建议
+   - 读取诊断信息中 `highPriorityRule` 对应的后端 Service 去向。
+   - 修改建议：将目标精确 Rule 的 `spec.priority` 值修改得比抢占 Rule 更小（如设为 0），或调大抢占 Rule 的 `spec.priority` 值。
 ```
 
 > 参考：[ALB2 Rule 优先级机制与路径冲突排查指南](references/alb2_rule_priority_guide.md)

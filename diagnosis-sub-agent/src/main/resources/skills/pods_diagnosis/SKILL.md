@@ -97,13 +97,9 @@ Running 但 Endpoints 为空
 ```
 ① 查看当前日志（容器刚重启后的输出）
    工具：get_k8s_pod_logs(cluster, namespace, name=<pod>, tail=100)
-   或使用 kubectl 兜底：
-   工具：kubectl(cluster, cmd="logs <pod> -n <namespace> --tail=100")
 
 ② 查看上次崩溃日志（最关键！）
    工具：get_k8s_pod_logs(cluster, namespace, name=<pod>, previous=true, tail=100)
-   或使用 kubectl 兜底：
-   工具：kubectl(cluster, cmd="logs <pod> -n <namespace> -p --tail=100")
    ⚠️ SRE 提醒：若 Exit Code 为 137 (OOMKilled)，Linux Kernel 的 OOM Killer 是强行发送 SIGKILL 瞬间杀死进程，应用通常来不及输出任何 "Out of Memory" 日志。此时 previous 日志可能完全没有报错信息，这是正常现象，不要因此困惑。
 
 ③ 查看容器 Exit Code 和 Last State
@@ -116,7 +112,7 @@ Running 但 Endpoints 为空
 | Exit Code | 含义 | 诊断方向 |
 |-----------|------|---------|
 | `1` | 应用运行时错误 | 查看日志找具体错误 |
-| `137` | OOMKilled（内存超限） | `get_k8s_pod_resource_usage` 确认内存用量，Exit Code=137 本身是最直接证据 |
+| `137` | OOMKilled（内存超限） | Exit Code=137 为强关联候选原因，仍建议通过 `get_k8s_pod_resource_usage` 核对是否发生实际内存超限 |
 | `127` | 命令不存在 | 检查 command/args 配置 |
 | `126` | 命令存在但无执行权限 | 检查镜像内文件权限 |
 | `2` | bash/sh 脚本语法错误 | 检查 entrypoint 脚本 |
@@ -175,12 +171,11 @@ Running 但 Endpoints 为空
    → 读取 Containers[].Liveness Probe 字段
    → 关注：path / port / initialDelaySeconds / timeoutSeconds / failureThreshold
 
-③ 在 Pod 内验证探针目标是否可达
-   工具：run_command_in_k8s_pod(cluster, namespace, name=<pod>, container=<c>,
-         command="wget", args=["-qO-", "--timeout=3", "http://localhost:<port>/<path>"])
-   ⚠️ SRE 提醒：如果执行该命令返回 "executable file not found"，说明该镜像是 scratch/distroless 等极简镜像，缺少 wget 工具。这不代表服务异常，请不要报错，应改用间接指标（如 Endpoints 状态或 Readiness 记录）判断。
-   → 若 wget 返回 200 → 路径/端口配置错误（与 Probe 不符）
-   → 若超时/返回 5xx → 应用自身健康检查异常
+③ 验证探针目标是否可达
+   工具：diagnose_k8s_pod_network(cluster, namespace, pod=<pod>, targetIP="127.0.0.1", targetPort=<port>)
+   ⚠️ SRE 提醒：该工具会自动运行连接测试，若镜像中缺少 wget/nc 等命令，它会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。不要使用 run_command_in_k8s_pod。
+   → 若连通性失败 → 应用本身未启动或未监听该端口
+   → 若连通性成功，但依然报错 → 结合 `list_k8s_event` 中探针失败事件记录的 HTTP 状态码（如 404），或应用日志来确认是否为具体的业务接口逻辑错误。
 ```
 
 > 参考：[探针配置字段说明](references/probe_config_guide.md)
@@ -225,7 +220,7 @@ Running 但 Endpoints 为空
 **示例（Liveness Probe 路径错误）**：
 > **Root Cause:** Deployment `livenessProbe.httpGet.path` 配置为 `/health`，但应用实际暴露的健康检查路径为 `/healthz`。  
 > **Evidence Chain:** `livenessProbe.path=/health` 配置写入 → kubelet 每 10 秒 GET /health 收到 404 → 达到 `failureThreshold=3` 后 kubelet 重启容器 → 容器反复重启，RESTARTS 持续递增，用户观察到 CrashLoopBackOff。  
-> **Confidence:** High — `list_k8s_event` 返回 "Liveness probe failed: HTTP probe failed with statuscode: 404" ; `run_command_in_k8s_pod` 验证 /healthz 返回 200，/health 返回 404。  
+> **Confidence:** High — `list_k8s_event` 返回 "Liveness probe failed: HTTP probe failed with statuscode: 404" ；且 `diagnose_k8s_pod_network` 证实本地端口处于监听就绪状态。  
 > **Recommended Fix:** 建议运维人员将 Deployment 的 `livenessProbe.httpGet.path` 修改为 `/healthz`，同时检查 `initialDelaySeconds` 是否留有足够启动预热时间（建议 ≥ 30s）。
 
 ---
