@@ -17,6 +17,7 @@ class SkillsLoadingTest {
         assertThat(skills).isNotEmpty();
         
         boolean hasNetworkingDiagnosis = false;
+        boolean hasKubectlQuery = false;
         for (AgentSkill skill : skills) {
             if ("networking_diagnosis".equals(skill.getName())) {
                 hasNetworkingDiagnosis = true;
@@ -24,9 +25,15 @@ class SkillsLoadingTest {
                 assertThat(skill.getMetadataValue("version")).isEqualTo("1.2");
                 assertThat(skill.getMetadataValue("category")).isEqualTo("Networking");
                 assertThat(skill.getDescription()).contains("诊断 Kubernetes Service 连通性");
+            } else if ("kubectl_query".equals(skill.getName())) {
+                hasKubectlQuery = true;
+                assertThat(skill.getMetadataValue("version")).isEqualTo("1.1");
+                assertThat(skill.getMetadataValue("category")).isEqualTo("Kubectl");
+                assertThat(skill.getDescription()).contains("kubectl MCP 工具查询");
             }
         }
         
         assertThat(hasNetworkingDiagnosis).isTrue();
+        assertThat(hasKubectlQuery).isTrue();
     }
 }
