@@ -107,7 +107,13 @@ public class AgentScopeRunner {
             DataSource dataSource) {
 
         Toolkit toolkit = new Toolkit(io.agentscope.core.tool.ToolkitConfig.builder().parallel(true).build());
-        AutoContextConfig autoContextConfig = AutoContextConfig.builder().tokenRatio(0.2).lastKeep(10).build();
+        AutoContextConfig autoContextConfig = AutoContextConfig.builder()
+                .maxToken(220 * 1024)
+                .tokenRatio(0.75)
+                .msgThreshold(300)
+                .lastKeep(30)
+                .minCompressionTokenThreshold(15000)
+                .build();
 
         return new CustomAgentRunner(
                 "analyze_agent",

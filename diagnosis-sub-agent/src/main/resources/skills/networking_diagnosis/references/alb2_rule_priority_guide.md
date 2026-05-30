@@ -137,20 +137,23 @@ spec.dslx:
 
 ## 4. 冲突排查命令
 
+> 💡 **MCP 工具使用提示**：在 MCP 环境下调用 `kubectl` 工具时，若执行带有 jsonpath、custom-columns 等包含特殊符号/引号的复杂查询，请**务必将参数以数组形式传递给 `args` 参数**（例如 `args=["get", "rules.crd.alauda.io", "-o", "jsonpath={...}"]`）以避免引号解析和反斜杠转义错误，不能直接使用 `cmd` 参数。此外，MCP 模式下不支持管道符 `|` 及外部命令。
+
 ```bash
 # 1. 列出同一 Frontend 下所有 Rule（可以看到同域名/同端口的所有规则）
-kubectl get rules -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> -o wide
+kubectl get rules.crd.alauda.io -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> -o wide
 
-# 2. 按 priority 排序查看所有 Rule 的关键字段（域名、DSL、优先级）
-kubectl get rules -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> \
-  -o custom-columns='NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,DSL:.spec.dsl'
+# 2. 按 priority 排序查看所有 Rule 的关键字段
+kubectl get rules.crd.alauda.io -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> \
+  --sort-by=.spec.priority \
+  -o custom-columns="NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,URL:.spec.url,DSL:.spec.dsl,SVC_NS:.spec.serviceGroup.services[*].namespace,SVC_NAME:.spec.serviceGroup.services[*].name"
 
 # 3. 查看特定 Rule 的完整 DSL 表达式和优先级
-kubectl get rule <rule-name> -n cpaas-system \
+kubectl get rules.crd.alauda.io <rule-name> -n cpaas-system \
   -o jsonpath='{.spec.priority}{"\t"}{.spec.domain}{"\t"}{.spec.dsl}{"\n"}'
 
 # 4. 查看特定 Rule 的后端 Service 配置（注意路径是 serviceGroup.services）
-kubectl get rule <rule-name> -n cpaas-system -o jsonpath='{.spec.serviceGroup.services}'
+kubectl get rules.crd.alauda.io <rule-name> -n cpaas-system -o jsonpath='{.spec.serviceGroup.services}'
 ```
 
 ---

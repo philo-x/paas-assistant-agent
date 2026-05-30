@@ -47,7 +47,7 @@ spec:
 |---------|------|
 | `policyTypes: [Ingress]` + `ingress: []`（空列表） | 拒绝所有入站流量（deny-all ingress） |
 | `policyTypes: [Ingress]` + `ingress` 有规则 | 只允许匹配规则的入站流量 |
-| 无 `policyTypes` | 不控制该方向（仅存在控制 ingress 的规则时默认影响 ingress） |
+| 无 `policyTypes` | 隐式自动推导：若声明了 ingress 规则，默认生效 Ingress 控制；若声明了 egress 规则，默认生效 Egress 控制；若均未声明，默认不控制。 |
 | `podSelector: {}`（空选择器）+ deny-all | 影响 Namespace 内所有 Pod |
 
 ---
@@ -56,8 +56,8 @@ spec:
 
 ```
 判断是否被 NetworkPolicy 拦截：
-  → connection timed out（超时）= 被静默丢弃（NetworkPolicy）
-  → connection refused = Port 不匹配（非 NetworkPolicy 问题）
+  → connection timed out（超时）= 被静默丢弃（可能是 NetworkPolicy 限制，也可能是路由、安全组防火墙、CNI 插件或节点网络异常）
+  → connection refused = 连接被对端拒绝（表示网络本身可达但目标端口未正常监听，非 NetworkPolicy 拦截问题，需返回检查 targetPort）
 
 验证步骤：
   1. list_k8s_resource(kind=NetworkPolicy) → 确认存在 Policy

@@ -194,34 +194,51 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
    工具：kubectl(cluster, cmd="get alb2 -n cpaas-system")
    → 结合集群服务部署拓扑，确定正确的负责此流量的 ALB2。
 
-② 校验配置的 Rule 是否绑定在正确的 ALB2 实例上
-   工具：kubectl(cluster, cmd="get rule <rule-name> -n cpaas-system -o yaml")
+② 反查 Service 暴露关系（识别 TCP 直连模式与 HTTP 路由规则模式）
+   ⚠️ SRE 提醒：服务在 ALB2 上暴露有两种可能模式：
+   - TCP/UDP 直连模式：Frontend 资源可能直接包含端口映射，或 Frontend 直接关联 Service；
+   - HTTP/HTTPS 反向代理模式：多个后端 Service 共享 80/443 端口，通过自定义路由规则（Rule）转发。
+     因此，不能仅凭“未在 Frontend 中直接关联此服务”就断定服务未暴露，必须全面检索指向该 Service 的所有 Rule。
+
+   反查命令：
+   工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "-n", "cpaas-system", "-l", "alb2.cpaas.io/name=<alb2-name>", "--sort-by=.spec.priority", "-o", "custom-columns=NAME:.metadata.name,FRONTEND:.metadata.labels.alb2\\.cpaas\\.io/frontend,PRIORITY:.spec.priority,DOMAIN:.spec.domain,SVC_NS:.spec.serviceGroup.services[*].namespace,SVC_NAME:.spec.serviceGroup.services[*].name,SVC_PORT:.spec.serviceGroup.services[*].port,WEIGHT:.spec.serviceGroup.services[*].weight"])
+   → 检索输出结果中是否包含目标 Service 的名字：
+     - 若找到匹配的 Rule：读取其 FRONTEND 列（格式为 `[ALB2 名称]-[五位端口号]`，如 `alb-xxx-00080` 代表 80 端口）获取其暴露的端口号；
+     - 若未在任何 Rule 或直连 Frontend 中找到：才可确认为未配置暴露。
+
+③ 校验配置的 Rule 是否绑定在正确的 ALB2 实例上
+   工具：kubectl(cluster, cmd="get rules.crd.alauda.io <rule-name> -n cpaas-system -o yaml")
    → 检查 `metadata.labels["alb2.cpaas.io/name"]` 的值。
    → 若该标签指示的 ALB2 名称与实际承载该业务流量的 ALB2 不一致：
      - 根因：Rule 被错误配置关联到了其他业务中心的 ALB2 实例上，导致流量走不到对应后端 Pod。
 
-③ 校验该 ALB2 实例对应的监听端口（Frontend）
-   工具：kubectl(cluster, cmd="get frontends -n cpaas-system -l alb2.cpaas.io/name=<correct-alb2-name>")
+④ 校验该 ALB2 实例对应的监听端口（Frontend）
+   工具：kubectl(cluster, args=["get", "frontends.crd.alauda.io", "-n", "cpaas-system", "-l", "alb2.cpaas.io/name=<correct-alb2-name>", "-o", "custom-columns=NAME:.metadata.name,PORT:.spec.port,PROTOCOL:.spec.protocol,BACKEND_PROTOCOL:.spec.backendProtocol"])
    → 检查请求使用的端口（如 80 或 443）对应的 Frontend 是否存在且状态正常。
    → 若 Frontend 不存在：表示未在该 ALB2 实例上开启该端口监听。
+   需要看详情时：
+   工具：kubectl(cluster, cmd="get frontends.crd.alauda.io <frontend-name> -n cpaas-system -o yaml")
 
-④ 查看监听端口挂载的路由转发规则（Rule）
+⑤ 查看监听端口挂载的路由转发规则（Rule）
    工具：kubectl(cluster, cmd="get rules -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> -o wide")
    → 确认当前 Frontend 下是否有 Rule 匹配请求的 Host 域名或 Path 路径。
    → 若无匹配 Rule ➔ 根因：在该 ALB2 上该端口的路由规则未配置或 DSL 匹配不当（返回 404）。
    → 若有匹配但请求仍未到达 Pod ➔ 跳转 Step 2G（检查是否被其他高优先级 Rule 抢占）。
 
-⑤ 校验 Rule 后端 Service 的 Namespace 配置
-   工具：kubectl(cluster, cmd="get rule <rule-name> -n cpaas-system -o jsonpath='{.spec.serviceGroup.services}'")
+⑥ 校验 Rule 后端 Service 的 Namespace 与 Port 配置
+   工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "<rule-name>", "-n", "cpaas-system", "-o", "jsonpath={.spec.serviceGroup.services}"])
    → 检查 `namespace` 字段是否与后端 Service 实际所在的 Namespace 一致。
+   → 检查 `port` 字段是否为后端 Service 实际暴露并监听的端口。
    → 若 namespace 配置错误 ➔ 根因：Rule 跨 Namespace 指向了不存在的 Service。
+   → 若 port 配置错误 ➔ 根因：Rule 指向了 Service 未暴露的端口，导致路由失败。
 
-⑥ 检查控制面同步与后端服务 (502 / 504 / 404)
+⑦ 检查控制面同步与后端服务 (502 / 504 / 404)
    - 若返回 502/504，检查 Rule 绑定的后端 Service 及 Endpoints
      工具：kubectl(cluster, cmd="get ep <service-name> -n <service-namespace>")
      → 若 Endpoints 为空或后端 Pod 未就绪 ➔ 根因：后端服务异常（返回 502）。
-   - 检查对应的 ALB2 控制器同步日志：
-     工具：kubectl(cluster, cmd="logs -n cpaas-system -l alb2.cpaas.io/name=<correct-alb2-name> -c alb2")
+   - 检查对应的 ALB2 控制器同步日志（为防 label 不匹配，建议先 get pod 并列出 labels，再针对性查询，并增加 --tail 限制以防输出过大）：
+     工具：kubectl(cluster, cmd="get pod -n cpaas-system --show-labels")
+     工具：kubectl(cluster, cmd="logs -n cpaas-system <correct-pod-name> -c alb2 --tail=100")
 ```
 
 > 参考：[ALB2、Frontend 与 Rule 调试指南](references/alb2_resource_guide.md)
@@ -234,7 +251,7 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 
 ```
 ① 获取同一 Frontend 下所有共享相同域名的 Rule 及其优先级
-   工具：kubectl(cluster, cmd="get rules -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> -o custom-columns='NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,DSL:.spec.dsl'")
+   工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "-n", "cpaas-system", "-l", "alb2.cpaas.io/frontend=<frontend-name>", "--sort-by=.spec.priority", "-o", "custom-columns=NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,URL:.spec.url,DSL:.spec.dsl,SVC_NS:.spec.serviceGroup.services[*].namespace,SVC_NAME:.spec.serviceGroup.services[*].name,SVC_PORT:.spec.serviceGroup.services[*].port"])
    → 按 priority 从小到大排序，列出所有 Rule 的域名和路径匹配条件。
 
 ② 识别路径覆盖冲突
@@ -244,13 +261,12 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
    → 若存在此冲突 ➔ 根因：高优先级的宽泛路径 Rule 截获了原本应该匹配精确路径 Rule 的流量。
 
 ③ 确认被抢占流量的实际去向
-   工具：kubectl(cluster, cmd="get rule <high-priority-rule-name> -n cpaas-system -o yaml")
+   工具：kubectl(cluster, cmd="get rules.crd.alauda.io <high-priority-rule-name> -n cpaas-system -o yaml")
    → 读取 spec.serviceGroup.services 确认流量实际被路由到了哪个 Service。
    → 对比用户期望的目标 Service，确认流量走向不一致。
 
 ④ 给出调整建议
-   → 若冲突确认，建议将精确路径 Rule 的 priority 调低（数值更小），使其优先于宽泛路径 Rule 被匹配。
-   → 或建议将宽泛路径 Rule 的 priority 调高（数值更大），降低其匹配优先级。
+   → 若冲突确认，建议将精确路径 Rule 的 `spec.priority` 调低（数值更小），使其优先于宽泛路径 Rule 被匹配；或将宽泛路径 Rule 的 `spec.priority` 调高（数值更大），降低其匹配优先级。
 ```
 
 > 参考：[ALB2 Rule 优先级机制与路径冲突排查指南](references/alb2_rule_priority_guide.md)
@@ -304,10 +320,10 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 - 查看网络策略（NetworkPolicy）的实际应用情况：
   `工具：kubectl(cluster, cmd="get networkpolicy -n <namespace> -o yaml")`
 - 排查 ALB2、Frontend 和 Rule 自定义资源配置关系：
-  `工具：kubectl(cluster, cmd="get alb2,frontend,rule -n cpaas-system -o wide")`
-  `工具：kubectl(cluster, cmd="get rule <rule-name> -n cpaas-system -o yaml")`
+  `工具：kubectl(cluster, cmd="get alb2,frontends.crd.alauda.io,rules.crd.alauda.io -n cpaas-system -o wide")`
+  `工具：kubectl(cluster, cmd="get rules.crd.alauda.io <rule-name> -n cpaas-system -o yaml")`
 - 按优先级排序查看同一 Frontend 下所有 Rule 的域名、路径与优先级（用于排查优先级冲突）：
-  `工具：kubectl(cluster, cmd="get rules -n cpaas-system -l alb2.cpaas.io/frontend=<frontend-name> -o custom-columns='NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,DSL:.spec.dsl'")`
+  `工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "-n", "cpaas-system", "-l", "alb2.cpaas.io/frontend=<frontend-name>", "--sort-by=.spec.priority", "-o", "custom-columns=NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,URL:.spec.url,DSL:.spec.dsl,SVC_NS:.spec.serviceGroup.services[*].namespace,SVC_NAME:.spec.serviceGroup.services[*].name,SVC_PORT:.spec.serviceGroup.services[*].port"])`
 - 查看 Rule 的后端 Service 配置（含跨 Namespace 信息）：
-  `工具：kubectl(cluster, cmd="get rule <rule-name> -n cpaas-system -o jsonpath='{.spec.serviceGroup.services}'")`
+  `工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "<rule-name>", "-n", "cpaas-system", "-o", "jsonpath={.spec.serviceGroup.services}"])`
 

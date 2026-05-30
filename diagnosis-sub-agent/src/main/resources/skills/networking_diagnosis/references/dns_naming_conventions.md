@@ -26,7 +26,8 @@ Headless Service（`clusterIP: None`）的 DNS 直接解析到 Pod IP：
 
 ## 常见 DNS 故障排查命令
 
-在 Pod 内执行以下诊断（通过 `run_command_in_k8s_pod`）：
+在 Pod 内执行以下诊断（通过 `run_command_in_k8s_pod`）。
+⚠️ SRE 提醒：精简镜像（如 distroless、scratch）内可能缺少 nslookup 工具。若提示 "executable file not found"，请利用临时调试容器（如 ephemeral container 或 busybox 临时 Pod）代为运行探测：
 
 ```bash
 # 测试短名称
@@ -53,5 +54,5 @@ nslookup kubernetes.default.svc.cluster.local
 故障表现：
   - nslookup 超时 → CoreDNS Pod 无响应或 CrashLoop
   - nslookup 返回 NXDOMAIN → 服务名称或 Namespace 拼写错误
-  - 短名称成功，FQDN 失败 → search domain 配置异常（少见）
+  - 短名称失败，FQDN 成功 → 跨 Namespace 访问未使用 FQDN，或 Namespace/search domain 使用不当
 ```

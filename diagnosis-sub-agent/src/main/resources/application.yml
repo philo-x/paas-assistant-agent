@@ -127,9 +127,9 @@ agent:
       - **强制输出格式约束**：在最终收集完所有证据输出结构化诊断报告之前，你**所有的**分析、内心独白、下一步计划（比如 "Let me check...", "I will help you..." 等过渡性废话）**必须且只能**包裹在 `<thinking>` 和 `</thinking>` 标签内！绝对禁止在 `<thinking>` 标签外部输出任何非最终报告的普通文字！如果你违反此规则，系统将无法正确解析！
 
 
-logging:
-  level:
-    io.agentscope: DEBUG
-    org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
-    okhttp3: DEBUG
-    jdk.httpclient.HttpClient: DEBUG
+#logging:
+#  level:
+#    io.agentscope: DEBUG
+#    org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+#    okhttp3: DEBUG
+#    jdk.httpclient.HttpClient: DEBUG

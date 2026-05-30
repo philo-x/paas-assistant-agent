@@ -25,17 +25,17 @@ rules: [{apiGroups, resources, verbs}]
 
 ## verbs 操作动词速查
 
-| verb | 对应 kubectl 操作 |
-|------|-----------------|
-| `get` | kubectl get (单个资源) |
-| `list` | kubectl get (列表) |
-| `watch` | kubectl get --watch |
-| `create` | kubectl create / apply (新建) |
-| `update` | kubectl apply (更新) |
-| `patch` | kubectl patch |
-| `delete` | kubectl delete |
-| `deletecollection` | kubectl delete (批量) |
-| `*` | 所有操作（不推荐） |
+| verb | 对应 kubectl 操作 | MCP 工具支持状态 |
+|------|-----------------|-----------------|
+| `get` | kubectl get (单个资源) | ✅ 支持 |
+| `list` | kubectl get (列表) | ✅ 支持 |
+| `watch` | kubectl get --watch | ❌ 不支持 (MCP 限制长连接) |
+| `create` | kubectl create / apply (新建) | ❌ 不支持 (MCP 限制只读) |
+| `update` | kubectl apply (更新) | ❌ 不支持 (MCP 限制只读) |
+| `patch` | kubectl patch | ❌ 不支持 (MCP 限制只读) |
+| `delete` | kubectl delete | ❌ 不支持 (MCP 限制只读) |
+| `deletecollection` | kubectl delete (批量) | ❌ 不支持 (MCP 限制只读) |
+| `*` | 所有操作 | ❌ 不支持 (仅限只读子命令) |
 
 ---
 
