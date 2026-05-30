@@ -22,6 +22,14 @@ import io.agentscope.core.memory.autocontext.AutoContextConfig;
 
 import io.agentscope.core.memory.autocontext.AutoContextMemory;
 
+import io.agentscope.core.memory.autocontext.AutoContextHook;
+
+import io.agentscope.core.session.Session;
+
+import io.agentscope.core.session.mysql.MysqlSession;
+
+import javax.sql.DataSource;
+
 import io.agentscope.core.memory.mem0.Mem0ApiType;
 
 import io.agentscope.core.message.Msg;
@@ -88,7 +96,8 @@ public class AgentScopeRunner {
             AgentPromptConfig promptConfig,
             GuideTools guideTools,
             Knowledge knowledge,
-            Model model) {
+            Model model,
+            DataSource dataSource) {
 
         Toolkit toolkit = new Toolkit(io.agentscope.core.tool.ToolkitConfig.builder().parallel(false).build());
         toolkit.registerTool(guideTools);
@@ -105,7 +114,8 @@ public class AgentScopeRunner {
                 mem0ApiKey,
                 mem0BaseUrl,
                 mem0ApiType,
-                mem0InferEnabled);
+                mem0InferEnabled,
+                dataSource);
     }
 
     private static class CustomAgentRunner implements AgentRunner {
@@ -151,6 +161,7 @@ public class AgentScopeRunner {
         private final String mem0BaseUrl;
         private final String mem0ApiType;
         private final boolean mem0InferEnabled;
+        private final DataSource dataSource;
 
         private CustomAgentRunner(
                 String agentName,
@@ -162,7 +173,8 @@ public class AgentScopeRunner {
                 String mem0ApiKey,
                 String mem0BaseUrl,
                 String mem0ApiType,
-                boolean mem0InferEnabled) {
+                boolean mem0InferEnabled,
+                DataSource dataSource) {
             this.agentName = agentName;
             this.sysPrompt = sysPrompt;
             this.model = model;
@@ -174,6 +186,7 @@ public class AgentScopeRunner {
             this.mem0BaseUrl = mem0BaseUrl;
             this.mem0ApiType = mem0ApiType;
             this.mem0InferEnabled = mem0InferEnabled;
+            this.dataSource = dataSource;
         }
 
         private ReActAgent buildReActAgent(String userId) {
@@ -198,7 +211,7 @@ public class AgentScopeRunner {
                     .knowledge(knowledge)
                     .ragMode(RAGMode.AGENTIC)
                     .longTermMemory(longTermMemory)
-                    .hooks(List.of(new MonitoringHook(), new TruncationHook()))
+                    .hooks(List.of(new MonitoringHook(), new TruncationHook(), new AutoContextHook()))
                     .maxIters(50)
                     .build();
         }
@@ -239,38 +252,49 @@ public class AgentScopeRunner {
                 throw new IllegalStateException(
                         "Agent already exists for taskId: " + options.getTaskId());
             }
-            String userId = parseUserIdFromMessages(requestMessages);
-            // Per-request isolation: create a fresh agent instance
-            ReActAgent agent = buildReActAgent(userId);
-            agentCache.put(options.getTaskId(), agent);
+            return reactor.core.publisher.Mono.fromCallable(() -> {
+                        String userId = parseUserIdFromMessages(requestMessages);
+                        // Per-request isolation: create a fresh agent instance
+                        ReActAgent agent = buildReActAgent(userId);
+                        agentCache.put(options.getTaskId(), agent);
 
-            agent.getMemory()
-                    .addMessage(
-                            Msg.builder()
-                                    .role(MsgRole.USER)
-                                    .content(
-                                            TextBlock.builder()
-                                                    .text("<userId>" + userId + "</userId>")
-                                                    .build())
-                                    .build());
+                        // Load existing session state from MySQL
+                        Session session = new MysqlSession(dataSource, true);
+                        agent.loadIfExists(session, options.getTaskId());
 
-            return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
-                    .onErrorResume(e -> {
-                        logger.error("Error during agent stream for taskId {}: ", options.getTaskId(), e);
-                        Msg errorMsg = Msg.builder()
-                                .role(MsgRole.ASSISTANT)
-                                .content(TextBlock.builder()
-                                        .text("\n\n> [!CAUTION]\n> **代理执行异常**\n> \n> 抱歉，助手在处理您的请求时遇到了技术故障：\n> `" + e.getMessage() + "`\n> \n> 请尝试精简您的问题，或者稍后重试。")
-                                        .build())
-                                .build();
-                        return Flux.just(new Event(EventType.AGENT_RESULT, errorMsg, false));
-                    })
-                    .doFinally(signal -> {
-                        ReActAgent cachedAgent = agentCache.remove(options.getTaskId());
-                        if (cachedAgent != null) {
-                            logger.info("Interrupting agent {} in doFinally on signal: {}", options.getTaskId(), signal);
-                            cachedAgent.interrupt();
+                        if (agent.getMemory().getMessages().isEmpty()) {
+                            agent.getMemory()
+                                    .addMessage(
+                                            Msg.builder()
+                                                    .role(MsgRole.USER)
+                                                    .content(
+                                                            TextBlock.builder()
+                                                                    .text("<userId>" + userId + "</userId>")
+                                                                    .build())
+                                                    .build());
                         }
+                        return new Object[]{agent, session};
+                    })
+                    .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                    .flatMapMany(params -> {
+                        ReActAgent agent = (ReActAgent) params[0];
+                        Session session = (Session) params[1];
+                        return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
+                                .doOnComplete(() -> {
+                                    try {
+                                        agent.saveTo(session, options.getTaskId());
+                                        logger.info("Successfully saved session state for taskId: {}", options.getTaskId());
+                                    } catch (Exception e) {
+                                        logger.error("Failed to save session state", e);
+                                    }
+                                })
+                                .doFinally(signal -> {
+                                    ReActAgent cachedAgent = agentCache.remove(options.getTaskId());
+                                    if (cachedAgent != null) {
+                                        logger.info("Interrupting agent {} in doFinally on signal: {}", options.getTaskId(), signal);
+                                        cachedAgent.interrupt();
+                                    }
+                                });
                     });
         }
 

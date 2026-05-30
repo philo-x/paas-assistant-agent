@@ -23,6 +23,14 @@ import io.agentscope.core.memory.autocontext.AutoContextConfig;
 
 import io.agentscope.core.memory.autocontext.AutoContextMemory;
 
+import io.agentscope.core.memory.autocontext.AutoContextHook;
+
+import io.agentscope.core.session.Session;
+
+import io.agentscope.core.session.mysql.MysqlSession;
+
+import javax.sql.DataSource;
+
 import io.agentscope.core.message.Msg;
 
 import io.agentscope.core.message.MsgRole;
@@ -33,13 +41,7 @@ import io.agentscope.core.model.Model;
 
 import io.agentscope.core.tool.Toolkit;
 
-import io.agentscope.core.tool.mcp.McpClientBuilder;
-
-import io.agentscope.core.tool.mcp.McpClientWrapper;
-
-
-
-import io.agentscope.examples.paasassistant.common.utils.SanitizingMcpClient;
+import io.agentscope.examples.paasassistant.common.config.McpToolRegistrar;
 
 
 
@@ -101,9 +103,10 @@ public class AgentScopeRunner {
     @Bean
     public AgentRunner agentRunner(
             AgentPromptConfig promptConfig,
-            Model model) {
+            Model model,
+            DataSource dataSource) {
 
-        Toolkit toolkit = new Toolkit(io.agentscope.core.tool.ToolkitConfig.builder().parallel(false).build());
+        Toolkit toolkit = new Toolkit(io.agentscope.core.tool.ToolkitConfig.builder().parallel(true).build());
         AutoContextConfig autoContextConfig = AutoContextConfig.builder().tokenRatio(0.2).lastKeep(10).build();
 
         return new CustomAgentRunner(
@@ -118,7 +121,8 @@ public class AgentScopeRunner {
                 mem0InferEnabled,
                 k8sgptMcpUrl,
                 k8sMcpUrl,
-                mcpToolTimeout);
+                mcpToolTimeout,
+                dataSource);
     }
 
     private static class CustomAgentRunner implements AgentRunner {
@@ -149,6 +153,7 @@ public class AgentScopeRunner {
         private final String k8sgptMcpUrl;
         private final String k8sMcpUrl;
         private final Duration mcpToolTimeout;
+        private final DataSource dataSource;
         private volatile boolean mcpInitialized = false;
 
         private CustomAgentRunner(
@@ -163,7 +168,8 @@ public class AgentScopeRunner {
                 boolean mem0InferEnabled,
                 String k8sgptMcpUrl,
                 String k8sMcpUrl,
-                Duration mcpToolTimeout) {
+                Duration mcpToolTimeout,
+                DataSource dataSource) {
             this.agentName = agentName;
             this.sysPrompt = sysPrompt;
             this.model = model;
@@ -177,6 +183,7 @@ public class AgentScopeRunner {
             this.k8sgptMcpUrl = k8sgptMcpUrl;
             this.k8sMcpUrl = k8sMcpUrl;
             this.mcpToolTimeout = mcpToolTimeout;
+            this.dataSource = dataSource;
         }
 
         private void initializeMcpOnce() {
@@ -184,108 +191,8 @@ public class AgentScopeRunner {
                 synchronized (this) {
                     if (!mcpInitialized) {
                         try {
-                            // k8sgpt mcp 工具注册
-                            McpClientWrapper k8sgptMcpClient = McpClientBuilder.create("k8sgpt-mcp-server")
-                                    .streamableHttpTransport(k8sgptMcpUrl)
-                                    .timeout(mcpToolTimeout)
-                                    .buildSync();
-                            // 1. 资源问题快速分析
-                            toolkit.createToolGroup("k8s_resource_analyze", "k8s资源问题快速分析", true);
-                            toolkit.registration().mcpClient(k8sgptMcpClient)
-                                    .enableTools(List.of(
-                                            "analyze",
-                                            "list-filters",
-                                            "add-filters"))
-                                    .group("k8s_resource_analyze")
-                                    .apply();
-
-
-                            // Register standard local MCP service via SSE
-                            McpClientWrapper komMcpClient = McpClientBuilder.create("kom-mcp-server")
-                                    .streamableHttpTransport(k8sMcpUrl)
-                                    .timeout(mcpToolTimeout)
-                                    .buildSync();
-
-                            McpClientWrapper sanitizedK8sClient = new SanitizingMcpClient(komMcpClient);
-
-
-                            // 1. 集群管理 (Cluster Management)
-                            toolkit.createToolGroup("cluster_management", "Kubernetes多集群管理，支持列出/查询可用K8s集群列表", true);
-                            toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of("list_k8s_clusters"))
-                                    .group("cluster_management").apply();
-
-                            // 2. 节点管理 (Node)
-                            toolkit.createToolGroup("node_management", "Kubernetes节点管理，包含节点IP/资源占用/运行Pod数量查询，支持系统日志检索和内核dmesg OOM排查", false);
-                            toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of(
-                                            "list_k8s_node","get_k8s_node_ip_usage",
-                                            "get_k8s_top_node", "get_k8s_node_resource_usage",
-                                            "get_k8s_pod_count_running_on_node",
-                                            "get_k8s_node_system_logs", "get_k8s_node_dmesg_oom"))
-                                    .group("node_management").apply();
-
-                            // 3. 部署管理 (Deployment)
-                            toolkit.createToolGroup("deployment_management", "工作负载与部署管理，包含Deployment的Rollout历史与状态查询，HPA配置列表及资源历史指标(PromQL历史曲线)", true);
-                            toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of(
-                                            "get_k8s_deployment_rollout_history", "get_k8s_deployment_rollout_status",
-                                            "get_k8s_deployment_hpa_list","get_k8s_resource_metrics_history"))
-                                    .group("deployment_management").apply();
-
-
-                            // 4. Pod管理
-                            toolkit.createToolGroup("pod_management", "Pod生命周期与容器内诊断管理，支持Pod日志拉取、环境变量与关联Services/Endpoints查询、容器内命令执行与文件列表检索", true);
-                            toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of(
-                                            "describe_k8s_pod","list_k8s_pod","list_k8s_pod_event",
-                                            "get_k8s_pod_logs","get_k8s_pod_linked_env","get_pod_linked_env_from_yaml",
-                                            "get_k8s_pod_linked_services","get_pod_linked_endpoints",
-                                            "get_k8s_pod_resource_usage","get_k8s_top_pod",
-                                            "list_files_in_k8s_pod","list_pod_all_files",
-                                            "run_command_in_k8s_pod"))
-                                    .group("pod_management").apply();
-
-                            // 5. 事件管理 (Event)
-                            toolkit.createToolGroup("event_management", "Kubernetes事件诊断管理，支持通过命名空间和涉及对象名称/类型过滤检索集群事件", true);
-                            toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of("list_k8s_event"))
-                                    .group("event_management").apply();
-
-                            // 6. 资源管理 (Dynamic Resource/CRD)
-                            toolkit.createToolGroup("dynamic_resource_management", "Kubernetes任意资源与CRD动态诊断管理，支持命名空间列表查询以及任意特定类型K8s资源(如Quota等)的Get/List/Describe", false);
-                            toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of(
-                                            "describe_k8s_resource", "get_k8s_resource",
-                                            "list_k8s_resource", "list_k8s_namespace"))
-                                    .group("dynamic_resource_management").apply();
-
-                            // 7. 存储管理 (Storage)
-                            toolkit.createToolGroup("storage_management", "持久化存储与PV/PVC管理，支持Pod关联存储卷绑定状态、StorageClass的PV/PVC数量统计及CSI驱动挂载卡死故障诊断", false);
-                            toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of(
-                                            "get_k8s_pod_linked_pv", "get_k8s_pod_linked_pvc",
-                                            "get_k8s_storageclass_pv_count", "get_k8s_storageclass_pvc_count",
-                                            "diagnose_k8s_csi_driver"))
-                                    .group("storage_management").apply();
-
-                            // 8. Ingress与网络路由管理
-                            toolkit.createToolGroup("ingress_management", "网络连通性与路由管理，支持Pod关联Ingress路由查询、Pod内网络连通性探测(nc/curl/wget/临时诊断Pod测试)及CoreDNS域名解析测试", false);
-                            toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of(
-                                            "get_pod_linked_ingresses", "diagnose_k8s_pod_network",
-                                            "test_k8s_dns_resolve"))
-                                    .group("ingress_management").apply();
-
-                            // 9. Kubectl 兜底管理
-                            toolkit.createToolGroup("kubectl_management", "Kubectl只读兜底命令行管理，支持在专用MCP工具受限时执行只读命令(如get/describe/logs -p等)", true);
-                            toolkit.registration().mcpClient(sanitizedK8sClient)
-                                    .enableTools(List.of("kubectl"))
-                                    .group("kubectl_management").apply();
-
-                            // 注册 Meta Tool，允许 LLM 在运行时动态激活或停用上述工具组
-                            toolkit.registerMetaTool();
-
+                            McpToolRegistrar.registerK8sToolGroups(
+                                    toolkit, k8sgptMcpUrl, k8sMcpUrl, mcpToolTimeout);
                             mcpInitialized = true;
                         } catch (Exception exception) {
                             logger.warn(
@@ -318,7 +225,7 @@ public class AgentScopeRunner {
                     .memory(new AutoContextMemory(autoContextConfig, model))
                     .longTermMemory(longTermMemory)
                     .toolkit(toolkit)
-                    .hooks(List.of(new MonitoringHook(), new TruncationHook()))
+                    .hooks(List.of(new MonitoringHook(), new TruncationHook(), new AutoContextHook()))
                     .maxIters(80)
                     .build();
         }
@@ -365,27 +272,43 @@ public class AgentScopeRunner {
                         String clusterId = parseClusterIdFromMessages(requestMessages);
                         ReActAgent agent = buildReActAgent(userId);
                         agentCache.put(options.getTaskId(), agent);
-                        agent.getMemory()
-                                .addMessage(
-                                        Msg.builder()
-                                                .role(MsgRole.USER)
-                                                .content(
-                                                        TextBlock.builder()
-                                                                .text("<userId>" + userId + "</userId>")
-                                                                .build())
-                                                .build());
-                        return new Object[]{agent, clusterId, userId};
+
+                        // Load existing session state from MySQL
+                        Session session = new MysqlSession(dataSource, true);
+                        agent.loadIfExists(session, options.getTaskId());
+
+                        if (agent.getMemory().getMessages().isEmpty()) {
+                            agent.getMemory()
+                                    .addMessage(
+                                            Msg.builder()
+                                                    .role(MsgRole.USER)
+                                                    .content(
+                                                            TextBlock.builder()
+                                                                    .text("<userId>" + userId + "</userId>")
+                                                                    .build())
+                                                    .build());
+                        }
+                        return new Object[]{agent, clusterId, userId, session};
                     })
                     .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
                     .flatMapMany(params -> {
                         ReActAgent agent = (ReActAgent) params[0];
                         String clusterId = (String) params[1];
                         String userId = (String) params[2];
+                        Session session = (Session) params[3];
                         return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
                                 .contextWrite(ctx -> ctx.put(AgentConstants.CTX_TOOL_CACHE, new ConcurrentHashMap<String, McpSchema.CallToolResult>())
                                         .put(AgentConstants.CTX_CLUSTER_ID, clusterId)
                                         .put(AgentConstants.CTX_USER_ID, userId)
                                         .put(AgentConstants.CTX_CHAT_ID, options.getTaskId()))
+                                .doOnComplete(() -> {
+                                    try {
+                                        agent.saveTo(session, options.getTaskId());
+                                        logger.info("Successfully saved session state for taskId: {}", options.getTaskId());
+                                    } catch (Exception e) {
+                                        logger.error("Failed to save session state", e);
+                                    }
+                                })
                                 .doFinally(signal -> {
                                     ReActAgent cachedAgent = agentCache.remove(options.getTaskId());
                                     if (cachedAgent != null) {

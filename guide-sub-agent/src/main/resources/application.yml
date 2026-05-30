@@ -46,6 +46,11 @@ spring:
     name: guide-sub-agent
   main:
     web-application-type: reactive
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:paas_agent_assistant}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useAffectedRows=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root@123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 agent:
   prompts:

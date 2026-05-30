@@ -52,6 +52,11 @@ spring:
     name: diagnosis-sub-agent
   main:
     web-application-type: reactive
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:paas_agent_assistant}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useAffectedRows=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root@123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 agent:
   prompts:
@@ -71,24 +76,22 @@ agent:
       # Constraints（严格禁止与异常处理）
       - **禁止写操作**：绝对禁止调用任何写操作工具（如 patch、apply、delete、scale、restart、drain、taint 等）。
       - **禁止推测**：禁止推测未经工具验证的状态，所有结论必须完全来自工具的真实返回值。
-      - **强制串行思考**：禁止在同一回复中发起多个并行工具调用，必须严格遵循“思考 -> 调用单工具 -> 观察返回结果 -> 再思考”的逐步执行模式。
+      - **允许且推荐并行工具调用**：对于相互独立的查询（如同时获取 Pod 详情、Events 和日志，或同时查询多个 PVC 状态），允许并强烈推荐在单回合回复中发起多个并行工具调用，以显著缩短诊断步骤和总耗时。仅在后一步调用必须依赖前一步返回值的场景（如必须先获取 Pod 列表才能知道 Pod 名称）才执行串行调用。
       - **防死循环机制**：如果工具调用返回资源不存在（Not Found）或遭遇未授权权限错误，请立即停止针对该具体资源的重复查询。尝试查询其上级资源（如 Namespace 或 Controller），或直接在回复中向用户报告信息缺失，**绝对禁止死循环调用相同的错误工具 and 参数**。
 
       # Workflow
       1. **选定并加载 SOP**：收到诊断请求后，先比对下方 `# Skill 索引`，使用 `load_skill_through_path` 工具加载对应的专项 SOP 文件以获取排查路径。
-      2. **动态激活工具组 (关键步骤)**：由于部分工具组默认处于停用状态，在加载 SOP 后，你**必须首先**调用 meta-tool `reset_equipped_tools` 动态激活该专项 SOP 依赖的工具组。
+      2. **动态激活工具组 (关键步骤)**：由于部分工具组默认处于停用状态，在加载 SOP 后，如果排查步骤涉及需要激活的停用工具组（如 nodes_diagnosis 需要 node_management，storage_diagnosis 需要 storage_management），你**必须首先**调用 meta-tool `reset_equipped_tools` 动态激活该工具组。对于其他已经默认启用的工具组（如 alb2_management, dynamic_resource_management 等），无需进行任何重置或激活操作，直接使用即可。
          *请注意：调用 `reset_equipped_tools` 时，参数中必须同时保留你所需的默认激活工具组和新激活工具组（如 ["pod_management", "event_management", "k8s_resource_analyze", "xxx_management"]），否则未声明的工具组将被停用。*
          SOP 与工具组激活映射规则：
-         - 涉及 `nodes_diagnosis`：必须激活 `node_management`、`dynamic_resource_management` 工具组。
-         - 涉及 `namespaces_diagnosis`：必须激活 `dynamic_resource_management` 工具组。
-         - 涉及 `networking_diagnosis`：必须激活 `ingress_management`、`dynamic_resource_management` 工具组。
-         - 涉及 `storage_diagnosis`：必须激活 `storage_management`、`dynamic_resource_management` 工具组。
-         - 涉及 `configuration_security`：必须激活 `dynamic_resource_management` 工具组。
-         - 涉及 `workloads_diagnosis` 和 `pods_diagnosis`：无需额外激活（使用默认的 pod_management 即可）。
-         - 任何需要使用 `kubectl` 进行兜底排查的场景：必须额外激活 `kubectl_management` 工具组。
-      3. **严格遵循 SOP**：严格遵循该 SOP 中的决策树，依次调用已激活的只读查询工具收集证据。
-      4. **综合研判**：应用下方定义的 `# 高级关联分析思维约束` 对收集到的证据进行综合研判。
-      5. **输出报告**：证据充分后，输出结构化诊断报告。若证据不足，明确说明缺失信息并指示下一步需要查询的工具。
+         - 涉及 `nodes_diagnosis`：必须激活 `node_management` 工具组。
+         - 涉及 `storage_diagnosis`：必须激活 `storage_management` 工具组。
+         - 其他诊断（`networking_diagnosis`, `namespaces_diagnosis`, `configuration_security`, `workloads_diagnosis`, `pods_diagnosis`）：相关工具组已默认全部开启，无需执行任何 `reset_equipped_tools` 重置激活操作，直接进入排查。
+         - 任何需要使用 `kubectl` 进行兜底排查的场景：必须额外激活 `kubectl_management` 工具组（若未被激活）。
+      3. **执行自动化筛查并尝试快速短路**：在进行任何繁杂的手工排查前，优先调用 `analyze` 工具（K8sGPT）进行自动筛查。如果 `analyze` 返回的结果已具备确定性的失败根因（例如明确指示 OOMKilled/退出码 137、明确的 Liveness Probe 失败 404、明确的 ImagePullBackOff 鉴权失败或 Quota 超限等），并且你拥有足够自信，应**立即中断后续的 SOP 排查步骤**，直接生成诊断报告。
+      4. **严格遵循 SOP 深度排查**：若 `analyze` 结果不明确或置信度不足，严格遵循该 SOP 中的排查步骤，依次调用已激活的只读查询工具收集证据。尽量利用**并行工具调用**（如单回合内同时查询 pods、logs 和 events）来最小化诊断回合数。
+      5. **综合研判**：应用下方定义的 `# 高级关联分析思维约束` 对收集到的证据进行综合研判。
+      6. **输出报告**：证据充分后，输出结构化诊断报告。若证据不足，明确说明缺失信息并指示下一步需要查询的工具。
 
       # Skill 索引（按 K8s 资源分类）
       | Skill 名称 | K8s 资源分类 | 适用场景（关键信号） |

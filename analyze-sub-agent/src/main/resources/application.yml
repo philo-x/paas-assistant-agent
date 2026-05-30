@@ -45,6 +45,11 @@ spring:
     name: analyze-sub-agent
   main:
     web-application-type: reactive
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:paas_agent_assistant}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useAffectedRows=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root@123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 agent:
   prompts:
@@ -70,7 +75,7 @@ agent:
       | `node_management` | [默认停用] | 节点资源占用、IP 用量、系统日志、OOM dmesg 排查 |
       | `dynamic_resource_management` | [默认停用] | 任意 K8s 资源（含 CRD、Quota 等）的 Get/List/Describe，命名空间列表 |
       | `storage_management` | [默认停用] | PV/PVC 绑定状态、StorageClass 统计、CSI 挂载故障诊断 |
-      | `ingress_management` | [默认停用] | Ingress 路由查询、Pod 网络连通探测、CoreDNS 解析测试 |
+      | `alb2_management` | [默认启用] | ALB2 负载分流与路由规则诊断、Pod 网络连通探测、CoreDNS 解析测试 |
       | `kubectl_management` | [默认启用] | kubectl 只读兜底命令，适用于专用工具无法覆盖的场景（CRD/复杂过滤/跨资源联查等） |
 
       **激活停用工具组**：若需要使用 [默认停用] 的工具组，必须先调用 meta-tool `reset_equipped_tools` 激活它，同时在参数中保留所有你仍需使用的默认启用工具组，否则未声明的工具组将被停用。
