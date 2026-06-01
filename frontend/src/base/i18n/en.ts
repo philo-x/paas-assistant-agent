@@ -62,11 +62,16 @@ export default {
   },
   chat: {
     mode: {
-      flash: "Flash",
-      pro: "Pro"
+      flash: "Quick Scan",
+      pro: "Deep Diagnosis",
+      flashDesc: "Focus on resource lookup and quick scanning, fast response",
+      proDesc: "Focus on application and resource diagnosis and root-cause analysis, in-depth reasoning"
     },
     title: 'PaaS Platform Agent Assistant',
-    placeholder: 'Please enter your question...',
+    placeholder: {
+      flash: 'Enter questions about resource lookup or quick scan, e.g., what Pods are in the kube-system namespace?',
+      pro: 'Enter problems requiring deep diagnosis, e.g., diagnose Deployment coredns in the kube-system namespace'
+    },
     send: 'Send',
     clear: 'Clear Chat',
     settings: 'Settings',
@@ -149,12 +154,6 @@ export default {
       callAnalyzeAgent: 'Call analyze_agent',
       callDiagnosisAgent: 'Call diagnosis_agent',
       callGuideAgent: 'Call guide_agent'
-    },
-    examples: {
-      title: 'Common Questions Examples',
-      diagnoseDeployments: 'Find unhealthy Deployments in the kube-system namespace.',
-      diagnoseFinops: 'Please diagnose Deployment coredns.',
-      explainYaml: 'What does this YAML field mean?'
     }
   },
   settings: {

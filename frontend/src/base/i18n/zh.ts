@@ -62,11 +62,16 @@ export default {
   },
   chat: {
     mode: {
-      flash: "Flash",
-      pro: "Pro"
+      flash: "极速扫描",
+      pro: "深度诊断",
+      flashDesc: "专注资源查找与快速扫描，响应极速",
+      proDesc: "专注应用、资源诊断与故障根因排查，推理深入"
     },
     title: 'PaaS 平台 Agent 助手',
-    placeholder: '请输入您的问题...',
+    placeholder: {
+      flash: '请输入资源查找或快速分析问题，例如：kube-system 命名空间下有哪些 Pod？',
+      pro: '请输入需要深度诊断的故障或现象，例如：诊断 kube-system 命名空间下的 Deployment coredns'
+    },
     send: '发送',
     clear: '清空对话',
     settings: '设置',
@@ -149,12 +154,6 @@ export default {
       callAnalyzeAgent: '调用 analyze_agent',
       callDiagnosisAgent: '调用 diagnosis_agent',
       callGuideAgent: '调用 guide_agent'
-    },
-    examples: {
-      title: '常见问题示例',
-      diagnoseDeployments: 'kube-system命名空间下哪些Deployment有问题',
-      diagnoseFinops: '请诊断Deployment coredns',
-      explainYaml: '这个 YAML 字段是什么意思'
     }
   },
   settings: {

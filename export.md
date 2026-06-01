@@ -18,9 +18,9 @@ docker build --build-arg MODULE=guide-sub-agent --build-arg PORT=8081 \
 
 
 docker save -o paas-agents-all.tar \
+dev-apaas-harbor-app.mis.bcs/ai/kom:0.2.71 \
+dev-apaas-harbor-app.mis.bcs/ai/paas-agent-frontend:2.0.0 \
 dev-apaas-harbor-app.mis.bcs/ai/paas-agent-diagnosis:2.0.0 \
 dev-apaas-harbor-app.mis.bcs/ai/paas-agent-analyze:2.0.0 \
-dev-apaas-harbor-app.mis.bcs/ai/paas-agent-frontend:2.0.0 \
 dev-apaas-harbor-app.mis.bcs/ai/k8sgpt:0.4.33 \
-dev-apaas-harbor-app.mis.bcs/ai/kom:0.2.71 \
 dev-apaas-harbor-app.mis.bcs/ai/paas-agent-guide:2.0.0 

@@ -31,11 +31,8 @@ import {
   Tooltip
 } from 'ant-design-vue'
 import {
-  AlertOutlined,
   ClearOutlined,
-  CodeOutlined,
   GlobalOutlined,
-  SearchOutlined,
   SendOutlined,
   SettingOutlined,
   UserOutlined,
@@ -64,7 +61,13 @@ const configStore = useConfigStore()
 const isManagedByPaaS = computed(() => !!configStore.token)
 
 const inputValue = ref('')
-const chatMode = ref<'flash' | 'pro'>('flash')
+const chatMode = ref<'flash' | 'pro'>('pro')
+const isDropdownOpen = ref(false)
+const isTooltipOpen = ref(false)
+const handleDropdownVisibleChange = (open: boolean) => {
+  isDropdownOpen.value = open
+  isTooltipOpen.value = false
+}
 const activeAbortController = ref<AbortController | null>(null)
 const chatContainer = ref<HTMLElement>()
 const userIdInput = ref('')
@@ -77,12 +80,6 @@ const currentLocale = computed(() => getLocale())
 const languageMenuItems = computed(() => [
   { key: 'zh', label: t('common.chinese') },
   { key: 'en', label: t('common.english') }
-])
-
-const chatExamples = computed(() => [
-  { text: t('chat.examples.diagnoseDeployments'), icon: AlertOutlined },
-  { text: t('chat.examples.diagnoseFinops'), icon: SearchOutlined },
-  { text: t('chat.examples.explainYaml'), icon: CodeOutlined }
 ])
 
 const hasBaseUrl = computed(() => configStore.baseUrl.trim().length > 0)
@@ -162,11 +159,6 @@ const setClusterId = () => {
 const showClusterIdInputDialog = () => {
   showClusterIdInput.value = true
   clusterIdInput.value = configStore.clusterId
-}
-
-const handleExampleClick = (example: string) => {
-  inputValue.value = example
-  focusChatInputTextArea()
 }
 
 const clearChat = () => {
@@ -426,34 +418,41 @@ onMounted(() => {
 
     <div class="chat-input">
       <div class="input-container">
-        <div v-if="chatStore.messages.length <= 1" class="chat-examples">
-          <Space wrap>
-            <Tag
-              v-for="(example, index) in chatExamples"
-              :key="index"
-              class="example-tag"
-              @click="handleExampleClick(example.text)"
-            >
-              <template #icon><component :is="example.icon" /></template>
-              {{ example.text }}
-            </Tag>
-          </Space>
-        </div>
-
         <div class="input-wrapper">
           <Input.TextArea
             id="chatInputTextArea"
             v-model:value="inputValue"
-            :placeholder="t('chat.placeholder')"
+            :placeholder="chatMode === 'flash' ? t('chat.placeholder.flash') : t('chat.placeholder.pro')"
             :auto-size="{ minRows: 2, maxRows: 5 }"
             :disabled="chatStore.isLoading"
             class="message-input"
             @keydown.enter.exact.prevent="sendMessage"
           />
-          <Select v-model:value="chatMode" class="mode-select">
-            <Select.Option value="flash">{{ t('chat.mode.flash') }}</Select.Option>
-            <Select.Option value="pro">{{ t('chat.mode.pro') }}</Select.Option>
-          </Select>
+           <Tooltip 
+            placement="topRight" 
+            :trigger="isDropdownOpen ? [] : ['hover']"
+            :open="isDropdownOpen ? false : isTooltipOpen"
+            @update:open="(val) => { if (!isDropdownOpen) isTooltipOpen = val }"
+          >
+            <template #title>
+              <div style="padding: 4px; font-size: 12px; line-height: 1.6;">
+                <div style="margin-bottom: 6px;">
+                  <strong style="color: #60a5fa;">{{ t('chat.mode.flash') }}</strong>: {{ t('chat.mode.flashDesc') }}
+                </div>
+                <div>
+                  <strong style="color: #60a5fa;">{{ t('chat.mode.pro') }}</strong>: {{ t('chat.mode.proDesc') }}
+                </div>
+              </div>
+            </template>
+            <Select 
+              v-model:value="chatMode" 
+              class="mode-select"
+              @dropdownVisibleChange="handleDropdownVisibleChange"
+            >
+              <Select.Option value="flash">{{ t('chat.mode.flash') }}</Select.Option>
+              <Select.Option value="pro">{{ t('chat.mode.pro') }}</Select.Option>
+            </Select>
+          </Tooltip>
         </div>
       </div>
     </div>
@@ -717,20 +716,6 @@ onMounted(() => {
   gap: 14px;
 }
 
-.chat-examples {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.example-tag {
-  cursor: pointer;
-  border-radius: 8px;
-  padding: 6px 10px;
-  border-color: #d6e3f2;
-  background: #f8fbff;
-  color: #1f4b7a;
-}
-
 .input-wrapper {
   display: flex;
   align-items: center; /* Align items to center vertically */
@@ -760,7 +745,7 @@ onMounted(() => {
 }
 
 .mode-select {
-  width: 90px;
+  width: 110px;
 }
 
 .mode-select :deep(.ant-select-selector) {
