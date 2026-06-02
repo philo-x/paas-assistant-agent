@@ -41,6 +41,10 @@ agentscope:
             email: support@paas.example.com
             phone: 400-100-2000
 
+agentscope.memory.auto-context.max-token: ${AUTO_CONTEXT_MAX_TOKEN:225280}
+agentscope.memory.auto-context.token-ratio: ${AUTO_CONTEXT_TOKEN_RATIO:0.75}
+agentscope.memory.auto-context.msg-threshold: ${AUTO_CONTEXT_MSG_THRESHOLD:300}
+
 spring:
   application:
     name: guide-sub-agent

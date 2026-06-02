@@ -100,6 +100,15 @@ public class AgentScopeRunner {
     @Value("${agentscope.mcp.tool-timeout:PT3M}")
     Duration mcpToolTimeout;
 
+    @Value("${agentscope.memory.auto-context.max-token:225280}")
+    int autoContextMaxToken;
+
+    @Value("${agentscope.memory.auto-context.token-ratio:0.75}")
+    double autoContextTokenRatio;
+
+    @Value("${agentscope.memory.auto-context.msg-threshold:300}")
+    int autoContextMsgThreshold;
+
     @Bean
     public AgentRunner agentRunner(
             AgentPromptConfig promptConfig,
@@ -108,9 +117,9 @@ public class AgentScopeRunner {
 
         Toolkit toolkit = new Toolkit(io.agentscope.core.tool.ToolkitConfig.builder().parallel(true).build());
         AutoContextConfig autoContextConfig = AutoContextConfig.builder()
-                .maxToken(220 * 1024)
-                .tokenRatio(0.75)
-                .msgThreshold(300)
+                .maxToken(autoContextMaxToken)
+                .tokenRatio(autoContextTokenRatio)
+                .msgThreshold(autoContextMsgThreshold)
                 .lastKeep(30)
                 .minCompressionTokenThreshold(15000)
                 .build();

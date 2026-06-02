@@ -21,6 +21,10 @@ import io.agentscope.core.model.DashScopeChatModel;
 import io.agentscope.core.model.Model;
 import io.agentscope.core.model.OpenAIChatModel;
 import io.agentscope.core.model.GenerateOptions;
+import io.agentscope.core.model.transport.HttpTransport;
+import io.agentscope.core.model.transport.HttpTransportConfig;
+import io.agentscope.core.model.transport.HttpVersion;
+import io.agentscope.core.model.transport.JdkHttpTransport;
 import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +67,14 @@ public class AgentScopeModelConfig {
     @Value("${agentscope.model.disable-parallel-tools:false}")
     private boolean disableParallelTools;
 
+    private HttpTransport createHttpTransport() {
+        return JdkHttpTransport.builder()
+                .config(HttpTransportConfig.builder()
+                        .httpVersion(HttpVersion.HTTP_1_1)
+                        .build())
+                .build();
+    }
+
     @Bean
     public Model model() {
         String provider = normalizeProvider(modelProvider);
@@ -76,6 +88,7 @@ public class AgentScopeModelConfig {
                             .apiKey(openaiApiKey)
                             .modelName(openaiModelName)
                             .stream(true)
+                            .httpTransport(createHttpTransport())
                             .formatter(new SafeOpenAIChatFormatter());
             if (disableParallelTools) {
                 builder.generateOptions(GenerateOptions.builder()
@@ -96,6 +109,7 @@ public class AgentScopeModelConfig {
                     DashScopeChatModel.builder()
                             .apiKey(dashscopeApiKey)
                             .modelName(dashscopeModelName)
+                            .httpTransport(createHttpTransport())
                             .formatter(new DashScopeChatFormatter());
             if (disableParallelTools) {
                 builder.defaultOptions(GenerateOptions.builder()
@@ -119,3 +133,4 @@ public class AgentScopeModelConfig {
         return provider == null ? "" : provider.trim().toLowerCase(Locale.ROOT);
     }
 }
+

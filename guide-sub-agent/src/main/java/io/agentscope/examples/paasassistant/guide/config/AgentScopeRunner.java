@@ -91,6 +91,15 @@ public class AgentScopeRunner {
     @Value("${agentscope.mem0.infer-enabled:true}")
     boolean mem0InferEnabled;
 
+    @Value("${agentscope.memory.auto-context.max-token:225280}")
+    int autoContextMaxToken;
+
+    @Value("${agentscope.memory.auto-context.token-ratio:0.75}")
+    double autoContextTokenRatio;
+
+    @Value("${agentscope.memory.auto-context.msg-threshold:300}")
+    int autoContextMsgThreshold;
+
     @Bean
     public AgentRunner agentRunner(
             AgentPromptConfig promptConfig,
@@ -103,9 +112,9 @@ public class AgentScopeRunner {
         toolkit.registerTool(guideTools);
 
         AutoContextConfig autoContextConfig = AutoContextConfig.builder()
-                .maxToken(220 * 1024)
-                .tokenRatio(0.75)
-                .msgThreshold(300)
+                .maxToken(autoContextMaxToken)
+                .tokenRatio(autoContextTokenRatio)
+                .msgThreshold(autoContextMsgThreshold)
                 .lastKeep(30)
                 .minCompressionTokenThreshold(15000)
                 .build();

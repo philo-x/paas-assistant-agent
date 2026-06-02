@@ -40,6 +40,10 @@ agentscope:
     k8s-mcp-url: ${K8S_MCP_URL:http://localhost:9096/mcp}
     tool-timeout: ${MCP_TOOL_TIMEOUT:PT3M}
 
+agentscope.memory.auto-context.max-token: ${AUTO_CONTEXT_MAX_TOKEN:225280}
+agentscope.memory.auto-context.token-ratio: ${AUTO_CONTEXT_TOKEN_RATIO:0.75}
+agentscope.memory.auto-context.msg-threshold: ${AUTO_CONTEXT_MSG_THRESHOLD:300}
+
 spring:
   application:
     name: analyze-sub-agent
