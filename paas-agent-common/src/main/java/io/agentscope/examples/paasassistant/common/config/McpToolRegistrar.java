@@ -160,10 +160,11 @@ public final class McpToolRegistrar {
                 .streamableHttpTransport(k8sgptMcpUrl)
                 .timeout(mcpToolTimeout)
                 .buildSync();
+        McpClientWrapper sanitizedK8sGptClient = new SanitizingMcpClient(k8sgptMcpClient);
 
         // 1. 资源问题快速分析
         toolkit.createToolGroup(Groups.K8S_RESOURCE_ANALYZE, Groups.DESC_K8S_RESOURCE_ANALYZE, true);
-        toolkit.registration().mcpClient(k8sgptMcpClient)
+        toolkit.registration().mcpClient(sanitizedK8sGptClient)
                 .enableTools(List.of(K8sGpt.TOOL_ANALYZE, K8sGpt.TOOL_LIST_FILTERS, K8sGpt.TOOL_ADD_FILTERS))
                 .group(Groups.K8S_RESOURCE_ANALYZE)
                 .apply();

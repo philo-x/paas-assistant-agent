@@ -48,6 +48,7 @@ import io.agentscope.core.tool.Toolkit;
 
 
 import io.agentscope.examples.paasassistant.common.config.McpToolRegistrar;
+import io.agentscope.examples.paasassistant.common.stream.ToolNarrator;
 
 
 
@@ -268,6 +269,7 @@ public class AgentScopeRunner {
                     .toolkit(toolkit)
                     .skillBox(skillBox)
                     .longTermMemory(longTermMemory)
+                    .longTermMemoryAsyncRecord(true)
                     .hooks(List.of(new MonitoringHook(), new TruncationHook(), new AutoContextHook()))
                     .maxIters(150)
                     .build();
@@ -338,6 +340,7 @@ public class AgentScopeRunner {
                         // Load existing session state from MySQL
                         Session session = new MysqlSession(dataSource, true);
                         agent.loadIfExists(session, options.getTaskId());
+                        cleanMemoryMessages(agent.getMemory());
 
                         if (agent.getMemory().getMessages().isEmpty()) {
                             agent.getMemory()
@@ -365,6 +368,7 @@ public class AgentScopeRunner {
                                         .put(AgentConstants.CTX_CHAT_ID, options.getTaskId()))
                                 .doOnComplete(() -> {
                                     try {
+                                        cleanMemoryMessages(agent.getMemory());
                                         agent.saveTo(session, options.getTaskId());
                                         logger.info("Successfully saved session state for taskId: {}", options.getTaskId());
                                     } catch (Exception e) {
@@ -389,6 +393,47 @@ public class AgentScopeRunner {
                                 .build();
                         return Flux.just(new Event(EventType.AGENT_RESULT, errorMsg, false));
                     });
+        }
+
+        private void cleanMemoryMessages(io.agentscope.core.memory.Memory memory) {
+            if (memory == null) {
+                return;
+            }
+            cleanMessageList(memory.getMessages());
+            try {
+                java.lang.reflect.Method getOriginal = memory.getClass().getMethod("getOriginalMemoryMsgs");
+                Object origList = getOriginal.invoke(memory);
+                if (origList instanceof List<?> list) {
+                    cleanMessageList((List<Msg>) list);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        private void cleanMessageList(List<Msg> messages) {
+            if (messages == null) {
+                return;
+            }
+            for (Msg msg : messages) {
+                if (msg == null || msg.getContent() == null) {
+                    continue;
+                }
+                for (Object block : msg.getContent()) {
+                    if (block instanceof TextBlock textBlock) {
+                        try {
+                            java.lang.reflect.Field field = TextBlock.class.getDeclaredField("text");
+                            field.setAccessible(true);
+                            String rawText = (String) field.get(textBlock);
+                            if (rawText != null && !rawText.isEmpty()) {
+                                String cleaned = ToolNarrator.cleanLlmTokens(rawText);
+                                field.set(textBlock, cleaned);
+                            }
+                        } catch (Exception e) {
+                            logger.warn("Failed to clean TextBlock via reflection: {}", e.getMessage());
+                        }
+                    }
+                }
+            }
         }
 
         private String parseUserIdFromMessages(List<Msg> requestMessages) {

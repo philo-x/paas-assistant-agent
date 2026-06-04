@@ -138,6 +138,14 @@ public class SanitizingMcpClient extends McpClientWrapper {
             }
 
             Mono<McpSchema.CallToolResult> call = delegate.callTool(name, finalArgs)
+                    .onErrorResume(e -> {
+                        if (isSessionNotFoundFailure(e)) {
+                            logger.warn("MCP session not found or terminated, attempting to re-initialize and retry tool '{}'", name);
+                            return delegate.initialize()
+                                    .then(delegate.callTool(name, finalArgs));
+                        }
+                        return Mono.error(e);
+                    })
                     .doOnNext(res -> {
                         if (cache != null) {
                             cache.put(signature, res);
@@ -192,6 +200,17 @@ public class SanitizingMcpClient extends McpClientWrapper {
         String msg = e.getMessage();
         return msg != null && (msg.contains("timeout") || msg.contains("connection reset")
                 || msg.contains("EOF") || msg.contains("broken pipe"));
+    }
+
+    private static boolean isSessionNotFoundFailure(Throwable e) {
+        if (e.getClass().getName().contains("McpTransportSessionNotFoundException")) {
+            return true;
+        }
+        String msg = e.getMessage();
+        return msg != null && (msg.contains("Session session not found")
+                || msg.contains("Session not found")
+                || msg.contains("session not found")
+                || msg.contains("session with server terminated"));
     }
 
 }

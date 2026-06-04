@@ -489,12 +489,7 @@ onMounted(() => {
             v-model:value="clusterIdInput"
             :placeholder="t('chat.clusterPlaceholder')"
             class="user-id-input"
-            :options="[
-              { value: 'dev', label: 'dev' },
-              { value: 'sit', label: 'sit' },
-              { value: 'uat', label: 'uat' },
-              { value: 'st', label: 'st' }
-            ]"
+            :options="configStore.clusterOptions"
           />
           <div class="modal-actions">
             <Button type="primary" @click="setClusterId" :disabled="!clusterIdInput.trim()">

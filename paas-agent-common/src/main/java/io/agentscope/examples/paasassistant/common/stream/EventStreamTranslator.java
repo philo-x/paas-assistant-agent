@@ -84,6 +84,7 @@ public class EventStreamTranslator {
             if (finalText != null && !finalText.isEmpty()) {
                 finalText = ToolNarrator.extractThinkingText(finalText);
                 finalText = ToolNarrator.cleanReActSyntax(finalText);
+                finalText = ToolNarrator.cleanLlmTokens(finalText);
                 
                 if (!finalText.isEmpty()) {
                     emitter.emitAnswerDelta(finalText);

@@ -20,9 +20,10 @@ import java.util.function.Consumer;
 
 /**
  * A stateful stream splitter that routes text chunks either to a reasoning callback
- * (if inside <thinking> tags) or an answer callback (if outside <thinking> tags).
+ * (if inside <thinking> or <think> tags) or an answer callback (if outside the tags).
  */
 public class ThinkingStreamSplitter {
+    private String activeEndTag = null;
     private boolean inThinking = false;
     private final StringBuilder buffer = new StringBuilder();
 
@@ -42,15 +43,51 @@ public class ThinkingStreamSplitter {
 
         while (buffer.length() > 0) {
             if (!inThinking) {
-                int startIndex = buffer.indexOf("<thinking>");
+                int startIndexThinking = buffer.indexOf("<thinking>");
+                int startIndexThink = buffer.indexOf("<think>");
+                
+                int startIndex = -1;
+                String activeStartTag = "";
+                
+                if (startIndexThinking != -1 && startIndexThink != -1) {
+                    if (startIndexThinking < startIndexThink) {
+                        startIndex = startIndexThinking;
+                        activeStartTag = "<thinking>";
+                        activeEndTag = "</thinking>";
+                    } else {
+                        startIndex = startIndexThink;
+                        activeStartTag = "<think>";
+                        activeEndTag = "</think>";
+                    }
+                } else if (startIndexThinking != -1) {
+                    startIndex = startIndexThinking;
+                    activeStartTag = "<thinking>";
+                    activeEndTag = "</thinking>";
+                } else if (startIndexThink != -1) {
+                    startIndex = startIndexThink;
+                    activeStartTag = "<think>";
+                    activeEndTag = "</think>";
+                }
+
                 if (startIndex != -1) {
                     if (startIndex > 0) {
                         onAnswer.accept(buffer.substring(0, startIndex));
                     }
                     inThinking = true;
-                    buffer.delete(0, startIndex + "<thinking>".length());
+                    buffer.delete(0, startIndex + activeStartTag.length());
                 } else {
-                    int partialIndex = findPartialTag(buffer, "<thinking>");
+                    int partialThinking = findPartialTag(buffer, "<thinking>");
+                    int partialThink = findPartialTag(buffer, "<think>");
+                    int partialIndex = -1;
+                    
+                    if (partialThinking != -1 && partialThink != -1) {
+                        partialIndex = Math.min(partialThinking, partialThink);
+                    } else if (partialThinking != -1) {
+                        partialIndex = partialThinking;
+                    } else if (partialThink != -1) {
+                        partialIndex = partialThink;
+                    }
+
                     if (partialIndex != -1) {
                         if (partialIndex > 0) {
                             onAnswer.accept(buffer.substring(0, partialIndex));
@@ -63,15 +100,16 @@ public class ThinkingStreamSplitter {
                     }
                 }
             } else {
-                int endIndex = buffer.indexOf("</thinking>");
+                int endIndex = buffer.indexOf(activeEndTag);
                 if (endIndex != -1) {
                     if (endIndex > 0) {
                         onReasoning.accept(buffer.substring(0, endIndex));
                     }
                     inThinking = false;
-                    buffer.delete(0, endIndex + "</thinking>".length());
+                    buffer.delete(0, endIndex + activeEndTag.length());
+                    activeEndTag = null;
                 } else {
-                    int partialIndex = findPartialTag(buffer, "</thinking>");
+                    int partialIndex = findPartialTag(buffer, activeEndTag);
                     if (partialIndex != -1) {
                         if (partialIndex > 0) {
                             onReasoning.accept(buffer.substring(0, partialIndex));

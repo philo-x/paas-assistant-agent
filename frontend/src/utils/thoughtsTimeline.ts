@@ -80,6 +80,30 @@ const normalizeText = (raw: string | undefined | null) => {
     .replace(/\\\\/g, '\\')
 }
 
+const cleanLlmTokens = (text: string): string => {
+  if (!text) {
+    return ''
+  }
+  return text
+    // 1. Clean compound tokens like <|DSML|...<|begin_of_sentence|>> or similar
+    .replace(/< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *< *[|｜] *begin[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? */gi, '')
+    .replace(/< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *< *[|｜] *end[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? */gi, '')
+    // 2. Clean begin/end of sentence/text tokens (with optional backticks and enclosing delimiters)
+    .replace(/`?< *[|｜]? *(?:begin|end)[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>`?/gi, '')
+    .replace(/`?[|｜] *(?:begin|end)[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>?`?/gi, '')
+    .replace(/`?(?:begin|end)[_▁]of[_▁](?:sentence|text)`?/gi, '')
+    // 3. Clean Chat/Role control tokens (like Qwen's im_start/im_end/endoftext or DeepSeek's User/Assistant/Outputs/System)
+    .replace(/`?< *[|｜]? *(?:im_(?:start|end)|endoftext|user|assistant|system|outputs) *[|｜]? *>`?/gi, '')
+    .replace(/`?[|｜] *(?:im_(?:start|end)|endoftext|user|assistant|system|outputs) *[|｜]? *>?`?/gi, '')
+    // 4. Clean DSML tool/invocation tags (e.g. <|DSML|tool_calls>, <｜DSML｜call:xxx｜>, DSML|tool_calls)
+    .replace(/< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *>? */gi, '')
+    .replace(/[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *>? */gi, '')
+    .replace(/DSML *[|｜] *[^>|｜\s]+ */gi, '')
+    // 5. Catch-all: Clean any remaining <｜...｜> DeepSeek-style control tokens
+    // (e.g. <｜tool▁calls▁begin｜>, <｜tool▁sep｜>, <｜tool▁output▁end｜> etc.)
+    .replace(/<｜[^>]+｜>/g, '')
+}
+
 const appendReasoningText = (existing: string, incoming: string) => {
   if (!existing) {
     return normalizeReasoningDescription(incoming)
@@ -264,9 +288,9 @@ export const applyStructuredThoughtsEvent = (
       const lastOpenReasoning = findLastOpenReasoningStep(message)
       if (lastOpenReasoning && lastOpenReasoning.agent === agent) {
         if (lastOpenReasoning.description === labels.fallbacks.syntheticAnalysis) {
-          lastOpenReasoning.description = normalizeReasoningDescription(text)
+          lastOpenReasoning.description = cleanLlmTokens(normalizeReasoningDescription(text))
         } else {
-          lastOpenReasoning.description = appendReasoningText(lastOpenReasoning.description, text)
+          lastOpenReasoning.description = cleanLlmTokens(appendReasoningText(lastOpenReasoning.description, text))
         }
         return
       }
@@ -279,7 +303,7 @@ export const applyStructuredThoughtsEvent = (
           agent,
           agentLabel: resolveAgentLabel(agent, labels),
           title: resolveReasoningTitle(message, agent, labels),
-          description: normalizeReasoningDescription(text || labels.fallbacks.emptyReasoning),
+          description: cleanLlmTokens(normalizeReasoningDescription(text || labels.fallbacks.emptyReasoning)),
           status: 'pending',
           startedAt: now,
           isOpen: true

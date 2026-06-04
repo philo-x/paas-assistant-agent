@@ -91,14 +91,14 @@ public final class ToolNarrator {
         }
         // Use (?s) so DOTALL is enabled for the regex, matching newlines inside the tags.
         // DO NOT use .trim() here, as it destroys spaces and newlines between streaming chunks!
-        return chunk.replaceAll("(?s)<thinking>.*?</thinking>", "");
+        return chunk.replaceAll("(?s)<(thinking|think)>.*?</(thinking|think)>", "");
     }
 
     public static String extractThinkingText(String chunk) {
         if (chunk == null || chunk.isEmpty()) {
             return "";
         }
-        return chunk.replaceAll("(?s)<thinking>.*?</thinking>", "").trim();
+        return chunk.replaceAll("(?s)<(thinking|think)>.*?</(thinking|think)>", "").trim();
     }
 
     public static String cleanReActSyntax(String text) {
@@ -108,13 +108,46 @@ public final class ToolNarrator {
         // Remove native tool calls starting with <function=
         String result = text.replaceAll("(?m)^<function=.*$", "");
         
-        // Remove <tool_call> blocks completely
+        // Remove <tool_call> and <tool_response> blocks completely (Qwen 3 tool tokens)
         result = result.replaceAll("(?s)<tool_call>.*?</tool_call>", "");
+        result = result.replaceAll("(?s)<tool_response>.*?</tool_response>", "");
         
         // Remove ReAct Action/Action Input/Thought completely if it's at the end
         result = result.replaceAll("(?m)^Action:.*$", "");
         result = result.replaceAll("(?m)^Action Input:.*$", "");
         
         return result.trim();
+    }
+
+    public static String cleanLlmTokens(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        String result = text;
+
+        // 1. Clean compound tokens like <|DSML|...<|begin_of_sentence|>> or similar
+        result = result.replaceAll("(?i)< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *< *[|｜] *begin[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? *", "");
+        result = result.replaceAll("(?i)< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *< *[|｜] *end[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? *", "");
+
+        // 2. Clean begin/end of sentence/text tokens (with optional backticks and enclosing delimiters)
+        result = result.replaceAll("(?i)`?< *[|｜]? *(?:begin|end)[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>`?", "");
+        result = result.replaceAll("(?i)`?[|｜] *(?:begin|end)[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>?`?", "");
+        result = result.replaceAll("(?i)`?(?:begin|end)[_▁]of[_▁](?:sentence|text)`?", "");
+
+        // 3. Clean Chat/Role control tokens (like Qwen's im_start/im_end/endoftext or DeepSeek's User/Assistant/Outputs/System)
+        result = result.replaceAll("(?i)`?< *[|｜]? *(?:im_(?:start|end)|endoftext|user|assistant|system|outputs) *[|｜]? *>`?", "");
+        result = result.replaceAll("(?i)`?[|｜] *(?:im_(?:start|end)|endoftext|user|assistant|system|outputs) *[|｜]? *>?`?", "");
+
+        // 4. Clean DSML tool/invocation tags (e.g. <|DSML|tool_calls>, <｜DSML｜call:xxx｜>, DSML|tool_calls)
+        result = result.replaceAll("(?i)< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *>? *", "");
+        result = result.replaceAll("(?i)[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *>? *", "");
+        result = result.replaceAll("(?i)DSML *[|｜] *[^>|｜\\s]+ *", "");
+
+        // 5. Catch-all: Clean any remaining <｜...｜> DeepSeek-style control tokens
+        // (e.g. <｜tool▁calls▁begin｜>, <｜tool▁sep｜>, <｜tool▁output▁end｜> etc.)
+        // Uses the full-width pipe ｜ (U+FF5C) as anchor — normal text never contains this pattern.
+        result = result.replaceAll("<｜[^>]+｜>", "");
+
+        return result;
     }
 }

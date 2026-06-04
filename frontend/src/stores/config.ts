@@ -109,6 +109,30 @@ export const useConfigStore = defineStore('config', () => {
   const clusterId = ref('')
   const token = ref('')
   const initialPrompt = ref('')
+  const clusterOptions = ref<{ value: string; label: string }[]>([
+    { value: 'dev', label: 'dev' },
+    { value: 'sit', label: 'sit' },
+    { value: 'uat', label: 'uat' },
+    { value: 'st', label: 'st' }
+  ])
+
+  let isOptionsLoaded = false
+
+  async function fetchClusterOptions() {
+    if (isOptionsLoaded) return
+    isOptionsLoaded = true
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL}clusters.json`)
+      if (response.ok) {
+        const data = await response.json()
+        if (Array.isArray(data)) {
+          clusterOptions.value = data
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load clusters.json, using default fallback options.', error)
+    }
+  }
 
   // Getters
   const structuredApiUrl = computed(() => `${baseUrl.value}/api/assistant/chat/structured`)
@@ -239,6 +263,7 @@ export const useConfigStore = defineStore('config', () => {
     token.value = savedToken || ''
 
     persist()
+    fetchClusterOptions()
   }
 
   function setChatId(id: string) {
@@ -263,8 +288,10 @@ export const useConfigStore = defineStore('config', () => {
     token,
     initialPrompt,
     structuredApiUrl,
+    clusterOptions,
     updateConfig,
     loadConfig,
+    fetchClusterOptions,
     setChatId,
     generateNewChatId,
     initializeChatId

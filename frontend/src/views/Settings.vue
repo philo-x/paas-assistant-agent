@@ -285,12 +285,7 @@ onMounted(() => {
                 <Select
                   v-model:value="formData.clusterId"
                   :placeholder="t('chat.clusterPlaceholder')"
-                  :options="[
-                    { value: 'dev', label: 'dev' },
-                    { value: 'sit', label: 'sit' },
-                    { value: 'uat', label: 'uat' },
-                    { value: 'st', label: 'st' }
-                  ]"
+                  :options="configStore.clusterOptions"
                 />
               </Form.Item>
 
