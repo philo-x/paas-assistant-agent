@@ -12,20 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Hybrid Dockerfile for PaaS Assistant Agent
-# - Frontend: Built inside Docker for consistency.
-# - Java: Pre-built locally via IDE/Maven to save time.
-
-# Stage 1: Build frontend
-FROM node:20-alpine AS frontend-builder
-WORKDIR /build/frontend
-COPY frontend/package*.json ./
-# Use npm mirror for faster build in China
-RUN npm config set registry https://registry.npmmirror.com && npm ci
-COPY frontend/ .
-RUN npm run build-only
-
-# Stage 2: Final runtime image
+# Final runtime image
 FROM eclipse-temurin:17-jre
 
 ARG MODULE
@@ -42,9 +29,8 @@ WORKDIR /app
 # Make sure you have run 'mvn clean package' locally before building the image
 COPY ${MODULE}/target/*.jar app.jar
 
-# Copy the frontend build artifacts to an external static resources directory
-RUN mkdir -p /app/static /app/logs
-COPY --from=frontend-builder /build/frontend/dist/ /app/static/
+# Create logs directory
+RUN mkdir -p /app/logs
 
 # Set ownership
 RUN chown -R appuser:appgroup /app
@@ -53,10 +39,8 @@ USER appuser
 EXPOSE ${PORT}
 
 # Common Environment Variables Defaults
-# SPRING_WEB_RESOURCES_STATIC_LOCATIONS tells Spring to serve static files from the external /app/static/ directory
 ENV SERVER_PORT=${PORT} \
-    JAVA_OPTS="-Xms512m -Xmx1024m -Dnacos.logging.path=/app/logs -DJM.LOG.PATH=/app/logs" \
-    SPRING_WEB_RESOURCES_STATIC_LOCATIONS="file:/app/static/,classpath:/static/,classpath:/public/,classpath:/resources/,classpath:/META-INF/resources/"
+    JAVA_OPTS="-Xms512m -Xmx1024m -Dnacos.logging.path=/app/logs -DJM.LOG.PATH=/app/logs"
 
 # Health check using Spring Boot Actuator
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
