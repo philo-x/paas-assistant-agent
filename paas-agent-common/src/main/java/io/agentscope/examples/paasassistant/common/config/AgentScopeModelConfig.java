@@ -64,6 +64,12 @@ public class AgentScopeModelConfig {
     @Value("${agentscope.openai.base-url}")
     private String openaiBaseUrl;
 
+    @Value("${agentscope.openai.thinking:false}")
+    private boolean openaiThinking;
+
+    @Value("${agentscope.openai.reasoning-effort:}")
+    private String openaiReasoningEffort;
+
     @Value("${agentscope.model.disable-parallel-tools:false}")
     private boolean disableParallelTools;
 
@@ -90,11 +96,23 @@ public class AgentScopeModelConfig {
                             .stream(true)
                             .httpTransport(createHttpTransport())
                             .formatter(new SafeOpenAIChatFormatter());
+
+            GenerateOptions.Builder optionsBuilder = GenerateOptions.builder();
             if (disableParallelTools) {
-                builder.generateOptions(GenerateOptions.builder()
-                        .additionalBodyParam("parallel_tool_calls", false)
-                        .build());
+                optionsBuilder.additionalBodyParam("parallel_tool_calls", false);
             }
+            if (openaiThinking || (openaiReasoningEffort != null && !openaiReasoningEffort.isEmpty())) {
+                // 仅当模型名称包含 deepseek 时才注入 chat_template_kwargs，避免干扰 Qwen 等其他模型
+                if (openaiModelName != null && openaiModelName.toLowerCase(Locale.ROOT).contains("ds")) {
+                    java.util.Map<String, Object> chatTemplateKwargs = new java.util.HashMap<>();
+                    chatTemplateKwargs.put("thinking", openaiThinking);
+                    if (openaiReasoningEffort != null && !openaiReasoningEffort.isEmpty()) {
+                        chatTemplateKwargs.put("reasoning_effort", openaiReasoningEffort);
+                    }
+                    optionsBuilder.additionalBodyParam("chat_template_kwargs", chatTemplateKwargs);
+                }
+            }
+            builder.generateOptions(optionsBuilder.build());
             if (openaiBaseUrl != null && !openaiBaseUrl.isEmpty() && !openaiBaseUrl.equals("-")) {
                 builder.baseUrl(openaiBaseUrl);
             }

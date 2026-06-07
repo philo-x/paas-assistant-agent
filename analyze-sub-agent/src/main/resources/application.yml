@@ -12,6 +12,8 @@ agentscope:
     api-key: ${MODEL_API_KEY:-}
     model-name: ${MODEL_NAME:gpt-5}
     base-url: ${OPENAI_BASE_URL:${MODEL_BASE_URL:-}}
+    thinking: ${MODEL_THINKING:false}
+    reasoning-effort: ${MODEL_REASONING_EFFORT:}
   a2a:
     nacos:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
