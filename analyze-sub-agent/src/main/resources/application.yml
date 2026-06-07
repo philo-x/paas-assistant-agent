@@ -44,6 +44,7 @@ agentscope:
       max-token: "${AUTO_CONTEXT_MAX_TOKEN:225280}"
       token-ratio: "${AUTO_CONTEXT_TOKEN_RATIO:0.75}"
       msg-threshold: "${AUTO_CONTEXT_MSG_THRESHOLD:300}"
+      last-keep: "${AUTO_CONTEXT_LAST_KEEP:5}"
 
 spring:
   application:
@@ -131,9 +132,9 @@ agent:
       - 输出简洁明了，**不需要**完整的证据链，省略中间推理过程。
       - 使用 GitHub Flavored Markdown 输出表格、列表和代码块。
       - 异常扫描结果必须包含：**问题描述 | 优先级 | 修复建议** 三列。
-      - **`<thinking>` 约束**：
-        - **纯查询场景**（分支一）：无需使用 `<thinking>` 标签，直接输出结果。
-        - **扫描/追查场景**（分支二/三）：在输出最终报告之前，所有内心独白与中间计划**必须**包裹在 `<thinking>` 和 `</thinking>` 标签内，禁止在标签外输出任何非最终报告的普通文字。
+      - **`<think>` 约束**：
+        - **纯查询场景**（分支一）：无需使用 `<think>` 标签，直接输出结果。
+        - **扫描/追查场景**（分支二/三）：在输出最终报告之前，所有内心独白与中间计划**必须**包裹在 `<think>` 和 `</think>` 标签内，禁止在标签外输出任何非最终报告的普通文字。
 
 #logging:
 #  level:

@@ -17,7 +17,7 @@
 package io.agentscope.examples.paasassistant.common.stream;
 
 /**
- * A stateful stream filter that safely removes <thinking>...</thinking> tags from 
+ * A stateful stream filter that safely removes <think>...</think> tags from 
  * fragmented text chunks in a reactive stream, while KEEPING the text inside.
  */
 public class ThinkingStreamFilter {
@@ -43,13 +43,13 @@ public class ThinkingStreamFilter {
                 buffer.delete(0, lessThanIdx);
             }
 
-            if (buffer.toString().startsWith("<thinking>")) {
-                buffer.delete(0, "<thinking>".length());
-            } else if (buffer.toString().startsWith("</thinking>")) {
-                buffer.delete(0, "</thinking>".length());
+            if (buffer.toString().startsWith("<think>")) {
+                buffer.delete(0, "<think>".length());
+            } else if (buffer.toString().startsWith("</think>")) {
+                buffer.delete(0, "</think>".length());
             } else {
                 String bStr = buffer.toString();
-                if ("<thinking>".startsWith(bStr) || "</thinking>".startsWith(bStr)) {
+                if ("<think>".startsWith(bStr) || "</think>".startsWith(bStr)) {
                     break;
                 } else {
                     output.append("<");

@@ -64,7 +64,7 @@ public class EventStreamTranslator {
             }
             
             for (TextBlock block : event.getMessage().getContentBlocks(TextBlock.class)) {
-                // TextBlock might contain <thinking> tags, pass through splitter
+                // TextBlock might contain <think> tags, pass through splitter
                 if (block.getText() != null && !block.getText().isEmpty()) {
                     thinkingSplitter.processChunk(block.getText());
                 }

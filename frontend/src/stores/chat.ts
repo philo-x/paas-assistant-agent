@@ -21,7 +21,7 @@ import type {
   Message,
   StructuredSseEvent
 } from '@/types'
-import { applyStructuredThoughtsEvent, type ThoughtsTimelineLabels } from '@/utils/thoughtsTimeline'
+import { applyStructuredThoughtsEvent, cleanLlmTokens, type ThoughtsTimelineLabels } from '@/utils/thoughtsTimeline'
 
 export const useChatStore = defineStore('chat', () => {
   // State
@@ -68,7 +68,7 @@ export const useChatStore = defineStore('chat', () => {
   function appendAssistantAnswer(content: string) {
     const lastMessage = getLastAssistantMessage()
     if (lastMessage) {
-      lastMessage.answer += content
+      lastMessage.answer += cleanLlmTokens(content)
       lastMessage.isStreaming = true
     }
   }

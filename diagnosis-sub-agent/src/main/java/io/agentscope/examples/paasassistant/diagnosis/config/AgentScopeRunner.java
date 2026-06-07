@@ -123,6 +123,9 @@ public class AgentScopeRunner {
     @Value("${agentscope.memory.auto-context.msg-threshold:300}")
     int autoContextMsgThreshold;
 
+    @Value("${agentscope.memory.auto-context.last-keep:5}")
+    int autoContextLastKeep;
+
     @Bean
     public AgentRunner agentRunner(
             AgentPromptConfig promptConfig, AiService aiService, Model model,
@@ -133,7 +136,7 @@ public class AgentScopeRunner {
                 .maxToken(autoContextMaxToken)
                 .tokenRatio(autoContextTokenRatio)
                 .msgThreshold(autoContextMsgThreshold)
-                .lastKeep(30)
+                .lastKeep(autoContextLastKeep)
                 .minCompressionTokenThreshold(15000)
                 .build();
 

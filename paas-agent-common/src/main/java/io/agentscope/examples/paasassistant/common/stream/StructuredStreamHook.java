@@ -61,8 +61,15 @@ public class StructuredStreamHook implements Hook {
                     summary,
                     summarize(postActing.getToolUse().getInput()));
         } else if (event instanceof PostCallEvent postCall) {
-            emitter.emitAnswerDelta(postCall.getFinalMessage().getTextContent());
-
+            String finalText = postCall.getFinalMessage().getTextContent();
+            if (finalText != null && !finalText.isEmpty()) {
+                finalText = ToolNarrator.extractThinkingText(finalText);
+                finalText = ToolNarrator.cleanReActSyntax(finalText);
+                finalText = ToolNarrator.cleanLlmTokens(finalText);
+                if (!finalText.isEmpty()) {
+                    emitter.emitAnswerDelta(finalText);
+                }
+            }
         }
         return Mono.just(event);
     }

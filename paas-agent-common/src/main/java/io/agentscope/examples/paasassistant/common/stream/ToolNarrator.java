@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 
 public final class ToolNarrator {
 
-    private static final Pattern THINKING_PATTERN = Pattern.compile("<thinking>(.*?)</thinking>", Pattern.DOTALL);
+    private static final Pattern THINKING_PATTERN = Pattern.compile("<think>(.*?)</think>", Pattern.DOTALL);
 
     private ToolNarrator() {}
 
@@ -91,14 +91,14 @@ public final class ToolNarrator {
         }
         // Use (?s) so DOTALL is enabled for the regex, matching newlines inside the tags.
         // DO NOT use .trim() here, as it destroys spaces and newlines between streaming chunks!
-        return chunk.replaceAll("(?s)<(thinking|think)>.*?</(thinking|think)>", "");
+        return chunk.replaceAll("(?s)<think>.*?</think>", "");
     }
 
     public static String extractThinkingText(String chunk) {
         if (chunk == null || chunk.isEmpty()) {
             return "";
         }
-        return chunk.replaceAll("(?s)<(thinking|think)>.*?</(thinking|think)>", "").trim();
+        return chunk.replaceAll("(?s)<think>.*?</think>", "").trim();
     }
 
     public static String cleanReActSyntax(String text) {
@@ -125,25 +125,32 @@ public final class ToolNarrator {
         }
         String result = text;
 
+        // 0. Clean hook logs (both lines starting with [HOOK] and hooks in the middle of a line)
+        result = result.replaceAll("(?m)^ *\\[HOOK\\].*(?:\\r?\\n)?", "");
+        result = result.replaceAll("\\[HOOK\\].*", "");
+
         // 1. Clean compound tokens like <|DSML|...<|begin_of_sentence|>> or similar
-        result = result.replaceAll("(?i)< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *< *[|｜] *begin[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? *", "");
-        result = result.replaceAll("(?i)< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *< *[|｜] *end[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? *", "");
+        result = result.replaceAll("(?i)< *[|｜] *DSML *[|｜] *[^<>|｜]* *[|｜]? *< *[|｜] *begin[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? *", "");
+        result = result.replaceAll("(?i)< *[|｜] *DSML *[|｜] *[^<>|｜]* *[|｜]? *< *[|｜] *end[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? *", "");
 
         // 2. Clean begin/end of sentence/text tokens (with optional backticks and enclosing delimiters)
         result = result.replaceAll("(?i)`?< *[|｜]? *(?:begin|end)[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>`?", "");
         result = result.replaceAll("(?i)`?[|｜] *(?:begin|end)[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>?`?", "");
         result = result.replaceAll("(?i)`?(?:begin|end)[_▁]of[_▁](?:sentence|text)`?", "");
 
-        // 3. Clean Chat/Role control tokens (like Qwen's im_start/im_end/endoftext or DeepSeek's User/Assistant/Outputs/System)
-        result = result.replaceAll("(?i)`?< *[|｜]? *(?:im_(?:start|end)|endoftext|user|assistant|system|outputs) *[|｜]? *>`?", "");
-        result = result.replaceAll("(?i)`?[|｜] *(?:im_(?:start|end)|endoftext|user|assistant|system|outputs) *[|｜]? *>?`?", "");
+        // 3. Clean Chat/Role control tokens (like Qwen's im_start/im_end/endoftext, DeepSeek's User/Assistant/Outputs/System/EOT)
+        result = result.replaceAll("(?i)`?< *[|｜]? *(?:im_(?:start|end)|endoftext|EOT|user|assistant|system|outputs) *[|｜]? *>`?", "");
+        result = result.replaceAll("(?i)`?[|｜] *(?:im_(?:start|end)|endoftext|EOT|user|assistant|system|outputs) *[|｜]? *>?`?", "");
 
         // 4. Clean DSML tool/invocation tags (e.g. <|DSML|tool_calls>, <｜DSML｜call:xxx｜>, DSML|tool_calls)
         result = result.replaceAll("(?i)< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *>? *", "");
         result = result.replaceAll("(?i)[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *>? *", "");
         result = result.replaceAll("(?i)DSML *[|｜] *[^>|｜\\s]+ *", "");
 
-        // 5. Catch-all: Clean any remaining <｜...｜> DeepSeek-style control tokens
+        // 5. Clean <dsml:...> / </dsml:...> XML-style DSML tags (DeepSeek-V4)
+        result = result.replaceAll("</?dsml:[^>]*>?", "");
+
+        // 6. Catch-all: Clean any remaining <｜...｜> DeepSeek-style control tokens
         // (e.g. <｜tool▁calls▁begin｜>, <｜tool▁sep｜>, <｜tool▁output▁end｜> etc.)
         // Uses the full-width pipe ｜ (U+FF5C) as anchor — normal text never contains this pattern.
         result = result.replaceAll("<｜[^>]+｜>", "");

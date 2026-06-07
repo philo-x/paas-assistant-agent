@@ -80,26 +80,31 @@ const normalizeText = (raw: string | undefined | null) => {
     .replace(/\\\\/g, '\\')
 }
 
-const cleanLlmTokens = (text: string): string => {
+export const cleanLlmTokens = (text: string): string => {
   if (!text) {
     return ''
   }
   return text
+    // 0. Clean hook logs (both lines starting with [HOOK] and hooks in the middle of a line)
+    .replace(/^ *\[HOOK\].*(?:\r?\n)?/gm, '')
+    .replace(/\[HOOK\].*/g, '')
     // 1. Clean compound tokens like <|DSML|...<|begin_of_sentence|>> or similar
-    .replace(/< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *< *[|｜] *begin[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? */gi, '')
-    .replace(/< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *< *[|｜] *end[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? */gi, '')
+    .replace(/< *[|｜] *DSML *[|｜] *[^<>|｜]* *[|｜]? *< *[|｜] *begin[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? */gi, '')
+    .replace(/< *[|｜] *DSML *[|｜] *[^<>|｜]* *[|｜]? *< *[|｜] *end[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>? *>? */gi, '')
     // 2. Clean begin/end of sentence/text tokens (with optional backticks and enclosing delimiters)
     .replace(/`?< *[|｜]? *(?:begin|end)[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>`?/gi, '')
     .replace(/`?[|｜] *(?:begin|end)[^a-zA-Z]+of[^a-zA-Z]+(?:sentence|text) *[|｜]? *>?`?/gi, '')
     .replace(/`?(?:begin|end)[_▁]of[_▁](?:sentence|text)`?/gi, '')
-    // 3. Clean Chat/Role control tokens (like Qwen's im_start/im_end/endoftext or DeepSeek's User/Assistant/Outputs/System)
-    .replace(/`?< *[|｜]? *(?:im_(?:start|end)|endoftext|user|assistant|system|outputs) *[|｜]? *>`?/gi, '')
-    .replace(/`?[|｜] *(?:im_(?:start|end)|endoftext|user|assistant|system|outputs) *[|｜]? *>?`?/gi, '')
+    // 3. Clean Chat/Role control tokens (like Qwen's im_start/im_end/endoftext, DeepSeek's User/Assistant/Outputs/System/EOT)
+    .replace(/`?< *[|｜]? *(?:im_(?:start|end)|endoftext|EOT|user|assistant|system|outputs) *[|｜]? *>`?/gi, '')
+    .replace(/`?[|｜] *(?:im_(?:start|end)|endoftext|EOT|user|assistant|system|outputs) *[|｜]? *>?`?/gi, '')
     // 4. Clean DSML tool/invocation tags (e.g. <|DSML|tool_calls>, <｜DSML｜call:xxx｜>, DSML|tool_calls)
     .replace(/< *[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *>? */gi, '')
     .replace(/[|｜] *DSML *[|｜] *[^>|｜]+ *[|｜]? *>? */gi, '')
     .replace(/DSML *[|｜] *[^>|｜\s]+ */gi, '')
-    // 5. Catch-all: Clean any remaining <｜...｜> DeepSeek-style control tokens
+    // 5. Clean <dsml:...> / </dsml:...> XML-style DSML tags (DeepSeek-V4)
+    .replace(/<\/?dsml:[^>]*>?/g, '')
+    // 6. Catch-all: Clean any remaining <｜...｜> DeepSeek-style control tokens
     // (e.g. <｜tool▁calls▁begin｜>, <｜tool▁sep｜>, <｜tool▁output▁end｜> etc.)
     .replace(/<｜[^>]+｜>/g, '')
 }

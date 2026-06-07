@@ -16,7 +16,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { AssistantMessage, StructuredSseEvent } from '@/types'
-import { applyStructuredThoughtsEvent, type ThoughtsTimelineLabels } from './thoughtsTimeline'
+import { applyStructuredThoughtsEvent, cleanLlmTokens, type ThoughtsTimelineLabels } from './thoughtsTimeline'
 
 const labels: ThoughtsTimelineLabels = {
   agentLabels: {
@@ -263,6 +263,50 @@ describe('applyStructuredThoughtsEvent', () => {
     expect(message.thinkingTimeline[5].kind).toBe('reasoning')
     expect(message.thinkingTimeline[5].description).toBe('正在分析工具的执行结果...')
     expect(message.thinkingTimeline[5].isOpen).toBe(true)
+  })
+})
+
+describe('cleanLlmTokens', () => {
+  it('should clean Qwen style tokens', () => {
+    expect(cleanLlmTokens('<|im_start|>user\nHello<|im_end|>')).toBe('user\nHello')
+    expect(cleanLlmTokens('<|endoftext|>Some content')).toBe('Some content')
+  })
+
+  it('should clean DeepSeek style U+FF5C full-width pipe tokens', () => {
+    expect(cleanLlmTokens('<｜begin▁of▁sentence｜>Normal text')).toBe('Normal text')
+    expect(cleanLlmTokens('<｜tool▁calls▁begin｜><｜tool▁sep｜>Output')).toBe('Output')
+    expect(cleanLlmTokens('<｜User｜>User message<｜Assistant｜>')).toBe('User message')
+  })
+
+  it('should clean DSML style tool tags', () => {
+    expect(cleanLlmTokens('<|DSML|call:k8s_list_pods>Hello')).toBe('Hello')
+    expect(cleanLlmTokens('DSML|call:xxx Hello')).toBe('Hello')
+  })
+
+  it('should clean compound DSML + begin of sentence/text tokens', () => {
+    expect(cleanLlmTokens('<｜DSML｜<｜begin_of_sentence｜>')).toBe('')
+    expect(cleanLlmTokens('<|DSML|<|begin_of_sentence|>')).toBe('')
+    expect(cleanLlmTokens('我来诊断命名空间 \'pt<｜DSML｜<｜begin_of_sentence｜>一些文字')).toBe('我来诊断命名空间 \'pt一些文字')
+  })
+
+  it('should clean [HOOK] logs', () => {
+    expect(cleanLlmTokens('[HOOK] PreCallEvent - Agent started: diagnosis_agent')).toBe('')
+    expect(cleanLlmTokens('好的。[HOOK] PostActingEvent - Tool: list_k8s_resource, Result: {"items":null}')).toBe('好的。')
+    expect(cleanLlmTokens('   [HOOK] Spaced hook log\nHello world')).toBe('Hello world')
+  })
+
+  it('should clean DeepSeek-V4 EOT token (half-width pipe)', () => {
+    expect(cleanLlmTokens('Final answer<|EOT|>')).toBe('Final answer')
+    expect(cleanLlmTokens('<|EOT|>Trailing text')).toBe('Trailing text')
+  })
+
+  it('should clean DeepSeek-V4 dsml: XML-style tags', () => {
+    expect(cleanLlmTokens('<dsml:function_call>Hello')).toBe('Hello')
+    expect(cleanLlmTokens('Result</dsml:output>Done')).toBe('ResultDone')
+  })
+
+  it('should return empty string if input is empty or undefined', () => {
+    expect(cleanLlmTokens('')).toBe('')
   })
 })
 

@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 
 /**
  * A stateful stream splitter that routes text chunks either to a reasoning callback
- * (if inside <thinking> or <think> tags) or an answer callback (if outside the tags).
+ * (if inside <think> tags) or an answer callback (if outside the tags).
  */
 public class ThinkingStreamSplitter {
     private String activeEndTag = null;
@@ -43,51 +43,18 @@ public class ThinkingStreamSplitter {
 
         while (buffer.length() > 0) {
             if (!inThinking) {
-                int startIndexThinking = buffer.indexOf("<thinking>");
-                int startIndexThink = buffer.indexOf("<think>");
+                int startIndex = buffer.indexOf("<think>");
                 
-                int startIndex = -1;
-                String activeStartTag = "";
-                
-                if (startIndexThinking != -1 && startIndexThink != -1) {
-                    if (startIndexThinking < startIndexThink) {
-                        startIndex = startIndexThinking;
-                        activeStartTag = "<thinking>";
-                        activeEndTag = "</thinking>";
-                    } else {
-                        startIndex = startIndexThink;
-                        activeStartTag = "<think>";
-                        activeEndTag = "</think>";
-                    }
-                } else if (startIndexThinking != -1) {
-                    startIndex = startIndexThinking;
-                    activeStartTag = "<thinking>";
-                    activeEndTag = "</thinking>";
-                } else if (startIndexThink != -1) {
-                    startIndex = startIndexThink;
-                    activeStartTag = "<think>";
-                    activeEndTag = "</think>";
-                }
-
                 if (startIndex != -1) {
                     if (startIndex > 0) {
                         onAnswer.accept(buffer.substring(0, startIndex));
                     }
                     inThinking = true;
-                    buffer.delete(0, startIndex + activeStartTag.length());
+                    activeEndTag = "</think>";
+                    buffer.delete(0, startIndex + "<think>".length());
                 } else {
-                    int partialThinking = findPartialTag(buffer, "<thinking>");
-                    int partialThink = findPartialTag(buffer, "<think>");
-                    int partialIndex = -1;
+                    int partialIndex = findPartialTag(buffer, "<think>");
                     
-                    if (partialThinking != -1 && partialThink != -1) {
-                        partialIndex = Math.min(partialThinking, partialThink);
-                    } else if (partialThinking != -1) {
-                        partialIndex = partialThinking;
-                    } else if (partialThink != -1) {
-                        partialIndex = partialThink;
-                    }
-
                     if (partialIndex != -1) {
                         if (partialIndex > 0) {
                             onAnswer.accept(buffer.substring(0, partialIndex));
