@@ -31,11 +31,17 @@ public class SanitizingMcpClient extends McpClientWrapper {
     private static final ObjectMapper signatureMapper = new ObjectMapper()
             .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
 
-    private final McpClientWrapper delegate;
+    private volatile McpClientWrapper delegate;
+    private final java.util.function.Supplier<McpClientWrapper> delegateCreator;
 
     public SanitizingMcpClient(McpClientWrapper delegate) {
+        this(delegate, null);
+    }
+
+    public SanitizingMcpClient(McpClientWrapper delegate, java.util.function.Supplier<McpClientWrapper> delegateCreator) {
         super(delegate.getName());
         this.delegate = delegate;
+        this.delegateCreator = delegateCreator;
     }
 
     @Override
@@ -141,6 +147,39 @@ public class SanitizingMcpClient extends McpClientWrapper {
                     .onErrorResume(e -> {
                         if (isSessionNotFoundFailure(e)) {
                             logger.warn("MCP session not found or terminated, attempting to re-initialize and retry tool '{}'", name);
+                            McpClientWrapper oldDelegate = delegate;
+                            if (delegateCreator != null) {
+                                synchronized (this) {
+                                    if (oldDelegate == delegate) {
+                                        try {
+                                            McpClientWrapper newDelegate = delegateCreator.get();
+                                            this.delegate = newDelegate;
+                                            logger.info("Recreated MCP client wrapper delegate for '{}'", name);
+                                            // Close old delegate asynchronously to avoid blocking
+                                            Mono.fromRunnable(() -> {
+                                                try {
+                                                    oldDelegate.close();
+                                                } catch (Exception ex) {
+                                                    logger.warn("Error closing old MCP client wrapper delegate", ex);
+                                                }
+                                            }).subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic()).subscribe();
+                                        } catch (Exception ex) {
+                                            logger.error("Failed to recreate MCP client wrapper delegate", ex);
+                                            return Mono.error(e);
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Fallback: try reflection-based reset of initialized flag on delegate
+                                try {
+                                    java.lang.reflect.Field field = McpClientWrapper.class.getDeclaredField("initialized");
+                                    field.setAccessible(true);
+                                    field.set(delegate, false);
+                                    logger.info("Reset initialized flag on delegate via reflection");
+                                } catch (Exception ex) {
+                                    logger.error("Failed to reset initialized flag on delegate via reflection", ex);
+                                }
+                            }
                             return delegate.initialize()
                                     .then(delegate.callTool(name, finalArgs));
                         }

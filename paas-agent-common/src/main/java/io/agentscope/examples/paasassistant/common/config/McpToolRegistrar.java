@@ -3,7 +3,11 @@ package io.agentscope.examples.paasassistant.common.config;
 import io.agentscope.core.tool.Toolkit;
 import io.agentscope.core.tool.mcp.McpClientBuilder;
 import io.agentscope.core.tool.mcp.McpClientWrapper;
+import io.agentscope.core.tool.mcp.McpSyncClientWrapper;
 import io.agentscope.examples.paasassistant.common.utils.SanitizingMcpClient;
+import io.modelcontextprotocol.client.McpClient;
+import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 
 import java.time.Duration;
 import java.util.List;
@@ -156,11 +160,11 @@ public final class McpToolRegistrar {
             Duration mcpToolTimeout) {
 
         // k8sgpt MCP 工具注册
-        McpClientWrapper k8sgptMcpClient = McpClientBuilder.create(K8sGpt.SERVER_NAME)
-                .streamableHttpTransport(k8sgptMcpUrl)
-                .timeout(mcpToolTimeout)
-                .buildSync();
-        McpClientWrapper sanitizedK8sGptClient = new SanitizingMcpClient(k8sgptMcpClient);
+        McpClientWrapper k8sgptMcpClient = buildMcpClient(K8sGpt.SERVER_NAME, k8sgptMcpUrl, mcpToolTimeout);
+        McpClientWrapper sanitizedK8sGptClient = new SanitizingMcpClient(
+                k8sgptMcpClient,
+                () -> buildMcpClient(K8sGpt.SERVER_NAME, k8sgptMcpUrl, mcpToolTimeout)
+        );
 
         // 1. 资源问题快速分析
         toolkit.createToolGroup(Groups.K8S_RESOURCE_ANALYZE, Groups.DESC_K8S_RESOURCE_ANALYZE, true);
@@ -170,11 +174,11 @@ public final class McpToolRegistrar {
                 .apply();
 
         // KOM MCP client (with SanitizingMcpClient wrapper)
-        McpClientWrapper komMcpClient = McpClientBuilder.create(Kom.SERVER_NAME)
-                .streamableHttpTransport(k8sMcpUrl)
-                .timeout(mcpToolTimeout)
-                .buildSync();
-        McpClientWrapper sanitizedK8sClient = new SanitizingMcpClient(komMcpClient);
+        McpClientWrapper komMcpClient = buildMcpClient(Kom.SERVER_NAME, k8sMcpUrl, mcpToolTimeout);
+        McpClientWrapper sanitizedK8sClient = new SanitizingMcpClient(
+                komMcpClient,
+                () -> buildMcpClient(Kom.SERVER_NAME, k8sMcpUrl, mcpToolTimeout)
+        );
 
         // 1. 集群管理 (Cluster Management)
         toolkit.createToolGroup(Groups.CLUSTER_MANAGEMENT, Groups.DESC_CLUSTER_MANAGEMENT, false);
@@ -252,5 +256,30 @@ public final class McpToolRegistrar {
 
         // 注册 Meta Tool，允许 LLM 在运行时动态激活或停用上述工具组
         toolkit.registerMetaTool();
+    }
+
+    private static McpClientWrapper buildMcpClient(String serverName, String mcpUrl, Duration timeout) {
+        String baseUrl = mcpUrl;
+        String endpoint = "/mcp";
+        if (mcpUrl.endsWith("/mcp")) {
+            baseUrl = mcpUrl.substring(0, mcpUrl.length() - 4);
+        } else if (mcpUrl.endsWith("/mcp/")) {
+            baseUrl = mcpUrl.substring(0, mcpUrl.length() - 5);
+        }
+
+        HttpClientStreamableHttpTransport transport = HttpClientStreamableHttpTransport.builder(baseUrl)
+                .endpoint(endpoint)
+                .build();
+
+        io.modelcontextprotocol.spec.McpSchema.Implementation clientInfo =
+                new io.modelcontextprotocol.spec.McpSchema.Implementation(
+                        "agentscope-java", "AgentScope Java Framework", io.agentscope.core.Version.VERSION);
+
+        McpSyncClient mcpClient = McpClient.sync(transport)
+                .requestTimeout(timeout)
+                .clientInfo(clientInfo)
+                .build();
+
+        return new McpSyncClientWrapper(serverName, mcpClient);
     }
 }
