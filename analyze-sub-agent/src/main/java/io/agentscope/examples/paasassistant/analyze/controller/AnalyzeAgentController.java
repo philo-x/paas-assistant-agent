@@ -22,6 +22,7 @@ import io.agentscope.core.a2a.server.executor.runner.AgentRunner;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.message.MsgRole;
 import io.agentscope.core.message.TextBlock;
+import io.agentscope.examples.paasassistant.common.config.AgentConstants;
 import io.agentscope.examples.paasassistant.common.controller.dto.StructuredChatRequest;
 import io.agentscope.examples.paasassistant.common.stream.EventStreamTranslator;
 import io.agentscope.examples.paasassistant.common.stream.StructuredSseEmitter;
@@ -68,12 +69,12 @@ public class AnalyzeAgentController {
 
             StringBuilder promptBuilder = new StringBuilder();
             if (userId != null && !userId.isEmpty()) {
-                promptBuilder.append("<userId>").append(userId).append("</userId>");
+                promptBuilder.append(AgentConstants.TAG_USER_ID_START).append(userId).append(AgentConstants.TAG_USER_ID_END);
             }
             if (request.cluster_id() != null && !request.cluster_id().isEmpty()) {
-                promptBuilder.append("<clusterId>").append(request.cluster_id()).append("</clusterId>");
+                promptBuilder.append(AgentConstants.TAG_CLUSTER_ID_START).append(request.cluster_id()).append(AgentConstants.TAG_CLUSTER_ID_END);
             }
-            promptBuilder.append("<traceId>").append(traceId).append("</traceId>");
+            promptBuilder.append(AgentConstants.TAG_TRACE_ID_START).append(traceId).append(AgentConstants.TAG_TRACE_ID_END);
             promptBuilder.append(userQuery);
 
             Msg msg = Msg.builder()
@@ -84,13 +85,13 @@ public class AnalyzeAgentController {
             AgentRequestOptions options = new AgentRequestOptions();
             options.setTaskId(traceId);
 
-            EventStreamTranslator translator = new EventStreamTranslator("analyze_agent", emitter);
+            EventStreamTranslator translator = new EventStreamTranslator(AgentConstants.AGENT_NAME_ANALYZE, emitter);
 
             Disposable disposable = agentRunner.stream(Collections.singletonList(msg), options)
                     .doOnNext(translator::handleEvent)
                     .doOnError(e -> {
                         logger.error("Error occurred during structured streaming", e);
-                        emitter.emitError("System processing error, please try again later.", "stream");
+                        emitter.emitError(AgentConstants.SYSTEM_ERROR_MESSAGE, AgentConstants.SSE_EVENT_STAGE_STREAM);
                         sink.tryEmitComplete();
                     })
                     .doOnComplete(() -> {
@@ -103,10 +104,10 @@ public class AnalyzeAgentController {
             Flux<ServerSentEvent<String>> flux = sink.asFlux()
                     .publish(shared -> Flux.merge(
                             shared,
-                            Flux.interval(Duration.ofSeconds(15))
+                            Flux.interval(Duration.ofSeconds(AgentConstants.KEEP_ALIVE_INTERVAL_SECONDS))
                                     .onBackpressureDrop()
                                     .map(i -> ServerSentEvent.<String>builder()
-                                            .comment("keep-alive")
+                                            .comment(AgentConstants.KEEP_ALIVE_COMMENT)
                                             .build())
                                     .takeUntilOther(shared.ignoreElements())
                     ))
@@ -121,20 +122,20 @@ public class AnalyzeAgentController {
                     });
 
             return ResponseEntity.ok()
-                    .header("X-Accel-Buffering", "no")
-                    .header("Cache-Control", "no-cache")
-                    .header("Connection", "keep-alive")
+                    .header(AgentConstants.HTTP_HEADER_X_ACCEL_BUFFERING, AgentConstants.HTTP_HEADER_VALUE_NO)
+                    .header(AgentConstants.HTTP_HEADER_CACHE_CONTROL, AgentConstants.HTTP_HEADER_VALUE_NO_CACHE)
+                    .header(AgentConstants.HTTP_HEADER_CONNECTION, AgentConstants.HTTP_HEADER_VALUE_KEEP_ALIVE)
                     .body(flux);
         } catch (Exception e) {
             logger.error("Failed to process structured user query: {}", userQuery, e);
             return ResponseEntity.ok()
-                    .header("X-Accel-Buffering", "no")
-                    .header("Cache-Control", "no-cache")
-                    .header("Connection", "keep-alive")
+                    .header(AgentConstants.HTTP_HEADER_X_ACCEL_BUFFERING, AgentConstants.HTTP_HEADER_VALUE_NO)
+                    .header(AgentConstants.HTTP_HEADER_CACHE_CONTROL, AgentConstants.HTTP_HEADER_VALUE_NO_CACHE)
+                    .header(AgentConstants.HTTP_HEADER_CONNECTION, AgentConstants.HTTP_HEADER_VALUE_KEEP_ALIVE)
                     .body(Flux.just(
                             ServerSentEvent.<String>builder()
-                                    .event("error")
-                                    .data("{\"message\":\"System processing error, please try again later.\",\"stage\":\"request\"}")
+                                    .event(AgentConstants.SSE_EVENT_ERROR)
+                                    .data(String.format(AgentConstants.SYSTEM_ERROR_JSON_FORMAT, AgentConstants.SYSTEM_ERROR_MESSAGE, AgentConstants.SSE_EVENT_STAGE_REQUEST))
                                     .build()));
         }
     }

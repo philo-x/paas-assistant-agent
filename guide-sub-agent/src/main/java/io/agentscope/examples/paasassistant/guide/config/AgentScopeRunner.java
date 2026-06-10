@@ -1,5 +1,6 @@
 package io.agentscope.examples.paasassistant.guide.config;
 import io.agentscope.examples.paasassistant.common.config.AgentPromptConfig;
+import io.agentscope.examples.paasassistant.common.config.AgentConstants;
 import io.agentscope.examples.paasassistant.common.hooks.TruncationHook;
 import io.agentscope.examples.paasassistant.common.hooks.MonitoringHook;
 import io.agentscope.examples.paasassistant.common.memory.CompatibleMem0LongTermMemory;
@@ -119,11 +120,11 @@ public class AgentScopeRunner {
                 .tokenRatio(autoContextTokenRatio)
                 .msgThreshold(autoContextMsgThreshold)
                 .lastKeep(autoContextLastKeep)
-                .minCompressionTokenThreshold(15000)
+                .minCompressionTokenThreshold(AgentConstants.DEFAULT_MIN_COMPRESSION_TOKEN_THRESHOLD)
                 .build();
 
         return new CustomAgentRunner(
-                "guide_agent",
+                AgentConstants.AGENT_NAME_GUIDE,
                 promptConfig.getAgentInstruction(),
                 model,
                 toolkit,
@@ -153,20 +154,7 @@ public class AgentScopeRunner {
          * fragmented acting chunks would force the supervisor to dedup repeated TOOL_RESULT
          * events. Disable here so the framework only emits one complete TOOL_RESULT per call.
          */
-        private static final StreamOptions FULL_STREAM_OPTIONS = StreamOptions.builder()
-                .eventTypes(
-                        EventType.REASONING,
-                        EventType.TOOL_RESULT,
-                        EventType.AGENT_RESULT)
-                .incremental(true)
-                .includeReasoningChunk(true)
-                .includeReasoningResult(false)
-                .includeActingChunk(false)
-                .includeSummaryChunk(false)
-                .includeSummaryResult(false)
-                .build();
-
-        private static final Pattern USER_ID_PATTERN = Pattern.compile("<userId>(.+?)</userId>");
+        private static final StreamOptions FULL_STREAM_OPTIONS = AgentConstants.FULL_STREAM_OPTIONS;
 
         private final String agentName;
         private final String sysPrompt;
@@ -210,27 +198,50 @@ public class AgentScopeRunner {
         private ReActAgent buildReActAgent(String userId) {
             Mem0ApiType apiType = resolveMem0ApiType(mem0BaseUrl, mem0ApiType);
             CompatibleMem0LongTermMemory longTermMemory = new CompatibleMem0LongTermMemory(
-                    "GuideAgent",
+                    AgentConstants.MEMORY_NAME_GUIDE,
                     userId,
                     null,
                     Map.of(),
                     mem0BaseUrl,
                     mem0ApiKey,
                     apiType,
-                    java.time.Duration.ofSeconds(60),
+                    java.time.Duration.ofSeconds(AgentConstants.DEFAULT_MEMORY_TIMEOUT_SECONDS),
                     resolveInferEnabled(apiType, mem0InferEnabled));
+
+            Model compressionModel = new Model() {
+                @Override
+                public reactor.core.publisher.Flux<io.agentscope.core.model.ChatResponse> stream(
+                        List<Msg> messages, List<io.agentscope.core.model.ToolSchema> tools, io.agentscope.core.model.GenerateOptions options) {
+                    io.agentscope.core.model.GenerateOptions.Builder optionsBuilder = io.agentscope.core.model.GenerateOptions.builder();
+                    String mName = model.getModelName();
+                    if (mName != null && mName.toLowerCase(java.util.Locale.ROOT).contains(AgentConstants.MODEL_DEEPSEEK_MARK)) {
+                        optionsBuilder.additionalBodyParam(AgentConstants.KEY_CHAT_TEMPLATE_KWARGS, Map.of(AgentConstants.KEY_THINKING, false));
+                        optionsBuilder.thinkingBudget(AgentConstants.DISABLE_THINKING_BUDGET);
+                    }
+                    io.agentscope.core.model.GenerateOptions mergedOptions = io.agentscope.core.model.GenerateOptions.mergeOptions(
+                            options,
+                            optionsBuilder.build()
+                    );
+                    return model.stream(messages, tools, mergedOptions);
+                }
+
+                @Override
+                public String getModelName() {
+                    return model.getModelName();
+                }
+            };
 
             return ReActAgent.builder()
                     .name(agentName)
                     .sysPrompt(sysPrompt)
                     .model(model)
-                    .memory(new AutoContextMemory(autoContextConfig, model))
+                    .memory(new AutoContextMemory(autoContextConfig, compressionModel))
                     .toolkit(toolkit)
                     .knowledge(knowledge)
                     .ragMode(RAGMode.AGENTIC)
                     .longTermMemory(longTermMemory)
                     .hooks(List.of(new MonitoringHook(), new TruncationHook(), new AutoContextHook()))
-                    .maxIters(50)
+                    .maxIters(AgentConstants.MAX_ITERS_GUIDE)
                     .build();
         }
 
@@ -261,7 +272,7 @@ public class AgentScopeRunner {
 
         @Override
         public String getAgentDescription() {
-            return "Guide agent for PaaS Assistant";
+            return AgentConstants.AGENT_DESC_GUIDE;
         }
 
         @Override
@@ -287,7 +298,7 @@ public class AgentScopeRunner {
                                                     .role(MsgRole.USER)
                                                     .content(
                                                             TextBlock.builder()
-                                                                    .text("<userId>" + userId + "</userId>")
+                                                                    .text(AgentConstants.TAG_USER_ID_START + userId + AgentConstants.TAG_USER_ID_END)
                                                                     .build())
                                                     .build());
                         }
@@ -325,7 +336,7 @@ public class AgentScopeRunner {
                     if (block instanceof TextBlock textBlock) {
                         String text = textBlock.getText();
                         if (text != null) {
-                            Matcher matcher = USER_ID_PATTERN.matcher(text);
+                            Matcher matcher = AgentConstants.USER_ID_PATTERN.matcher(text);
                             if (matcher.find()) {
                                 return matcher.group(1).trim();
                             }
@@ -333,7 +344,7 @@ public class AgentScopeRunner {
                     }
                 }
             }
-            return "default_userId";
+            return AgentConstants.DEFAULT_USER_ID;
         }
 
         @Override

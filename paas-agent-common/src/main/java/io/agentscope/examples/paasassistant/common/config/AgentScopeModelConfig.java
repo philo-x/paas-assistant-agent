@@ -103,13 +103,13 @@ public class AgentScopeModelConfig {
             }
             if (openaiThinking || (openaiReasoningEffort != null && !openaiReasoningEffort.isEmpty())) {
                 // 仅当模型名称包含 deepseek 时才注入 chat_template_kwargs，避免干扰 Qwen 等其他模型
-                if (openaiModelName != null && openaiModelName.toLowerCase(Locale.ROOT).contains("ds")) {
+                if (openaiModelName != null && openaiModelName.toLowerCase(Locale.ROOT).contains(AgentConstants.MODEL_DEEPSEEK_MARK)) {
                     java.util.Map<String, Object> chatTemplateKwargs = new java.util.HashMap<>();
-                    chatTemplateKwargs.put("thinking", openaiThinking);
+                    chatTemplateKwargs.put(AgentConstants.KEY_THINKING, openaiThinking);
                     if (openaiReasoningEffort != null && !openaiReasoningEffort.isEmpty()) {
-                        chatTemplateKwargs.put("reasoning_effort", openaiReasoningEffort);
+                        chatTemplateKwargs.put(AgentConstants.KEY_REASONING_EFFORT, openaiReasoningEffort);
                     }
-                    optionsBuilder.additionalBodyParam("chat_template_kwargs", chatTemplateKwargs);
+                    optionsBuilder.additionalBodyParam(AgentConstants.KEY_CHAT_TEMPLATE_KWARGS, chatTemplateKwargs);
                 }
             }
             builder.generateOptions(optionsBuilder.build());

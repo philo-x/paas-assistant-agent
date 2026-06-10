@@ -18,7 +18,7 @@ package io.agentscope.examples.paasassistant.common.stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.agentscope.examples.paasassistant.common.utils.AgentConstants;
+import io.agentscope.examples.paasassistant.common.config.AgentConstants;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;

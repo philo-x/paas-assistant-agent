@@ -137,13 +137,13 @@ public class AgentScopeRunner {
                 .tokenRatio(autoContextTokenRatio)
                 .msgThreshold(autoContextMsgThreshold)
                 .lastKeep(autoContextLastKeep)
-                .minCompressionTokenThreshold(15000)
+                .minCompressionTokenThreshold(AgentConstants.DEFAULT_MIN_COMPRESSION_TOKEN_THRESHOLD)
                 .build();
 
         AgentSkillRepository skillRepository;
         SkillBox skillBox = new SkillBox(toolkit);
         try {
-            skillRepository = new ClasspathSkillRepository("skills");
+            skillRepository = new ClasspathSkillRepository(AgentConstants.SKILL_DIRECTORY);
             for (AgentSkill skill : skillRepository.getAllSkills()) {
                 skillBox.registration().skill(skill).apply();
             }
@@ -152,7 +152,7 @@ public class AgentScopeRunner {
         }
 
         return new CustomAgentRunner(
-                "diagnosis_agent",
+                AgentConstants.AGENT_NAME_DIAGNOSIS,
                 promptConfig.getAgentInstruction(),
                 model,
                 aiService,
@@ -186,18 +186,7 @@ public class AgentScopeRunner {
          * fragmented acting chunks would force the supervisor to dedup repeated TOOL_RESULT
          * events. Disable here so the framework only emits one complete TOOL_RESULT per call.
          */
-        private static final StreamOptions FULL_STREAM_OPTIONS = StreamOptions.builder()
-                .eventTypes(
-                        EventType.REASONING,
-                        EventType.TOOL_RESULT,
-                        EventType.AGENT_RESULT)
-                .incremental(true)
-                .includeReasoningChunk(true)
-                .includeReasoningResult(false)
-                .includeActingChunk(false)
-                .includeSummaryChunk(false)
-                .includeSummaryResult(false)
-                .build();
+        private static final StreamOptions FULL_STREAM_OPTIONS = AgentConstants.FULL_STREAM_OPTIONS;
 
 
         private final String agentName;
@@ -254,27 +243,50 @@ public class AgentScopeRunner {
             initializeMcpOnce();
             Mem0ApiType apiType = resolveMem0ApiType(mem0BaseUrl, mem0ApiType);
             CompatibleMem0LongTermMemory longTermMemory = new CompatibleMem0LongTermMemory(
-                    "DiagnosisAgent",
+                    AgentConstants.MEMORY_NAME_DIAGNOSIS,
                     userId,
                     null,
                     Map.of(),
                     mem0BaseUrl,
                     mem0ApiKey,
                     apiType,
-                    Duration.ofSeconds(60),
+                    Duration.ofSeconds(AgentConstants.DEFAULT_MEMORY_TIMEOUT_SECONDS),
                     resolveInferEnabled(apiType, mem0InferEnabled));
+
+            Model compressionModel = new Model() {
+                @Override
+                public reactor.core.publisher.Flux<io.agentscope.core.model.ChatResponse> stream(
+                        List<Msg> messages, List<io.agentscope.core.model.ToolSchema> tools, io.agentscope.core.model.GenerateOptions options) {
+                    io.agentscope.core.model.GenerateOptions.Builder optionsBuilder = io.agentscope.core.model.GenerateOptions.builder();
+                    String mName = model.getModelName();
+                    if (mName != null && mName.toLowerCase(java.util.Locale.ROOT).contains(AgentConstants.MODEL_DEEPSEEK_MARK)) {
+                        optionsBuilder.additionalBodyParam(AgentConstants.KEY_CHAT_TEMPLATE_KWARGS, Map.of(AgentConstants.KEY_THINKING, false));
+                        optionsBuilder.thinkingBudget(AgentConstants.DISABLE_THINKING_BUDGET);
+                    }
+                    io.agentscope.core.model.GenerateOptions mergedOptions = io.agentscope.core.model.GenerateOptions.mergeOptions(
+                            options,
+                            optionsBuilder.build()
+                    );
+                    return model.stream(messages, tools, mergedOptions);
+                }
+
+                @Override
+                public String getModelName() {
+                    return model.getModelName();
+                }
+            };
 
             return ReActAgent.builder()
                     .name(agentName)
                     .sysPrompt(sysPrompt)
                     .model(model)
-                    .memory(new AutoContextMemory(autoContextConfig, model))
+                    .memory(new AutoContextMemory(autoContextConfig, compressionModel))
                     .toolkit(toolkit)
                     .skillBox(skillBox)
                     .longTermMemory(longTermMemory)
                     .longTermMemoryAsyncRecord(true)
                     .hooks(List.of(new MonitoringHook(), new TruncationHook(), new AutoContextHook()))
-                    .maxIters(150)
+                    .maxIters(AgentConstants.MAX_ITERS_DIAGNOSIS)
                     .build();
         }
 
@@ -323,7 +335,7 @@ public class AgentScopeRunner {
 
         @Override
         public String getAgentDescription() {
-            return "Diagnosis agent for PaaS Assistant";
+            return AgentConstants.AGENT_DESC_DIAGNOSIS;
         }
 
         @Override
@@ -352,7 +364,7 @@ public class AgentScopeRunner {
                                                     .role(MsgRole.USER)
                                                     .content(
                                                             TextBlock.builder()
-                                                                    .text("<userId>" + userId + "</userId>")
+                                                                    .text(AgentConstants.TAG_USER_ID_START + userId + AgentConstants.TAG_USER_ID_END)
                                                                     .build())
                                                     .build());
                         }
@@ -391,7 +403,7 @@ public class AgentScopeRunner {
                         Msg errorMsg = Msg.builder()
                                 .role(MsgRole.ASSISTANT)
                                 .content(TextBlock.builder()
-                                        .text("\n\n> [!CAUTION]\n> **代理执行异常**\n> \n> 抱歉，诊断过程中遇到了技术故障：\n> `" + e.getMessage() + "`\n> \n> 请尝试精简您的问题，或者稍后重试。")
+                                        .text(String.format(AgentConstants.DIAGNOSIS_ERROR_MARKDOWN_TEMPLATE, e.getMessage()))
                                         .build())
                                 .build();
                         return Flux.just(new Event(EventType.AGENT_RESULT, errorMsg, false));

@@ -1,0 +1,6 @@
+[
+  { "value": "dev", "label": "dev" },
+  { "value": "sit", "label": "sit" },
+  { "value": "uat", "label": "uat" },
+  { "value": "st", "label": "st" }
+]

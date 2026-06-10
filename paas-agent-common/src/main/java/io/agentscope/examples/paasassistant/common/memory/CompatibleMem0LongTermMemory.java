@@ -1,5 +1,6 @@
 package io.agentscope.examples.paasassistant.common.memory;
 
+import io.agentscope.examples.paasassistant.common.config.AgentConstants;
 import io.agentscope.core.memory.LongTermMemory;
 import io.agentscope.core.memory.mem0.Mem0AddRequest;
 import io.agentscope.core.memory.mem0.Mem0ApiType;
@@ -25,10 +26,9 @@ import reactor.core.publisher.Mono;
 
 public class CompatibleMem0LongTermMemory implements LongTermMemory {
 
-    private static final int MAX_MEMORY_TEXT_LENGTH = 8000;
+    private static final int MAX_MEMORY_TEXT_LENGTH = AgentConstants.MAX_MEMORY_TEXT_LENGTH;
 
-    private static final Pattern METADATA_TAG_PATTERN =
-            Pattern.compile("<(?:userId|traceId)>.*?</(?:userId|traceId)>", Pattern.DOTALL);
+    private static final Pattern METADATA_TAG_PATTERN = AgentConstants.METADATA_TAG_PATTERN;
 
     private static final Logger log = LoggerFactory.getLogger(CompatibleMem0LongTermMemory.class);
 
@@ -124,18 +124,18 @@ public class CompatibleMem0LongTermMemory implements LongTermMemory {
 
     private java.util.Optional<Mem0Message> convertToMem0Message(Msg msg) {
         String content = sanitize(msg.getTextContent());
-        if (content.isEmpty() || content.contains("<compressed_history>")) {
+        if (content.isEmpty() || content.contains(AgentConstants.TAG_COMPRESSED_HISTORY)) {
             return java.util.Optional.empty();
         }
 
-        String role = msg.getRole() == MsgRole.USER ? "user" : "assistant";
+        String role = msg.getRole() == MsgRole.USER ? AgentConstants.ROLE_USER : AgentConstants.ROLE_ASSISTANT;
         return java.util.Optional.of(
                 Mem0Message.builder().role(role).content(content).build());
     }
 
     private Mem0SearchRequest buildSearchRequest(String query) {
         Mem0SearchRequest.Builder builder =
-                Mem0SearchRequest.builder().query(query).topK(Integer.valueOf(5));
+                Mem0SearchRequest.builder().query(query).topK(Integer.valueOf(AgentConstants.MEM0_SEARCH_TOP_K));
 
         if (apiType == Mem0ApiType.SELF_HOSTED) {
             Map<String, Object> filters = new LinkedHashMap<>();
