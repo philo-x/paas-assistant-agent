@@ -165,7 +165,7 @@ flowchart LR
 | 持久化 | MySQL |
 | 前端 | Vue 3、TypeScript、Pinia、Vue Router |
 | 模型提供商 | DashScope、OpenAI 兼容接口 |
-| 知识检索 | 百炼 RAG |
+| 知识检索 | Dify RAG |
 | 记忆能力 | AutoContextMemory、Mem0 |
 | 部署方式 | Docker Compose、Helm |
 

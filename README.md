@@ -170,7 +170,7 @@ Every execution result returns these standard fields:
 | Persistence | MySQL |
 | Frontend | Vue 3, TypeScript, Pinia, Vue Router |
 | AI providers | DashScope, OpenAI-compatible APIs |
-| Knowledge retrieval | Bailian RAG |
+| Knowledge retrieval | Dify RAG |
 | Memory | AutoContextMemory, Mem0 |
 | Deployment | Docker Compose, Helm |
 

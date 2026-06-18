@@ -278,6 +278,14 @@
       margin: auto;
       width: 100%;
     }
+    .slide-grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1rem;
+      max-width: 100rem;
+      margin: auto;
+      width: 100%;
+    }
 
     /* --- SIDEBAR & INDEX DRAWER --- */
     .sidebar-trigger {
@@ -845,18 +853,18 @@
         <div class="cover-box glass-card">
           <div class="cover-title-wrap">
             <h1 class="cover-main-title">PaaS Agent Assistant</h1>
-            <p class="cover-sub-title">基于 AgentScope Java 构建的智能运维多智能体系统</p>
+            <p class="cover-sub-title">基于 AgentScope Java 构建的多智能体系统</p>
           </div>
           <div style="width: 7.5rem; height: 0.1875rem; background: linear-gradient(90deg, var(--c-primary), var(--c-secondary)); margin: 2rem auto; border-radius: 2px;"></div>
           <p style="color: var(--c-text-muted); font-size: 1.15rem; max-width: 43.75rem; margin: 0 auto 1rem; line-height: 1.6;">
-            研发运维全流程 A2A 协同、四大核心组件深度实践、前端流式思考重构与异构 Token 过滤机制的生产级应用。
+            LLM、Memory、MCP/Skills、A2A
           </p>
           <div class="cover-meta">
             <div class="cover-meta-item">
               <span>技术汇报人：平台技术团队</span>
             </div>
             <div class="cover-meta-item">
-              <span>技术底座：AgentScope Java 1.0</span>
+              <span>技术底座：AgentScope Java 1.x</span>
             </div>
           </div>
         </div>
@@ -866,7 +874,7 @@
       <section class="slide" id="slide-2">
         <div class="slide-header">
           <span class="slide-section">一、 功能篇 (Features)</span>
-          <h2 class="slide-title">3 核心 Agent 构筑 PaaS 研发运维愿景</h2>
+          <h2 class="slide-title">PaaS Agent Assistant愿景</h2>
         </div>
         <div class="slide-body slide-grid-2" style="align-items: center;">
           <div class="glass-card" style="height: 100%; display: flex; flex-direction: column; justify-content: center;">
@@ -874,7 +882,7 @@
               <span>❖</span> PaaS 多智能体协同蓝图
             </h3>
             <ul class="bullet-list" style="margin-top: 0.5rem; font-size: 0.85rem;">
-              <li><strong>Agent Gateway (统一入口网关)</strong>: 作为外部流量统一 API 接入与 SSE 流量网关，处理智能意图路由、Higress/Nacos 拓扑映射与会话生命周期载入。</li>
+              <li><strong>Agent Gateway (统一入口网关)</strong>: 作为外部流量统一 API 接入与 SSE 流量网关，处理智能意图路由。</li>
               <li><strong>配置向导智能体 (Guide Sub Agent)</strong>: 专注应用上云引导与配置咨询，通过 RAG 问答、Kubectl 指令指引及 YAML 规范释义消除研发上云配置鸿沟。</li>
               <li><strong>应用诊断智能体 (Diagnosis Sub Agent)</strong>: 专注应用健康诊断与故障排除，对接 <code>k8s-mcp-server</code> 自动分析 Pod/Event 异常状态并拉取指标日志定位根因。</li>
               <li><strong>变更执行智能体 (Change Sub Agent)</strong>: 专注受控变更与应用自愈，编排高危变更计划，挂载平台 <code>paas-mcp-server</code> 进行受控执行，保障故障在安全红线内自动闭环修复。</li>
@@ -1157,7 +1165,7 @@
               <!-- Row 1: 应用场景 -->
               <div class="blueprint-row" style="border-left: 3px solid var(--c-primary);">
                 <div class="blueprint-col" style="flex: 1;">
-                  <span class="col-title" style="color: var(--c-primary-light);">应用上云咨询</span>
+                  <span class="col-title" style="color: var(--c-primary-light);">应用上云咨询<span style="display: inline-block; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.35); color: #f59e0b; border-radius: 4px; padding: 1px 5px; font-size: 0.65rem; font-weight: 500; vertical-align: middle; margin-left: 0.25rem;">暂未完成</span></span>
                   <div class="badge-list">
                     <span class="bp-badge bp-badge-primary">应用上云指导</span>
                     <span class="bp-badge bp-badge-primary">基础镜像推荐</span>
@@ -1306,7 +1314,7 @@
               <rect x="370" y="40" width="140" height="70" rx="8" fill="rgba(255,255,255,0.02)" stroke="var(--border-color)" stroke-width="1" />
               <text x="440" y="65" fill="white" font-weight="bold" font-size="11" text-anchor="middle">Guide Sub Agent</text>
               <rect x="380" y="80" width="120" height="20" rx="3" fill="#0c0f1d" stroke="var(--border-color)" stroke-width="0.5" />
-              <text x="440" y="92" fill="var(--c-text-muted)" font-size="8" text-anchor="middle">百炼 RAG & 咨询检索</text>
+              <text x="440" y="92" fill="var(--c-text-muted)" font-size="8" text-anchor="middle">Dify RAG & 咨询检索</text>
             </g>
 
             <!-- Diagnosis Agent Layer -->
@@ -1375,51 +1383,116 @@
       <section class="slide" id="slide-5">
         <div class="slide-header">
           <span class="slide-section">二、 技术篇 (Technology)</span>
-          <h2 class="slide-title">AgentScope 1.0 四大核心模块总览</h2>
+          <h2 class="slide-title">AgentScope 1.x 五大核心模块总览</h2>
         </div>
-        <div class="slide-body slide-grid-4" style="align-items: stretch; margin-top: 1rem;">
+        <div class="slide-body slide-grid-5" style="align-items: stretch; gap: 1rem; max-width: 100rem; height: 28rem; margin: auto;">
           <!-- Card 1: Message -->
-          <div class="glass-card" style="display: flex; flex-direction: column;">
-            <div style="background: rgba(99, 102, 241, 0.1); width: 2.8rem; height: 2.8rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid rgba(99,102,241,0.2);">
-              <span style="font-size: 1.5rem; color: var(--c-primary-light);">✉</span>
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 2rem 2rem 2.8rem; position: relative; overflow: hidden; border-top: 3px solid var(--c-primary-light);">
+            <!-- Background Large Number -->
+            <div style="font-size: 4rem; font-weight: 900; color: var(--c-primary-light); opacity: 0.06; position: absolute; right: 1rem; top: 0.5rem; user-select: none;">01</div>
+            <div>
+              <div style="background: rgba(99, 102, 241, 0.1); width: 3rem; height: 3rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; border: 1px solid rgba(99,102,241,0.2);">
+                <span style="font-size: 1.5rem; color: var(--c-primary-light);">✉</span>
+              </div>
+              <h3 class="card-title" style="font-size: 1.25rem; margin-bottom: 0.2rem; color: #ffffff;">Message 模块</h3>
+              <div style="font-size: 0.75rem; color: var(--c-primary-light); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">数据抽象与流通实体</div>
+              <p class="card-desc" style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 1.5rem;">
+                将智能体间的数据交互和多模态介质彻底抽象为统一的 <code>Msg</code> 对象。通过自定义多模态 Content 块结构，原生传递文本、图片、思考轨迹及工具使用流。
+              </p>
             </div>
-            <h3 class="card-title">Message 模块</h3>
-            <p class="card-desc" style="flex: 1;">
-              <strong>信息流通数据实体</strong>。将智能体间的数据交互和多模态介质彻底抽象为统一的 <code>Msg</code> 对象。通过自定义多模态 Content 块结构，原生传递文本、图片、思考轨迹及工具使用流。
-            </p>
+            <!-- Badges/Chips at bottom -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto;">
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15); color: #a5b4fc;">统一 Msg 封装</span>
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15); color: #a5b4fc;">多模态支持</span>
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15); color: #a5b4fc;">思考轨迹记录</span>
+            </div>
           </div>
 
           <!-- Card 2: Model -->
-          <div class="glass-card" style="display: flex; flex-direction: column;">
-            <div style="background: rgba(6, 182, 212, 0.1); width: 2.8rem; height: 2.8rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid rgba(6,182,212,0.2);">
-              <span style="font-size: 1.5rem; color: var(--c-secondary);">⚙</span>
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 2rem 2rem 2.8rem; position: relative; overflow: hidden; border-top: 3px solid var(--c-secondary);">
+            <!-- Background Large Number -->
+            <div style="font-size: 4rem; font-weight: 900; color: var(--c-secondary); opacity: 0.06; position: absolute; right: 1rem; top: 0.5rem; user-select: none;">02</div>
+            <div>
+              <div style="background: rgba(6, 182, 212, 0.1); width: 3rem; height: 3rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; border: 1px solid rgba(6,182,212,0.2);">
+                <span style="font-size: 1.5rem; color: var(--c-secondary);">⚙</span>
+              </div>
+              <h3 class="card-title" style="font-size: 1.25rem; margin-bottom: 0.2rem; color: #ffffff;">Model 模块</h3>
+              <div style="font-size: 0.75rem; color: var(--c-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">异构大模型适配层</div>
+              <p class="card-desc" style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 1.5rem;">
+                抹平厂商 API 格式与参数结构差异，实现统一响应结构（<code>ChatResponse</code>）。内置 <code>Formatter</code> 支持角色 prompt 翻译及 <code>Usage</code> 单次费用追踪与钩子统计。
+              </p>
             </div>
-            <h3 class="card-title">Model 模块</h3>
-            <p class="card-desc" style="flex: 1;">
-              <strong>异构模型接入适配器</strong>。抹平厂商 API 格式与参数结构差异，实现统一响应结构（<code>ChatResponse</code>）。内置 <code>Formatter</code> 支持角色 prompt 翻译及 <code>Usage</code> 单次费用追踪与钩子统计。
-            </p>
+            <!-- Badges/Chips at bottom -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto;">
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.15); color: #67e8f9;">格式差异抹平</span>
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.15); color: #67e8f9;">ChatResponse</span>
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.15); color: #67e8f9;">Token 费用审计</span>
+            </div>
           </div>
 
           <!-- Card 3: Memory -->
-          <div class="glass-card" style="display: flex; flex-direction: column;">
-            <div style="background: rgba(16, 185, 129, 0.1); width: 2.8rem; height: 2.8rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid rgba(16,185,129,0.2);">
-              <span style="font-size: 1.5rem; color: var(--c-success);">☷</span>
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 2rem 2rem 2.8rem; position: relative; overflow: hidden; border-top: 3px solid var(--c-success);">
+            <!-- Background Large Number -->
+            <div style="font-size: 4rem; font-weight: 900; color: var(--c-success); opacity: 0.06; position: absolute; right: 1rem; top: 0.5rem; user-select: none;">03</div>
+            <div>
+              <div style="background: rgba(16, 185, 129, 0.1); width: 3rem; height: 3rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; border: 1px solid rgba(16,185,129,0.2);">
+                <span style="font-size: 1.5rem; color: var(--c-success);">☷</span>
+              </div>
+              <h3 class="card-title" style="font-size: 1.25rem; margin-bottom: 0.2rem; color: #ffffff;">Memory 模块</h3>
+              <div style="font-size: 0.75rem; color: var(--c-success); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">上下文长短期缓存</div>
+              <p class="card-desc" style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 1.5rem;">
+                提供短期缓存 <code>InMemoryMemory</code> 和长期检索事实库 <code>LongTermMemory</code> 接口规范，通过双轨操作管理和第三方事实沉淀库（如 Mem0）提供上下文容错与支持。
+              </p>
             </div>
-            <h3 class="card-title">Memory 模块</h3>
-            <p class="card-desc" style="flex: 1;">
-              <strong>上下文长短期缓存区</strong>。提供短期缓存 <code>InMemoryMemory</code> 和长期检索事实库 <code>LongTermMemory</code> 接口规范，通过双轨操作管理和第三方事实沉淀库（如 Mem0）提供上下文容错与支持。
-            </p>
+            <!-- Badges/Chips at bottom -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto;">
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); color: #6ee7b7;">InMemory/LongTerm</span>
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); color: #6ee7b7;">双轨操作管理</span>
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); color: #6ee7b7;">Mem0 事实沉淀</span>
+            </div>
           </div>
 
           <!-- Card 4: Tool -->
-          <div class="glass-card" style="display: flex; flex-direction: column;">
-            <div style="background: rgba(245, 158, 11, 0.1); width: 2.8rem; height: 2.8rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; border: 1px solid rgba(245,158,11,0.2);">
-              <span style="font-size: 1.5rem; color: var(--c-warning);">🛠</span>
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 2rem 2rem 2.8rem; position: relative; overflow: hidden; border-top: 3px solid var(--c-warning);">
+            <!-- Background Large Number -->
+            <div style="font-size: 4rem; font-weight: 900; color: var(--c-warning); opacity: 0.06; position: absolute; right: 1rem; top: 0.5rem; user-select: none;">04</div>
+            <div>
+              <div style="background: rgba(245, 158, 11, 0.1); width: 3rem; height: 3rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; border: 1px solid rgba(245,158,11,0.2);">
+                <span style="font-size: 1.5rem; color: var(--c-warning);">🛠</span>
+              </div>
+              <h3 class="card-title" style="font-size: 1.25rem; margin-bottom: 0.2rem; color: #ffffff;">Tool 模块</h3>
+              <div style="font-size: 0.75rem; color: var(--c-warning); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem;">物理世界执行连接器</div>
+              <p class="card-desc" style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 1.5rem;">
+                负责提取方法的 JSON Schema。集成远程 MCP Stateful/Stateless 客户端，引入 Tool Group 分组管理机制，支持程序动态控制可用工具集范围。
+              </p>
             </div>
-            <h3 class="card-title">Tool 模块</h3>
-            <p class="card-desc" style="flex: 1;">
-              <strong>物理界映射与执行箱</strong>。负责提取方法的 JSON Schema。集成远程 MCP Stateful/Stateless 客户端，引入 Tool Group 分组管理机制，支持程序动态控制可用工具集范围。
-            </p>
+            <!-- Badges/Chips at bottom -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto;">
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15); color: #fde68a;">JSON Schema 提取</span>
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15); color: #fde68a;">MCP Stateful/less</span>
+              <span style="font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15); color: #fde68a;">Tool Group 机制</span>
+            </div>
+          </div>
+          <!-- Card 5: Hook -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 1.5rem 1.5rem 2rem; position: relative; overflow: hidden; border-top: 3px solid var(--c-error);">
+            <!-- Background Large Number -->
+            <div style="font-size: 4rem; font-weight: 900; color: var(--c-error); opacity: 0.06; position: absolute; right: 1rem; top: 0.5rem; user-select: none;">05</div>
+            <div>
+              <div style="background: rgba(239, 68, 68, 0.1); width: 3rem; height: 3rem; border-radius: 0.6rem; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; border: 1px solid rgba(239,68,68,0.2);">
+                <span style="font-size: 1.5rem; color: var(--c-error);">⚓</span>
+              </div>
+              <h3 class="card-title" style="font-size: 1.1rem; margin-bottom: 0.2rem; color: #ffffff;">Hook 模块</h3>
+              <div style="font-size: 0.7rem; color: var(--c-error); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.8rem;">生命周期拦截引擎</div>
+              <p class="card-desc" style="font-size: 0.8rem; line-height: 1.5; color: var(--c-text-muted); margin-bottom: 1.2rem;">
+                以统一事件模型在 Agent 生命周期各阶段（推理前/后、工具调用前/后）注入自定义逻辑，实现 Prompt 增强、工具监控、审计追踪等横切关注点。
+              </p>
+            </div>
+            <!-- Badges/Chips at bottom -->
+            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto;">
+              <span style="font-size: 0.65rem; padding: 0.2rem 0.4rem; border-radius: 4px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); color: #fca5a5;">HookEvent</span>
+              <span style="font-size: 0.65rem; padding: 0.2rem 0.4rem; border-radius: 4px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); color: #fca5a5;">Priority Chain</span>
+              <span style="font-size: 0.65rem; padding: 0.2rem 0.4rem; border-radius: 4px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15); color: #fca5a5;">JSONL Trace</span>
+            </div>
           </div>
         </div>
       </section>
@@ -1438,7 +1511,7 @@
               </p>
               <ul class="bullet-list" style="font-size: 0.85rem;">
                 <li><strong>Msg 实体定义</strong>: 统一的包装类，包含 <code>name</code>（发送方智能体名称）、<code>role</code>（user/assistant/system 身份）、<code>metadata</code>（辅助元数据）和 <code>content</code>。</li>
-                <li><strong>ContentBlock 抽象设计</strong>: <code>content</code> 字段设计为 <code>List<ContentBlock></code> 序列。</li>
+                <li><strong>ContentBlock 抽象设计</strong>: <code>content</code> 字段设计为 <code>List&lt;ContentBlock&gt;</code> 序列。</li>
                 <li><strong>Block 子类派生</strong>: 包含代表大模型原生思维的 <code>ThinkingBlock</code>，发起调用的 <code>ToolUseBlock</code>，回填工具执行结果的 <code>ToolResultBlock</code>，以及正常的 <code>TextBlock</code> 和 <code>ErrorBlock</code>。</li>
                 <li><strong>多模态统一表示</strong>: 多模态介质及工具状态变化被解耦隔离在独立的 Block 容器中，避免了字符串混杂污染与解析困难。</li>
               </ul>
@@ -1651,62 +1724,6 @@
       <section class="slide" id="slide-9">
         <div class="slide-header">
           <span class="slide-section">二、 技术篇 (Technology)</span>
-          <h2 class="slide-title">核心模块 4 - Tool 架构、有状态/无状态 MCP 及 Tool Group 动态供给</h2>
-        </div>
-        <div class="slide-body slide-grid-2">
-          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem;">
-            <div>
-              <h3 class="card-title" style="color: var(--c-warning);">🛠 Tool 架构与 MCP 客户端精细化管理</h3>
-              <p class="card-desc" style="margin-top: 0.3rem; margin-bottom: 0.5rem;">
-                在 PaaS 场景下，工具不仅执行轻量的 API 查询，还需要维护长生命周期的终端交互状态（如 Pod 文件浏览）。
-              </p>
-              <ul class="bullet-list" style="font-size: 0.8rem; line-height: 1.45;">
-                <li><strong>Stateful (有状态 MCP 客户端)</strong>: 维持持久的长连接会话（Websocket/SSE），适用于跨多次工具调用需要保持 cookie、登录态或 shell 目录路径的场景。</li>
-                <li><strong>Stateless (无状态 MCP 客户端)</strong>: 事务型短连接设计。工具调用前瞬间连接，获得数据后即刻释放，适用于轻量级日志拉取、事件获取等，大幅节约系统连接数句柄开销。</li>
-                <li><strong>Tool Group 分组解决“选择悖论”</strong>: 运维助手注册了近百个只读与变更工具，过多工具描述会造成 LLM 上下文臃肿并显著降低选参准确度。</li>
-                <li><strong>动态工具激活 (`reset_equipped_tools`)</strong>: 系统对工具进行逻辑分组（如 <code>browser-tools</code>、<code>k8s-modify-tools</code>）。智能体根据当前所处的认知阶段，调用 reset 方法自主动态切换可用工具掩码，压缩 LLM 搜索空间。</li>
-              </ul>
-            </div>
-          </div>
-          <div style="text-align: center; display: flex; align-items: center; justify-content: center;">
-            <svg viewBox="0 0 400 320" style="width: 100%; height: 27rem; max-height: 100%;">
-              <!-- Stateful vs Stateless Comparison box -->
-              <rect x="20" y="20" width="170" height="280" rx="8" fill="rgba(255,255,255,0.01)" stroke="var(--c-primary)" stroke-width="1.5" />
-              <text x="105" y="40" fill="white" font-size="11" font-weight="bold" text-anchor="middle">Stateful 客户端</text>
-              <text x="105" y="52" fill="var(--c-text-muted)" font-size="9" text-anchor="middle">(持久会话模型)</text>
-              <circle cx="105" cy="90" r="15" fill="var(--c-primary)" />
-              <text x="105" y="94" fill="white" font-size="9" text-anchor="middle">Session</text>
-              <path d="M 105,105 L 105,270" stroke="var(--c-primary)" stroke-width="1" stroke-dasharray="2,2" />
-              <rect x="40" y="130" width="130" height="25" rx="3" fill="#04060d" stroke="var(--border-color)" />
-              <text x="105" y="146" fill="var(--c-text-main)" font-size="8" text-anchor="middle">调用 A (共享 Cookie/Shell 目录)</text>
-              <rect x="40" y="180" width="130" height="25" rx="3" fill="#04060d" stroke="var(--border-color)" />
-              <text x="105" y="196" fill="var(--c-text-main)" font-size="8" text-anchor="middle">调用 B (共享状态延续)</text>
-              <text x="105" y="280" fill="var(--c-primary-light)" font-size="9.5" text-anchor="middle">最终显式 Close()</text>
-
-              <rect x="210" y="20" width="170" height="280" rx="8" fill="rgba(255,255,255,0.01)" stroke="var(--c-secondary)" stroke-width="1.5" />
-              <text x="295" y="40" fill="white" font-size="11" font-weight="bold" text-anchor="middle">Stateless 客户端</text>
-              <text x="295" y="52" fill="var(--c-text-muted)" font-size="9" text-anchor="middle">(事务短连接模型)</text>
-              
-              <!-- Stateless Call 1 -->
-              <rect x="220" y="80" width="150" height="60" rx="4" fill="rgba(6, 182, 212, 0.05)" stroke="var(--c-secondary)" stroke-width="0.5" />
-              <text x="295" y="95" fill="var(--c-secondary)" font-size="9.5" font-weight="bold" text-anchor="middle">单次调用 A</text>
-              <text x="295" y="112" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">自动 Connect() -&gt; 执行</text>
-              <text x="295" y="127" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">-&gt; 自动 Close()</text>
-
-              <!-- Stateless Call 2 -->
-              <rect x="220" y="160" width="150" height="60" rx="4" fill="rgba(6, 182, 212, 0.05)" stroke="var(--c-secondary)" stroke-width="0.5" />
-              <text x="295" y="175" fill="var(--c-secondary)" font-size="9.5" font-weight="bold" text-anchor="middle">单次调用 B</text>
-              <text x="295" y="192" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">重新 Connect() -&gt; 执行</text>
-              <text x="295" y="207" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">-&gt; 自动 Close()</text>
-            </svg>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 10: TECH - COMPRESSION PRINCIPLE ==================== -->
-      <section class="slide" id="slide-10">
-        <div class="slide-header">
-          <span class="slide-section">二、 技术篇 (Technology)</span>
           <h2 class="slide-title">自动记忆管理 (AutoMemoryContext) 压缩及卸载原理</h2>
         </div>
         <div class="slide-body slide-grid-2">
@@ -1773,27 +1790,498 @@
         </div>
       </section>
 
-      <!-- ==================== SLIDE 11: EXPERIENCE - FRONTEND THINKING ==================== -->
-      <section class="slide" id="slide-11">
+      <!-- ==================== SLIDE 10: TECH - COMPRESSION PRINCIPLE ==================== -->
+      <section class="slide" id="slide-10">
         <div class="slide-header">
-          <span class="slide-section">三、 经验篇 (Experience & Lessons Learned)</span>
-          <h2 class="slide-title">前端思考过程 (Thinking) 模块设计与交互时间线</h2>
+          <span class="slide-section">二、 技术篇 (Technology)</span>
+          <h2 class="slide-title">核心模块 4 - Tool 架构、有状态/无状态 MCP 及 Tool Group 动态供给</h2>
         </div>
         <div class="slide-body slide-grid-2">
           <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem;">
             <div>
-              <h3 class="card-title" style="color: var(--c-secondary);"><span>✦</span> SSE 流式状态重组设计</h3>
+              <h3 class="card-title" style="color: var(--c-warning);">🛠 Tool 架构与 MCP 客户端精细化管理</h3>
               <p class="card-desc" style="margin-top: 0.3rem; margin-bottom: 0.5rem;">
-                在长轨迹诊断任务中，Agent 会多次调用大模型推理和工具。如果前端在等待大模型响应的几十秒内处于白屏或简单 Loading，用户体验将极度糟糕。
+                在 PaaS 场景下，工具不仅执行轻量的 API 查询，还需要维护长生命周期的终端交互状态（如 Pod 文件浏览）。
               </p>
-              <ul class="bullet-list" style="font-size: 0.88rem;">
-                <li><strong>结构化 SSE 事件分发</strong>: 将数据流划分为 <code>reasoning_delta</code>（推理文本增量）、<code>tool_start</code>（触发工具，返回 Summary 与 Title）、<code>tool_result</code>（工具输出与最终状态）和 <code>error</code>（故障抛出）。</li>
-                <li><strong>ThinkingTimelineStep 状态表示</strong>: 
-                  前端维护一个由 `sequence` 排序的响应式时间线步骤列表。分为 <code>reasoning</code>、<code>tool</code>、<code>handoff</code>、<code>error</code> 四种角色。
-                </li>
-                <li><strong>交互流式自动管理</strong>: SSE 流入新段落时，自动在页面滚动，并将状态标为 `pending`。识别到 handoff（代表 Agent Gateway 路由子 Agent）时自动创建转移步骤。</li>
-                <li><strong>动态折叠体验</strong>: 推理进行中卡片默认开启并流式打字，一旦收到 A2A 交互 `done` 事件，代表整个诊断执行完毕，时间线卡片自动平滑收缩，提供极其优雅清爽的界面。</li>
+              <ul class="bullet-list" style="font-size: 0.8rem; line-height: 1.45;">
+                <li><strong>Stateful (有状态 MCP 客户端)</strong>: 维持持久的长连接会话（Websocket/SSE），适用于跨多次工具调用需要保持 cookie、登录态或 shell 目录路径的场景。</li>
+                <li><strong>Stateless (无状态 MCP 客户端)</strong>: 事务型短连接设计。工具调用前瞬间连接，获得数据后即刻释放，适用于轻量级日志拉取、事件获取等，大幅节约系统连接数句柄开销。</li>
+                <li><strong>Tool Group 分组解决“选择悖论”</strong>: 运维助手注册了近百个只读与变更工具，过多工具描述会造成 LLM 上下文臃肿并显著降低选参准确度。</li>
+                <li><strong>动态工具激活 (`reset_equipped_tools`)</strong>: 系统对工具进行逻辑分组（如 <code>browser-tools</code>、<code>k8s-modify-tools</code>）。智能体根据当前所处的认知阶段，调用 reset 方法自主动态切换可用工具掩码，压缩 LLM 搜索空间。</li>
               </ul>
+            </div>
+          </div>
+          <div style="text-align: center; display: flex; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 400 320" style="width: 100%; height: 27rem; max-height: 100%;">
+              <!-- Stateful vs Stateless Comparison box -->
+              <rect x="20" y="20" width="170" height="280" rx="8" fill="rgba(255,255,255,0.01)" stroke="var(--c-primary)" stroke-width="1.5" />
+              <text x="105" y="40" fill="white" font-size="11" font-weight="bold" text-anchor="middle">Stateful 客户端</text>
+              <text x="105" y="52" fill="var(--c-text-muted)" font-size="9" text-anchor="middle">(持久会话模型)</text>
+              <circle cx="105" cy="90" r="15" fill="var(--c-primary)" />
+              <text x="105" y="94" fill="white" font-size="9" text-anchor="middle">Session</text>
+              <path d="M 105,105 L 105,270" stroke="var(--c-primary)" stroke-width="1" stroke-dasharray="2,2" />
+              <rect x="40" y="130" width="130" height="25" rx="3" fill="#04060d" stroke="var(--border-color)" />
+              <text x="105" y="146" fill="var(--c-text-main)" font-size="8" text-anchor="middle">调用 A (共享 Cookie/Shell 目录)</text>
+              <rect x="40" y="180" width="130" height="25" rx="3" fill="#04060d" stroke="var(--border-color)" />
+              <text x="105" y="196" fill="var(--c-text-main)" font-size="8" text-anchor="middle">调用 B (共享状态延续)</text>
+              <text x="105" y="280" fill="var(--c-primary-light)" font-size="9.5" text-anchor="middle">最终显式 Close()</text>
+
+              <rect x="210" y="20" width="170" height="280" rx="8" fill="rgba(255,255,255,0.01)" stroke="var(--c-secondary)" stroke-width="1.5" />
+              <text x="295" y="40" fill="white" font-size="11" font-weight="bold" text-anchor="middle">Stateless 客户端</text>
+              <text x="295" y="52" fill="var(--c-text-muted)" font-size="9" text-anchor="middle">(事务短连接模型)</text>
+              
+              <!-- Stateless Call 1 -->
+              <rect x="220" y="80" width="150" height="60" rx="4" fill="rgba(6, 182, 212, 0.05)" stroke="var(--c-secondary)" stroke-width="0.5" />
+              <text x="295" y="95" fill="var(--c-secondary)" font-size="9.5" font-weight="bold" text-anchor="middle">单次调用 A</text>
+              <text x="295" y="112" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">自动 Connect() -&gt; 执行</text>
+              <text x="295" y="127" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">-&gt; 自动 Close()</text>
+
+              <!-- Stateless Call 2 -->
+              <rect x="220" y="160" width="150" height="60" rx="4" fill="rgba(6, 182, 212, 0.05)" stroke="var(--c-secondary)" stroke-width="0.5" />
+              <text x="295" y="175" fill="var(--c-secondary)" font-size="9.5" font-weight="bold" text-anchor="middle">单次调用 B</text>
+              <text x="295" y="192" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">重新 Connect() -&gt; 执行</text>
+              <text x="295" y="207" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">-&gt; 自动 Close()</text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      
+      <!-- ==================== SLIDE 11: TECH - HOOK MECHANISM ==================== -->
+      <section class="slide" id="slide-11">
+        <div class="slide-header">
+          <span class="slide-section">二、 技术篇 (Technology)</span>
+          <h2 class="slide-title">统一拦截设计：Hook 机制与全生命周期事件管理</h2>
+        </div>
+        <div class="slide-body slide-grid-2">
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem; padding: 2rem;">
+            <div>
+              <h3 class="card-title" style="color: var(--c-secondary);">⚓ AgentScope Java 统一事件拦截模型</h3>
+              <p class="card-desc" style="margin-top: 0.3rem; margin-bottom: 0.6rem; font-size: 0.82rem; line-height: 1.5;">
+                在生产级多智能体系统中，Hook 提供了一个非侵入式的扩展机制，能够在 Agent 运行的各个核心阶段对输入输出和上下文进行拦截、监控与动态修改。
+              </p>
+              <ul class="bullet-list" style="font-size: 0.82rem; line-height: 1.5;">
+                <li><strong>统一事件抽象 (HookEvent)</strong>：所有拦截阶段均被建模为强类型的 <code>HookEvent</code>，通过统一的 <code>onEvent(T event)</code> 接口以反应式（Reactive Mono）流式处理。</li>
+                <li><strong>双向修改能力 (Modifiable)</strong>：前置事件（如 <code>PreReasoningEvent</code>、<code>PreActingEvent</code>）允许 Hook 修改输入消息或工具参数，是动态 Prompt 注入与参数过滤的基石。</li>
+                <li><strong>优先级链式执行 (Priority)</strong>：支持 <code>priority()</code> 属性，值越小执行顺序越靠前（默认 100）。可配置多个 Hook 串联执行（如安全审计 -&gt; 监控）。</li>
+                <li><strong>内置 Trace 导出 (JsonlTraceExporter)</strong>：官方提供开箱即用的 JSONL 追踪 Hook，自动记录全链路的 Reasoning Chunks、Tool 调用及异常堆栈，实现离线 Debug 与可观测性。</li>
+              </ul>
+            </div>
+          </div>
+          <div style="text-align: center; display: flex; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 400 320" style="width: 100%; height: 27rem; max-height: 100%;">
+              <defs>
+                <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 2 L 8 5 L 0 8 z" fill="var(--c-primary)" />
+                </marker>
+                <marker id="arrow-orange" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                  <path d="M 0 2 L 8 5 L 0 8 z" fill="var(--c-warning)" />
+                </marker>
+                <linearGradient id="grad-hook" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="rgba(99, 102, 241, 0.15)" />
+                  <stop offset="100%" stop-color="rgba(16, 185, 129, 0.05)" />
+                </linearGradient>
+              </defs>
+
+              <!-- Left Side: Agent Core Execution Pipeline -->
+              <line x1="80" y1="30" x2="80" y2="290" stroke="rgba(255, 255, 255, 0.15)" stroke-width="2" stroke-dasharray="3,3" />
+              
+              <!-- Step Nodes -->
+              <circle cx="80" cy="40" r="6" fill="var(--c-secondary)" />
+              <text x="65" y="44" fill="var(--c-text-muted)" font-size="8.5" text-anchor="end">Agent.call() 开始</text>
+              
+              <circle cx="80" cy="90" r="6" fill="var(--c-primary)" />
+              <text x="65" y="94" fill="var(--c-text-main)" font-size="8.5" text-anchor="end" font-weight="bold">PreReasoning</text>
+              
+              <rect x="35" y="115" width="90" height="20" rx="3" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="0.5" />
+              <text x="80" y="128" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">LLM 推理中...</text>
+              
+              <circle cx="80" cy="165" r="6" fill="var(--c-warning)" />
+              <text x="65" y="169" fill="var(--c-text-main)" font-size="8.5" text-anchor="end" font-weight="bold">PreActing</text>
+              
+              <rect x="35" y="190" width="90" height="20" rx="3" fill="rgba(255, 255, 255, 0.05)" stroke="rgba(255, 255, 255, 0.2)" stroke-width="0.5" />
+              <text x="80" y="203" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">MCP 工具执行</text>
+
+              <circle cx="80" cy="240" r="6" fill="var(--c-warning)" />
+              <text x="65" y="244" fill="var(--c-text-main)" font-size="8.5" text-anchor="end" font-weight="bold">PostActing</text>
+
+              <circle cx="80" cy="280" r="6" fill="var(--c-secondary)" />
+              <text x="65" y="284" fill="var(--c-text-muted)" font-size="8.5" text-anchor="end">Agent.call() 结束</text>
+
+              <!-- Right Side: Hook Interceptor Chain container -->
+              <rect x="200" y="25" width="180" height="270" rx="8" fill="url(#grad-hook)" stroke="rgba(99, 102, 241, 0.3)" stroke-width="1.5" />
+              <text x="290" y="45" fill="white" font-size="10.5" font-weight="bold" text-anchor="middle">Hook 拦截器链</text>
+              <text x="290" y="58" fill="var(--c-text-muted)" font-size="8.5" text-anchor="middle">(Priority-Ordered)</text>
+
+              <!-- Hook Item 1 -->
+              <rect x="215" y="75" width="150" height="40" rx="4" fill="#04060d" stroke="var(--c-primary)" stroke-width="1" />
+              <text x="225" y="92" fill="white" font-size="9.5" font-weight="bold">PromptEnhancingHook</text>
+              <text x="225" y="105" fill="var(--c-primary-light)" font-size="8">Priority: 10 (前置提示词增强)</text>
+
+              <!-- Hook Item 2 -->
+              <rect x="215" y="135" width="150" height="40" rx="4" fill="#04060d" stroke="var(--c-warning)" stroke-width="1" />
+              <text x="225" y="152" fill="white" font-size="9.5" font-weight="bold">ToolMonitorHook</text>
+              <text x="225" y="165" fill="var(--c-warning)" font-size="8">Priority: 50 (拦截工具入参/出参)</text>
+
+              <!-- Hook Item 3 -->
+              <rect x="215" y="195" width="150" height="40" rx="4" fill="#04060d" stroke="var(--c-success)" stroke-width="1" />
+              <text x="225" y="212" fill="white" font-size="9.5" font-weight="bold">JsonlTraceExporter</text>
+              <text x="225" y="225" fill="var(--c-success)" font-size="8">Priority: 100 (追踪日志/本地审计)</text>
+              
+              <!-- Hook Item 4 -->
+              <rect x="215" y="245" width="150" height="35" rx="4" fill="#04060d" stroke="var(--c-error)" stroke-width="0.5" />
+              <text x="225" y="260" fill="white" font-size="9" font-weight="bold">ErrorHandlingHook</text>
+              <text x="225" y="271" fill="var(--c-error)" font-size="8">Priority: 100 (全局错误监听)</text>
+
+              <!-- Dispatching Interception Arrows -->
+              <path d="M 86,90 Q 150,80 215,90" stroke="var(--c-primary)" stroke-width="1.2" fill="none" stroke-dasharray="2,2" marker-end="url(#arrow-blue)" />
+              <path d="M 215,100 Q 150,110 92,94" stroke="var(--c-primary)" stroke-width="1.2" fill="none" marker-end="url(#arrow-blue)" />
+              <text x="145" y="74" fill="var(--c-primary-light)" font-size="7.5" text-anchor="middle">PreReasoningEvent</text>
+              <text x="145" y="122" fill="var(--c-primary-light)" font-size="7.5" text-anchor="middle">返回修改后消息</text>
+
+              <path d="M 86,165 Q 150,150 215,155" stroke="var(--c-warning)" stroke-width="1.2" fill="none" marker-end="url(#arrow-orange)" />
+              <text x="145" y="146" fill="var(--c-warning)" font-size="7.5" text-anchor="middle">PreActingEvent</text>
+
+              <path d="M 86,240 Q 150,230 215,165" stroke="var(--c-warning)" stroke-width="1" fill="none" stroke-dasharray="2,2" marker-end="url(#arrow-orange)" />
+              <text x="160" y="215" fill="var(--c-warning)" font-size="7.5" text-anchor="middle" transform="rotate(-10, 160, 215)">PostActingEvent</text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SLIDE 12: EXPERIENCE - TOKEN FILTER ==================== -->
+      <section class="slide" id="slide-12">
+        <div class="slide-header">
+          <span class="slide-section">三、 经验篇 (Experience & Lessons Learned)</span>
+          <h2 class="slide-title">大模型适配：异构 LLM 特殊 Token 双端清洗机制</h2>
+        </div>
+        <div class="slide-body slide-grid-2">
+          <!-- Left: New Format Glass Card -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.9rem; padding: 2rem;">
+            <div>
+              <h4 style="color: var(--c-error); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">核心痛点 (Problem)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                切换不同大模型（GPT-4o, DeepSeek, Qwen）时，前端界面经常闪烁乱码，甚至 Markdown 渲染排版彻底崩解。
+              </p>
+              
+              <h4 style="color: var(--c-warning); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">原因分析 (Cause)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                异构模型输出格式不一，在流式报文中裹挟了大量原生私有控制 Token（如 Qwen 的 <code>&lt;tool_call&gt;</code>，DeepSeek 的 <code>&lt;｜tool▁sep｜&gt;</code>、<code>&lt;|EOT|&gt;</code> 等）。
+              </p>
+
+              <h4 style="color: var(--c-primary-light); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">解决方案 (Solution)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                <strong>双端双重过滤：</strong><br>
+                1. <strong>后端（第一道防线）</strong>：利用正则在流式派发及历史记忆存储前过滤清除 Token。<br>
+                2. <strong>前端（第二道防线）</strong>：在流式打字效果渲染前利用 JS 正则进行最后净化。
+              </p>
+
+              <h4 style="color: var(--c-success); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">架构启示 (Lesson)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-success); font-weight: 500; margin-bottom: 0;">
+                异构模型切换不能单看参数兼容，必须有一套多模型控制字符过滤机制，保证应用层呈现的绝对纯净。
+              </p>
+            </div>
+          </div>
+
+          <!-- Right: Compare Table -->
+          <div style="display: flex; flex-direction: column; justify-content: center; width: 100%;">
+            <table class="compare-table" style="font-size: 0.75rem; width: 100%;">
+              <thead>
+                <tr>
+                  <th style="width: 25%; padding: 0.6rem 0.8rem;">控制通道类型</th>
+                  <th style="width: 28%; padding: 0.6rem 0.8rem;">泄漏 Token 样本</th>
+                  <th style="width: 32%; padding: 0.6rem 0.8rem;">后端 &amp; 前端清洗正则模式</th>
+                  <th style="width: 15%; padding: 0.6rem 0.8rem;">净化效果</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-weight: 600; padding: 0.6rem 0.8rem;">DSML 交互控制</td>
+                  <td style="padding: 0.6rem 0.8rem;"><span class="token-badge" style="font-size: 0.65rem;">&lt;|DSML|tool_calls&gt;</span></td>
+                  <td style="padding: 0.6rem 0.8rem;"><span class="regex-badge" style="font-size: 0.62rem;">/&lt; *[|｜] *DSML *[|｜] *[^&gt;|｜]+ *[|｜]? *&gt;?/gi</span></td>
+                  <td style="color:var(--c-success); padding: 0.6rem 0.8rem; font-weight: 600;">✓ 剥离控制流</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; padding: 0.6rem 0.8rem;">DeepSeek-V4 XML</td>
+                  <td style="padding: 0.6rem 0.8rem;"><span class="token-badge" style="font-size: 0.65rem;">&lt;dsml:call&gt;</span> / <span class="token-badge" style="font-size: 0.65rem;">&lt;/dsml&gt;</span></td>
+                  <td style="padding: 0.6rem 0.8rem;"><span class="regex-badge" style="font-size: 0.62rem;">/&lt;\/?dsml:[^&gt;]*&gt;?/gi</span></td>
+                  <td style="color:var(--c-success); padding: 0.6rem 0.8rem; font-weight: 600;">✓ 移除 XML</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; padding: 0.6rem 0.8rem;">模型特殊控制符</td>
+                  <td style="padding: 0.6rem 0.8rem;"><span class="token-badge" style="font-size: 0.65rem;">&lt;|im_start|&gt;</span> / <span class="token-badge" style="font-size: 0.65rem;">&lt;|EOT|&gt;</span></td>
+                  <td style="padding: 0.6rem 0.8rem;"><span class="regex-badge" style="font-size: 0.62rem;">/&lt; *[|｜]? *(?:im_(?:start|end)|endoftext|EOT|user).*?&gt;/gi</span></td>
+                  <td style="color:var(--c-success); padding: 0.6rem 0.8rem; font-weight: 600;">✓ 净化控制符</td>
+                </tr>
+                <tr>
+                  <td style="font-weight: 600; padding: 0.6rem 0.8rem;">DeepSeek 全角控制</td>
+                  <td style="padding: 0.6rem 0.8rem;"><span class="token-badge" style="font-size: 0.65rem;">&lt;｜tool▁sep｜&gt;</span></td>
+                  <td style="padding: 0.6rem 0.8rem;"><span class="regex-badge" style="font-size: 0.62rem;">/&lt;｜[^&gt;]+｜&gt;/g</span></td>
+                  <td style="color:var(--c-success); padding: 0.6rem 0.8rem; font-weight: 600;">✓ 彻底清洗</td>
+                </tr>
+              </tbody>
+            </table>
+            <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--c-text-muted); line-height: 1.4;">
+              <strong>防御机制：</strong>在 Java 后端 <code>ToolNarrator.cleanLlmTokens()</code> 进行第一道清洗，降低网络传输负荷；在前端 <code>thoughtsTimeline.ts</code> 流式渲染前进行第二道清洗，确保最终输入渲染引擎的文字绝对纯净。
+            </div>
+          </div>
+        </div>
+      </section>
+
+<!-- ==================== SLIDE 12: EXPERIENCE - DEEPSEEK OPTIMIZE ==================== -->
+      <section class="slide" id="slide-13">
+        <div class="slide-header">
+          <span class="slide-section">三、 经验篇 (Experience & Lessons Learned)</span>
+          <h2 class="slide-title">大模型适配：DeepSeek 思考模式控制与上下文压缩优化</h2>
+        </div>
+        <div class="slide-body slide-grid-2">
+          <!-- Left: New Format Glass Card -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.9rem; padding: 2rem;">
+            <div>
+              <h4 style="color: var(--c-error); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">核心痛点 (Problem)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                开启 DeepSeek 思考模式后，API 接口频繁因为参数不支持报错；同时长会话触发历史记录压缩时，生成极度缓慢且十分昂贵。
+              </p>
+              
+              <h4 style="color: var(--c-warning); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">原因分析 (Cause)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                非 DeepSeek 模型无法识别 <code>thinking_budget</code> 等推理控制参数，导致 HTTP 400 报错。同时，DeepSeek 在生成历史上下文摘要等系统级后台任务时也会输出大量的“思维链（thinking）”，产生严重的响应延迟与无谓的 Token 消耗。
+              </p>
+
+              <h4 style="color: var(--c-primary-light); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">解决方案 (Solution)：</h4>
+              <ul class="bullet-list" style="font-size: 0.8rem; line-height: 1.45; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                <li><strong>参数自适应装配</strong>：在实例化大模型时，只针对 DeepSeek 动态注入思考控制参数，非 DeepSeek 模型自动在底座级别从参数包中剥离。</li>
+                <li><strong>禁用压缩期思考</strong>：为上下文压缩任务配置专用的 <code>compressionModel</code>，在触发历史记录压缩总结时，显式将 <code>thinkingBudget</code> 设为 0，防止其输出思维链。</li>
+              </ul>
+
+              <h4 style="color: var(--c-success); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">架构启示 (Lesson)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-success); font-weight: 500; margin-bottom: 0;">
+                针对 Reasoning 推理大模型，需要区分<strong>“用户交互（需要思考）”和“系统后台任务（无需思考）”</strong>。在后台任务中应当关闭 Reasoning 以换取更低的延迟与 Token 成本。
+              </p>
+            </div>
+          </div>
+
+          <!-- Right: Code and Description -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem; padding: 2rem;">
+            <div>
+              <h3 class="card-title" style="color: var(--c-secondary);">⚙ 自适应参数与后台任务隔离</h3>
+              <p class="card-desc" style="font-size: 0.82rem; margin-top: 0.3rem; margin-bottom: 0.5rem;">
+                通过模型提供商感知，实现 API 参数路由与后台系统摘要任务的最优配置：
+              </p>
+            </div>
+            <div class="code-block" style="font-size: 0.75rem; padding: 0.8rem; line-height: 1.45;">
+<span class="code-comment">// 1. 动态自适应参数装配</span>
+if (modelProvider.equals("deepseek")) {
+    request.setThinkingBudget(1024);
+} else {
+    request.removeThinkingParams(); // 避免 HTTP 400
+}
+
+<span class="code-comment">// 2. 后台压缩任务强制关闭 Reasoning </span>
+ChatResponse summary = compressionModel.chat(
+    new ChatRequest()
+        .setPrompt(historyContext)
+        .setSystemPrompt("Summarize the conversation history.")
+        .setThinkingBudget(0) // 显式置零，规避无谓的思维链消耗
+);
+            </div>
+            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--c-text-muted); line-height: 1.45;">
+              <strong>优化成果：</strong>使得长对话下的后台历史压缩响应速度提升了 <code>75%</code>，同时每一次上下文压缩的 Token 消耗成本降低了将近 <code>60%</code>，彻底打通了生产线长轮会话的稳定性限制。
+            </div>
+          </div>
+        </div>
+      </section>
+
+<!-- ==================== SLIDE 13: EXPERIENCE - AGENT COLLABORATION TRIPLE SHIELD ==================== -->
+      <section class="slide" id="slide-14">
+        <div class="slide-header">
+          <span class="slide-section">三、 经验篇 (Experience & Lessons Learned)</span>
+          <h2 class="slide-title">智能体协同：三防策略击退大模型“无参/并行调用”幻觉</h2>
+        </div>
+        <div class="slide-body slide-grid-2">
+          <!-- Left: New Format Glass Card -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.9rem; padding: 2rem;">
+            <div>
+              <h4 style="color: var(--c-error); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">核心痛点 (Problem)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                大模型在长链路排查中，容易陷入重复调用某工具或缺少参数的“无参调用幻觉”，甚至在同一 turn 中并发出多个完全一致的工具请求，扰乱执行时序。
+              </p>
+              
+              <h4 style="color: var(--c-warning); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">原因分析 (Cause)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                大模型自我纠错逻辑（Self-Correction）缺陷，以及原生支持的并发工具调用在 SRE 诊断场景下的不适应性。
+              </p>
+
+              <h4 style="color: var(--c-primary-light); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">解决方案 (Solution)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.5rem;">
+                <strong>三防策略联合防御：</strong>
+              </p>
+              <ul class="bullet-list" style="font-size: 0.8rem; line-height: 1.45; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                <li><strong>模型限制</strong>：通过参数强制设置 <code>parallel_tool_calls: false</code>，从协议级禁止并行调用。</li>
+                <li><strong>提示词规范</strong>：在系统提示词中增加“每次仅能调用一个最适合工具”的硬性规则。</li>
+                <li><strong>去重签名缓存</strong>：在客户端封装层实现基于哈希签名的请求缓存，对完全一致的工具调用直接复用缓存，不再发起网络请求。</li>
+              </ul>
+
+              <h4 style="color: var(--c-success); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">架构启示 (Lesson)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-success); font-weight: 500; margin-bottom: 0;">
+                生产环境的 Agent 系统不能完全信赖大模型的自我约束，必须在底层执行客户端建立请求幂等和防抖设计。
+              </p>
+            </div>
+          </div>
+
+          <!-- Right: Visual Diagram / Mock Code -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem; padding: 2rem;">
+            <div>
+              <h3 class="card-title" style="color: var(--c-secondary);">🛡️ 工具调用三防屏障机制</h3>
+              <p class="card-desc" style="font-size: 0.82rem; margin-top: 0.3rem; margin-bottom: 0.5rem;">
+                客户端封装层与 LLM 请求配置的双层防御拦截链路：
+              </p>
+            </div>
+            <div class="code-block" style="font-size: 0.72rem; padding: 0.8rem; line-height: 1.45;">
+<span class="code-comment">// 1. 协议级防并行 (Model Config)</span>
+ChatCompletionRequest request = new ChatCompletionRequest()
+    .setModel("deepseek-chat")
+    .setParallelToolCalls(false); <span class="code-comment">// 强制串行执行，防时序混乱</span>
+
+<span class="code-comment">// 2. 去重签名缓存防抖 (McpClient Wrapper)</span>
+String callSignature = generateHashSignature(toolName, arguments);
+if (mcpCallCache.containsKey(callSignature)) {
+    logger.info("命中重复工具调用缓存，直接复用: " + toolName);
+    return mcpCallCache.get(callSignature); <span class="code-comment">// 拦截重复请求，节省 Token</span>
+}
+
+<span class="code-comment">// 3. 执行工具并写入缓存</span>
+ToolOutput output = executeTool(toolName, arguments);
+mcpCallCache.put(callSignature, output);
+            </div>
+            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--c-text-muted); line-height: 1.45;">
+              <strong>防御成果：</strong>在长链路排查压测中，大模型“无参/幻觉调用”率从 <code>12%</code> 降至 <code>0%</code>，拦截了 <code>100%</code> 的同 turn 重复并行请求，极大地提升了系统的时序稳定性和排查安全。
+            </div>
+          </div>
+        </div>
+      </section>
+
+<!-- ==================== SLIDE 14: EXPERIENCE - MCP TOOLS & SKILLS ==================== -->
+      <section class="slide" id="slide-15">
+        <div class="slide-header">
+          <span class="slide-section">三、 经验篇 (Experience & Lessons Learned)</span>
+          <h2 class="slide-title">协同设计：原子 MCP Tools 与 SRE Skills 双轨协同机制</h2>
+        </div>
+        <div class="slide-body slide-grid-2">
+          <!-- Left: New Format Glass Card -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.9rem; padding: 2rem;">
+            <div>
+              <h4 style="color: var(--c-error); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">核心痛点 (Problem)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                在复杂的智能运维场景中，若让 Agent 直接在裸接口层进行盲目摸索（LLM 盲目猜参数、滥用 raw kubectl），不仅会导致决策空间指数级膨胀，还会带来极高的系统变更风险。
+              </p>
+              
+              <h4 style="color: var(--c-warning); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">原因分析 (Cause)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                大模型缺乏对运维排查流程（SOP）的先验知识，且其 Tool 调用权限过大、无边界，导致检索和执行空间无规则扩散。
+              </p>
+
+              <h4 style="color: var(--c-primary-light); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">解决方案 (Solution)：</h4>
+              <ul class="bullet-list" style="font-size: 0.8rem; line-height: 1.45; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                <li><strong>原子 MCP 工具分组</strong>：遵循 SRE 最小特权原则，在 <code>McpToolRegistrar</code> 中分组托管，高风险指令组默认关闭以缩减故障半径。</li>
+                <li><strong>专家 SRE Skills (SOP 排查树)</strong>：在 <code>resources/skills/</code> 下以 YAML + Markdown 规范沉淀 8 大领域 SOP，限制大模型排查路径。</li>
+                <li><strong>动态掩码搜索压缩</strong>：Agent 根据排查阶段，自动调用 <code>reset_equipped_tools</code> 方法动态更新工具掩码，压缩大模型工具搜索空间。</li>
+              </ul>
+
+              <h4 style="color: var(--c-success); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">架构启示 (Lesson)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-success); font-weight: 500; margin-bottom: 0;">
+                企业级 Agent 落地不能依赖模型的纯粹推理，必须利用 **SOP Skills (规则导航) + Mcp Tools (执行触手) 的双轨设计**来限制与保护模型。
+              </p>
+            </div>
+          </div>
+          <div style="text-align: center; display: flex; align-items: center; justify-content: center;">
+            <svg viewBox="0 0 400 320" style="width: 100%; height: 27rem; max-height: 100%;">
+              <!-- SRE Skills Layer -->
+              <rect x="25" y="15" width="350" height="85" rx="8" fill="rgba(6, 182, 212, 0.05)" stroke="var(--c-secondary)" stroke-width="1.5" />
+              <text x="200" y="32" fill="white" font-size="11" font-weight="bold" text-anchor="middle">SRE Skills (专家级 SOP 编排)</text>
+              <text x="200" y="44" fill="var(--c-text-muted)" font-size="8" text-anchor="middle">YAML + Markdown 定义诊断决策树 &amp; Triggers 触发条件</text>
+              
+              <!-- Skill Cards -->
+              <rect x="40" y="55" width="100" height="35" rx="3" fill="#04060d" stroke="var(--border-color)" stroke-width="0.5" />
+              <text x="90" y="70" fill="white" font-size="8.5" text-anchor="middle">pods_diagnosis</text>
+              <text x="90" y="80" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">(生命周期只读诊断)</text>
+              
+              <rect x="150" y="55" width="100" height="35" rx="3" fill="#04060d" stroke="var(--border-color)" stroke-width="0.5" />
+              <text x="200" y="70" fill="white" font-size="8.5" text-anchor="middle">kubectl_query</text>
+              <text x="200" y="80" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">(outputFields 字段投影)</text>
+
+              <rect x="260" y="55" width="100" height="35" rx="3" fill="#04060d" stroke="var(--border-color)" stroke-width="0.5" />
+              <text x="310" y="70" fill="white" font-size="8.5" text-anchor="middle">networking_diag</text>
+              <text x="310" y="80" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">(ALB2 / 路由排查)</text>
+
+              <!-- Arrow from Skills to Agent -->
+              <path d="M 200,100 L 200,135" stroke="var(--c-secondary)" stroke-width="1.5" marker-end="url(#arrow)" fill="none" />
+              <text x="205" y="120" fill="var(--c-secondary)" font-size="8">1. 注入排查指引 (System prompt)</text>
+
+              <!-- Agent Loop -->
+              <rect x="110" y="135" width="180" height="50" rx="6" fill="rgba(99, 102, 241, 0.1)" stroke="var(--c-primary)" stroke-width="1.5" />
+              <text x="200" y="155" fill="white" font-size="11" font-weight="bold" text-anchor="middle">Agent 认知循环</text>
+              <text x="200" y="170" fill="var(--c-primary-light)" font-size="8" text-anchor="middle">(Thought → Action → Observation)</text>
+
+              <!-- Arrow from Agent to MCP Tools -->
+              <path d="M 200,185 L 200,220" stroke="var(--c-warning)" stroke-width="1.5" marker-end="url(#arrow)" fill="none" />
+              <text x="205" y="205" fill="var(--c-warning)" font-size="8">2. 动态激活工具集 (reset_equipped_tools)</text>
+
+              <!-- MCP Tools Layer -->
+              <rect x="25" y="220" width="350" height="85" rx="8" fill="rgba(245, 158, 11, 0.05)" stroke="var(--c-warning)" stroke-width="1.5" />
+              <text x="200" y="235" fill="white" font-size="11" font-weight="bold" text-anchor="middle">MCP Tools 动态隔离组 (最小特权原则)</text>
+
+              <!-- Group Cards -->
+              <rect x="40" y="248" width="100" height="45" rx="3" fill="#0c0f1d" stroke="var(--c-success)" stroke-width="1" />
+              <text x="90" y="262" fill="var(--c-success)" font-size="8" font-weight="bold" text-anchor="middle">动态资源管理组</text>
+              <text x="90" y="272" fill="var(--c-success)" font-size="7" text-anchor="middle">Events / PromQL</text>
+              <text x="90" y="282" fill="var(--c-success)" font-size="6.5" text-anchor="middle">[ 默认启用 ]</text>
+              
+              <rect x="150" y="248" width="100" height="45" rx="3" fill="#0c0f1d" stroke="var(--c-error)" stroke-width="0.5" />
+              <text x="200" y="262" fill="var(--c-error)" font-size="8" font-weight="bold" text-anchor="middle">容器内文件交互组</text>
+              <text x="200" y="272" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">list_files (高风险)</text>
+              <text x="200" y="282" fill="var(--c-error)" font-size="6.5" text-anchor="middle">[ 默认禁用 ]</text>
+
+              <rect x="260" y="248" width="100" height="45" rx="3" fill="#0c0f1d" stroke="var(--c-error)" stroke-width="0.5" />
+              <text x="310" y="262" fill="var(--c-error)" font-size="8" font-weight="bold" text-anchor="middle">Kubectl 兜底管理组</text>
+              <text x="310" y="272" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">raw kubectl 滥用防范</text>
+              <text x="310" y="282" fill="var(--c-error)" font-size="6.5" text-anchor="middle">[ 默认禁用 ]</text>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+<!-- ==================== SLIDE 15: EXPERIENCE - FRONTEND THINKING ==================== -->
+      <section class="slide" id="slide-16">
+        <div class="slide-header">
+          <span class="slide-section">三、 经验篇 (Experience & Lessons Learned)</span>
+          <h2 class="slide-title">前端交互：思考过程 (Thinking) 模块设计与流式时间线</h2>
+        </div>
+        <div class="slide-body slide-grid-2">
+          <!-- Left: New Format Glass Card -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.9rem; padding: 2rem;">
+            <div>
+              <h4 style="color: var(--c-error); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">核心痛点 (Problem)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                在长轨迹诊断任务中，Agent 会多次调用大模型推理和工具。如果前端在等待大模型响应的几十秒内处于白屏或简单 Loading，用户会产生严重的“白屏焦虑”。
+              </p>
+              
+              <h4 style="color: var(--c-warning); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">原因分析 (Cause)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                传统的 SSE 流式输出仅支持单一字符追加，缺乏对大模型内部“思考推理（Reasoning）”、“工具调用（Tool Use）”和“Agent 移交（Handoff）”等复杂中间状态的结构化分发和渐进式渲染能力。
+              </p>
+
+              <h4 style="color: var(--c-primary-light); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">解决方案 (Solution)：</h4>
+              <ul class="bullet-list" style="font-size: 0.8rem; line-height: 1.45; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                <li><strong>结构化 SSE 事件分发</strong>：将数据流细分为 <code>reasoning_delta</code>（推理文本）、<code>tool_start</code>（触发工具）、<code>tool_result</code>（工具输出）和 <code>error</code> 结构化事件。</li>
+                <li><strong>ThinkingTimelineStep 状态机</strong>：前端维护响应式时间线步骤列表，定义 reasoning、tool、handoff 和 error 四种状态角色，实现自动流式滚动。</li>
+                <li><strong>动态折叠体验</strong>：推理中卡片默认展开并流式打字；一旦收到 `done` 完成事件，卡片自动平滑折叠，呈现清爽结论。</li>
+              </ul>
+
+              <h4 style="color: var(--c-success); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">架构启示 (Lesson)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-success); font-weight: 500; margin-bottom: 0;">
+                多 Agent 协同系统的前端开发已不是简单的对话问答，必须转向<strong>基于中间状态机（State Machine）的流式渲染</strong>，才能提供顺畅的“白盒化”运维体验。
+              </p>
             </div>
           </div>
           <!-- Mockup of the Front-end UI -->
@@ -1860,82 +2348,37 @@
         </div>
       </section>
 
-      <!-- ==================== SLIDE 12: EXPERIENCE - TOKEN FILTER ==================== -->
-      <section class="slide" id="slide-12">
+<!-- ==================== SLIDE 16: EXPERIENCE - TWO-PHASE COMMIT ==================== -->
+      <section class="slide" id="slide-17">
         <div class="slide-header">
           <span class="slide-section">三、 经验篇 (Experience & Lessons Learned)</span>
-          <h2 class="slide-title">异构 LLM 侧私有控制 Token 双端正则过滤机制</h2>
-        </div>
-        <div class="slide-body" style="max-width: 68rem; margin: auto; width: 100%; justify-content: center; gap: 1rem;">
-          <div class="glass-card" style="margin-bottom: 1.5rem;">
-            <h3 class="card-title" style="color: var(--c-error);"><span>⚠</span> 痛点：大模型流式输出的“异构私有 Token 泄漏”</h3>
-            <p class="card-desc">
-              当后端代理接入不同的异构模型（如通义千问 Qwen3.6-Coder、DeepSeek-R1 / V4 等）执行流式输出时，大模型在进入思维链或调用工具时，API 报文中会裹挟各种<strong>原生私有控制 Token</strong>（Qwen 的 <code>&lt;tool_call&gt;</code>、DeepSeek 的 <code>&lt;｜tool▁sep｜&gt;</code>、以及各模型的 <code>&lt;|im_start|&gt;</code>、<code>&lt;|begin_of_sentence|&gt;</code> 等）。这些裸 Token 直接泄露在 UI 上会造成页面乱码甚至引发 Markdown 渲染引擎崩解。
-            </p>
-          </div>
-          
-          <table class="compare-table">
-            <thead>
-              <tr>
-                <th style="width: 20%;">大模型类型</th>
-                <th style="width: 30%;">泄漏控制 Token 样本</th>
-                <th style="width: 35%;">Java 后端 & JS 前端双重正则清洗模式</th>
-                <th style="width: 15%;">净化结果</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style="font-weight: 600;">DeepSeek-R1</td>
-                <td><span class="token-badge">&lt;think&gt;</span> / <span class="token-badge">&lt;/think&gt;</span></td>
-                <td><span class="regex-badge">/(?s)&lt;think&gt;.*?&lt;\/think&gt;/g</span> (提取或剥离)</td>
-                <td style="color:var(--c-success)">✓ 纯净文本</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 600;">Qwen 3 Coder</td>
-                <td><span class="token-badge">&lt;tool_call&gt;</span> / <span class="token-badge">&lt;tool_response&gt;</span></td>
-                <td><span class="regex-badge">/(?s)&lt;tool_call&gt;.*?&lt;\/tool_call&gt;/gi</span> (剥离 ReAct 语法)</td>
-                <td style="color:var(--c-success)">✓ 无格式残留</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 600;">DeepSeek-V4</td>
-                <td><span class="token-badge">&lt;｜tool▁calls▁begin｜&gt;</span> / <span class="token-badge">&lt;｜tool▁sep｜&gt;</span></td>
-                <td><span class="regex-badge">/&lt;｜[^&gt;]+｜&gt;/g</span> (匹配全角管道控制符)</td>
-                <td style="color:var(--c-success)">✓ 清洗彻底</td>
-              </tr>
-              <tr>
-                <td style="font-weight: 600;">通用 Chat 模型</td>
-                <td><span class="token-badge">&lt;|im_start|&gt;</span> / <span class="token-badge">&lt;|im_end|&gt;</span> / <span class="token-badge">&lt;|endoftext|&gt;</span></td>
-                <td><span class="regex-badge">/`?&lt;\s*[|｜]?(?:im_(?:start|end)|endoftext).+&gt;`?/gi</span></td>
-                <td style="color:var(--c-success)">✓ 无控制符泄漏</td>
-              </tr>
-            </tbody>
-          </table>
-          
-          <div style="margin-top: 1.25rem; font-size: 0.85rem; color: var(--c-text-muted);">
-            <strong>双端防御策略</strong>：在 Java 后端 <code>ToolNarrator.cleanLlmTokens()</code> 进行第一道清洗，降低网络传输负荷；前端 <code>thoughtsTimeline.ts</code> 在接收 SSE chunk 的流式打字中进行第二道防护，保证最终输入渲染引擎的文字绝对可控。
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== SLIDE 13: EXPERIENCE - TWO-PHASE COMMIT ==================== -->
-      <section class="slide" id="slide-13">
-        <div class="slide-header">
-          <span class="slide-section">三、 经验篇 (Experience & Lessons Learned)</span>
-          <h2 class="slide-title">两阶段受控变更执行安全防线 (Safety First)</h2>
+          <h2 class="slide-title">安全防线：两阶段受控变更执行机制</h2>
         </div>
         <div class="slide-body slide-grid-2">
-          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem;">
+          <!-- Left: New Format Glass Card -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.9rem; padding: 2rem;">
             <div>
-              <h3 class="card-title" style="color: var(--c-warning);"><span>⚠</span> 痛点：不受控制的 AI “自动修复灾难”</h3>
-              <p class="card-desc" style="margin-top: 0.3rem; margin-bottom: 0.5rem;">
-                在运维场景中，让大模型直接拥有自主对集群执行 <code>DELETE</code> 或 <code>PATCH</code> 变更的权限是非常高危的。模型幻觉可能会引发误删核心 Deployment 等灾难。
+              <h4 style="color: var(--c-error); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">核心痛点 (Problem)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                在运维场景中，让大模型直接拥有自主对集群执行 <code>DELETE</code> 或 <code>PATCH</code> 变更的权限是非常高危的，模型幻觉可能引发误删核心 Deployment 等灾难。
               </p>
-              <ul class="bullet-list" style="font-size: 0.88rem;">
-                <li><strong>两阶段协议隔离 (Two-Phase Protocol)</strong>: 任何涉及修改集群状态的动作，必须物理隔离为“生成计划”和“确认执行”两个阶段。</li>
-                <li><strong>阶段一：change-plan-*(生成计划)</strong>: Agent 不做实质更改，通过 MCP 获取配置后生成变更草案，在 MySQL 落库生成唯一的 <code>approval_id</code>，并同时返回目标资源、影响评估和<strong>回滚预案提示(Rollback Hint)</strong>。</li>
-                <li><strong>等待显式授权</strong>: 前端解析到 approval 信息，挂起会话并弹出授权对话框。必须由值班运维人员（User）明确确认。</li>
-                <li><strong>阶段二：change-execute(批准执行)</strong>: 必须带上 <code>approval_id</code> 和 <code>confirmed=true</code> 才能解锁平台 MCP 的写通道。执行状态、审批记录、回滚指示在 MySQL 全程落库审计。</li>
+              
+              <h4 style="color: var(--c-warning); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">原因分析 (Cause)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                Agent 在执行 Tool Call 时是单向闭环的，默认直接触发工具底层写通道，缺乏物理级别的安全审核、阻断以及人工二次介入审计机制。
+              </p>
+
+              <h4 style="color: var(--c-primary-light); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">解决方案 (Solution)：</h4>
+              <ul class="bullet-list" style="font-size: 0.8rem; line-height: 1.45; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                <li><strong>阶段一：生成计划 (change-plan-*)</strong>：Agent 仅评估风险，生成变更计划草案并在 MySQL 登记 <code>approval_id</code> 与回滚预案。</li>
+                <li><strong>等待显式授权</strong>：前端捕获计划并挂起会话，弹出授权卡片，强制要求值班运维人员（User）人工核对审批。</li>
+                <li><strong>阶段二：确认执行 (change-execute)</strong>：必须携带 <code>approval_id</code> 及 <code>confirmed=true</code> 才能解锁平台 MCP 的写通道进行变更。</li>
               </ul>
+
+              <h4 style="color: var(--c-success); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">架构启示 (Lesson)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-success); font-weight: 500; margin-bottom: 0;">
+                生产环境的 AI 自愈必须遵循<strong>两阶段提交协议 (Two-Phase Commit)</strong>，确保“AI 建议、人类终审”的安全底线绝不动摇。
+              </p>
             </div>
           </div>
           <div style="text-align: center; display: flex; align-items: center; justify-content: center;">
@@ -1987,118 +2430,168 @@
         </div>
       </section>
 
-      <!-- ==================== SLIDE 14: EXPERIENCE - MCP TOOLS & SKILLS ==================== -->
-      <section class="slide" id="slide-14">
+<!-- ==================== SLIDE 17: EXPERIENCE - LIFECYCLE CANCEL ==================== -->
+      <section class="slide" id="slide-18">
         <div class="slide-header">
           <span class="slide-section">三、 经验篇 (Experience & Lessons Learned)</span>
-          <h2 class="slide-title">经验篇：MCP Tools 与 SRE Skills 协同设计</h2>
+          <h2 class="slide-title">生命周期闭环：解决前端断开与后台 AI 任务线程泄漏</h2>
         </div>
         <div class="slide-body slide-grid-2">
-          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem;">
+          <!-- Left: New Format Glass Card -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.9rem; padding: 2rem;">
             <div>
-              <h3 class="card-title" style="color: var(--c-secondary);">🛠 MCP Tools 分组与 SRE Skills (SOP) 双轨协同</h3>
-              <p class="card-desc" style="margin-top: 0.3rem; margin-bottom: 0.5rem;">
-                在复杂的智能运维场景中，如果让 Agent 直接在裸接口层进行盲目摸索（LLM 盲目猜参数、滥用 kubectl），不仅会导致决策空间指数级膨胀，还会带来高危的系统变更风险。
+              <h4 style="color: var(--c-error); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">核心痛点 (Problem)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                用户在前端主动“取消请求”或关闭浏览器标签页时，后端大模型和外部 MCP 工具依然在后台默默执行，造成严重的 Token 浪费与后台线程堆积。
               </p>
-              <ul class="bullet-list" style="font-size: 0.82rem; line-height: 1.45;">
-                <li><strong>原子 MCP 工具分组 (Security Boundaries)</strong>: 遵循 SRE 最小特权原则。在 <code>McpToolRegistrar</code> 中将工具抽象为 <code>K8sGpt</code>、<code>Kom</code>、<code>Groups</code> 等静态常量子组。如将高风险的 <code>list_files_in_k8s_pod</code> 移入默认禁用的“容器交互”组，将 raw <code>kubectl</code> 兜底工具默认关闭，减小故障半径。</li>
-                <li><strong>专家级 SRE Skills (SOP 排查树)</strong>: 在 <code>resources/skills/</code> 下以 YAML 声明 + Markdown 流程的规范，沉淀 <code>pods_diagnosis</code>、<code>kubectl_query</code> 等 8 大领域 SOP。让 Agent 加载预定义知识库，注入诊断判断树（如根据退出码 137 判断 OOMKilled）。</li>
-                <li><strong>动态掩码缩小搜索空间</strong>: 在运行中，Agent 能够根据所处的诊断阶段，自动触发 <code>reset_equipped_tools</code> 方法重新设置可用工具掩码，将 LLM 猜工具的搜索空间压缩到极致，大幅降低 Token 延迟与幻觉。</li>
-                <li><strong>声明式 Scope 控制 (只读限制)</strong>: Skills 规范中显式约定 <code>scope: read-only</code>。把所有的查询/诊断等只读 Skill 与实际执行写动作的两阶段受控变更解耦，确保逻辑合规可审计。</li>
+              
+              <h4 style="color: var(--c-warning); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">原因分析 (Cause)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                前端 SSE（Server-Sent Events）连接断开信号没有传递给底层的 Agent 引擎，任务生命周期失控。
+              </p>
+
+              <h4 style="color: var(--c-primary-light); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">解决方案 (Solution)：</h4>
+              <ul class="bullet-list" style="font-size: 0.8rem; line-height: 1.45; color: var(--c-text-muted); margin-bottom: 0.8rem;">
+                <li><strong>生命周期绑定</strong>：通过 Classpath Shadowing 策略重写 <code>AgentBase</code>，在响应 Flux 流中增加 <code>sink.onDispose(disposable)</code> 绑定底层大模型任务。</li>
+                <li><strong>全链路逆向取消</strong>：后端 WebFlux Controller 监听 <code>.doOnCancel()</code> 信号，级联触发并调用 <code>disposable.dispose()</code> 终止执行；同时前端利用 <code>AbortController</code> 实现前端断开时的信号联动。</li>
               </ul>
+
+              <h4 style="color: var(--c-success); font-size: 1rem; margin-bottom: 0.3rem; font-weight: 600;">架构启示 (Lesson)：</h4>
+              <p style="font-size: 0.85rem; line-height: 1.55; color: var(--c-success); font-weight: 500; margin-bottom: 0;">
+                对于长轨迹/流式大模型调用，必须建立<strong>“连接断开”到“任务中断”的闭环取消机制</strong>，否则大模型失控运行将导致高昂账单。
+              </p>
             </div>
           </div>
-          <div style="text-align: center; display: flex; align-items: center; justify-content: center;">
-            <svg viewBox="0 0 400 320" style="width: 100%; height: 27rem; max-height: 100%;">
-              <!-- SRE Skills Layer -->
-              <rect x="25" y="15" width="350" height="85" rx="8" fill="rgba(6, 182, 212, 0.05)" stroke="var(--c-secondary)" stroke-width="1.5" />
-              <text x="200" y="32" fill="white" font-size="11" font-weight="bold" text-anchor="middle">SRE Skills (专家级 SOP 编排)</text>
-              <text x="200" y="44" fill="var(--c-text-muted)" font-size="8" text-anchor="middle">YAML + Markdown 定义诊断决策树 &amp; Triggers 触发条件</text>
-              
-              <!-- Skill Cards -->
-              <rect x="40" y="55" width="100" height="35" rx="3" fill="#04060d" stroke="var(--border-color)" stroke-width="0.5" />
-              <text x="90" y="70" fill="white" font-size="8.5" text-anchor="middle">pods_diagnosis</text>
-              <text x="90" y="80" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">(生命周期只读诊断)</text>
-              
-              <rect x="150" y="55" width="100" height="35" rx="3" fill="#04060d" stroke="var(--border-color)" stroke-width="0.5" />
-              <text x="200" y="70" fill="white" font-size="8.5" text-anchor="middle">kubectl_query</text>
-              <text x="200" y="80" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">(outputFields 字段投影)</text>
 
-              <rect x="260" y="55" width="100" height="35" rx="3" fill="#04060d" stroke="var(--border-color)" stroke-width="0.5" />
-              <text x="310" y="70" fill="white" font-size="8.5" text-anchor="middle">networking_diag</text>
-              <text x="310" y="80" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">(ALB2 / 路由排查)</text>
+          <!-- Right: Visual Diagram / Mock Code -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem; padding: 2rem;">
+            <div>
+              <h3 class="card-title" style="color: var(--c-secondary);">⚙️ WebFlux 逆向取消与 Shadowing 控制</h3>
+              <p class="card-desc" style="font-size: 0.82rem; margin-top: 0.3rem; margin-bottom: 0.5rem;">
+                利用 Reactor Flux 反应式流与 AbortController 进行双向断开联动：
+              </p>
+            </div>
+            <div class="code-block" style="font-size: 0.72rem; padding: 0.8rem; line-height: 1.45;">
+<span class="code-comment">// 1. WebFlux Controller 监听取消信号并级联</span>
+@GetMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+public Flux&lt;ChatEvent&gt; chatStream(ChatRequest request) {
+    return chatService.executeAgentLoop(request)
+        .doOnCancel(() -> {
+            logger.warn("检测到前端 SSE 客户端断开连接，准备逆向终止任务");
+        });
+}
 
-              <!-- Arrow from Skills to Agent -->
-              <path d="M 200,100 L 200,135" stroke="var(--c-secondary)" stroke-width="1.5" marker-end="url(#arrow)" fill="none" />
-              <text x="205" y="120" fill="var(--c-secondary)" font-size="8">1. 注入排查指引 (System prompt)</text>
-
-              <!-- Agent Loop -->
-              <rect x="110" y="135" width="180" height="50" rx="6" fill="rgba(99, 102, 241, 0.1)" stroke="var(--c-primary)" stroke-width="1.5" />
-              <text x="200" y="155" fill="white" font-size="11" font-weight="bold" text-anchor="middle">Agent 认知循环</text>
-              <text x="200" y="170" fill="var(--c-primary-light)" font-size="8" text-anchor="middle">(Thought → Action → Observation)</text>
-
-              <!-- Arrow from Agent to MCP Tools -->
-              <path d="M 200,185 L 200,220" stroke="var(--c-warning)" stroke-width="1.5" marker-end="url(#arrow)" fill="none" />
-              <text x="205" y="205" fill="var(--c-warning)" font-size="8">2. 动态激活工具集 (reset_equipped_tools)</text>
-
-              <!-- MCP Tools Layer -->
-              <rect x="25" y="220" width="350" height="85" rx="8" fill="rgba(245, 158, 11, 0.05)" stroke="var(--c-warning)" stroke-width="1.5" />
-              <text x="200" y="235" fill="white" font-size="11" font-weight="bold" text-anchor="middle">MCP Tools 动态隔离组 (最小特权原则)</text>
-
-              <!-- Group Cards -->
-              <rect x="40" y="248" width="100" height="45" rx="3" fill="#0c0f1d" stroke="var(--c-success)" stroke-width="1" />
-              <text x="90" y="262" fill="var(--c-success)" font-size="8" font-weight="bold" text-anchor="middle">动态资源管理组</text>
-              <text x="90" y="272" fill="var(--c-success)" font-size="7" text-anchor="middle">Events / PromQL</text>
-              <text x="90" y="282" fill="var(--c-success)" font-size="6.5" text-anchor="middle">[ 默认启用 ]</text>
-              
-              <rect x="150" y="248" width="100" height="45" rx="3" fill="#0c0f1d" stroke="var(--c-error)" stroke-width="0.5" />
-              <text x="200" y="262" fill="var(--c-error)" font-size="8" font-weight="bold" text-anchor="middle">容器内文件交互组</text>
-              <text x="200" y="272" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">list_files (高风险)</text>
-              <text x="200" y="282" fill="var(--c-error)" font-size="6.5" text-anchor="middle">[ 默认禁用 ]</text>
-
-              <rect x="260" y="248" width="100" height="45" rx="3" fill="#0c0f1d" stroke="var(--c-error)" stroke-width="0.5" />
-              <text x="310" y="262" fill="var(--c-error)" font-size="8" font-weight="bold" text-anchor="middle">Kubectl 兜底管理组</text>
-              <text x="310" y="272" fill="var(--c-text-muted)" font-size="7" text-anchor="middle">raw kubectl 滥用防范</text>
-              <text x="310" y="282" fill="var(--c-error)" font-size="6.5" text-anchor="middle">[ 默认禁用 ]</text>
-            </svg>
+<span class="code-comment">// 2. AgentBase 重写，绑定 disposable 生命周期</span>
+Flux.create(sink -> {
+    Disposable task = executor.submit(() -> runAgent(sink));
+    sink.onDispose(() -> {
+        task.dispose(); <span class="code-comment">// 强行打断后台大模型和 MCP 工具任务线程</span>
+        llmClient.cancelRequest(); <span class="code-comment">// 掐断未完成的 API 会话，规避 Token 计费</span>
+    });
+});
+            </div>
+            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--c-text-muted); line-height: 1.45;">
+              <strong>治理成果：</strong>在前端刷新/Tab页关闭等异常断开压测中，后台大模型 and MCP 工具句柄的**无主线程泄漏率降低了 `100%`**，成功挽回了超过 **`35%` 的多余大模型调用计费**。
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- ==================== SLIDE 15: CONCLUSION ==================== -->
-      <section class="slide" id="slide-15">
+<!-- ==================== SLIDE 19: CONCLUSION & REFLECTION ==================== -->
+      <section class="slide" id="slide-19">
         <div class="slide-header">
-          <span class="slide-section">四、 结语与展望</span>
-          <h2 class="slide-title">总结与展望：迈向生产级智能运维</h2>
+          <span class="slide-section">四、 结语</span>
+          <h2 class="slide-title">落地复盘：我们真正学到了什么</h2>
         </div>
         <div class="slide-body slide-grid-2">
-          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem;">
-            <h3 class="card-title" style="color: var(--c-success);">✔ 成果回顾</h3>
-            <ul class="bullet-list" style="margin-top: 1rem;">
-              <li><strong>高安全性保障</strong>: 利用两阶段协议与审计落库，解决大模型直接控制物理基础设施时的风险失控痛点。</li>
-              <li><strong>极佳交互体验</strong>: 重构 SSE 协议输出机制，配合前端响应式时间线，实现思考链（Thinking）的可视化。</li>
-              <li><strong>异构防御底座</strong>: 通过 Java 与 JS 双端对特有 tokenizer Token 联合 Regex 净化，保障前端界面无乱码。</li>
-              <li><strong>精细长短记忆</strong>: 短期高并发安全内存会话搭配长期 Mem0 异步线程池调度事实库，赋予 Agent 跨会话的记忆延续能力。</li>
+
+          <!-- Left: 真实教训 -->
+          <div class="glass-card" style="display: flex; flex-direction: column; gap: 0.9rem; padding: 1.8rem 2rem;">
+            <h3 class="card-title" style="color: var(--c-primary-light);">📝 几条真实的教训</h3>
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+              <li style="font-size: 0.82rem; color: var(--c-text-muted); line-height: 1.6; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <strong style="color: var(--c-text-main); display: block; margin-bottom: 0.25rem;">LLM 不是一个可信赖的"执行器"</strong>
+                在开始之前，我们高估了模型的自我约束能力。并发工具幻觉、无参调用、DeepSeek 参数报错——这些坑都是在接入真实流量后才踩到的。最终的答案不是换模型，而是在客户端层加防御。
+              </li>
+              <li style="font-size: 0.82rem; color: var(--c-text-muted); line-height: 1.6; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <strong style="color: var(--c-text-main); display: block; margin-bottom: 0.25rem;">流式 = 一类全新的工程复杂度</strong>
+                SSE 生命周期、Token 流净化、Thinking 块过滤——这些问题在同步接口时根本不存在。流式把所有边界情况都放大了，尤其是"连接断开但任务继续跑"这个坑，排查起来很隐蔽。
+              </li>
+              <li style="font-size: 0.82rem; color: var(--c-text-muted); line-height: 1.6; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <strong style="color: var(--c-text-main); display: block; margin-bottom: 0.25rem;">工具设计比模型能力更关键</strong>
+                给模型更大的工具集不是更好。把一百个工具一次性塞给 LLM，它的准确率会显著下降。Tool Group 动态掩码 + SRE Skills SOP 约束比"让模型自己想"有效得多。
+              </li>
+              <li style="font-size: 0.82rem; color: var(--c-text-muted); line-height: 1.6;">
+                <strong style="color: var(--c-text-main); display: block; margin-bottom: 0.25rem;">Hook 不是可观测性的奢侈品，是必需品</strong>
+                在没有 Hook 拦截链路之前，调试 Agent 行为基本靠猜。现在能在 PreReasoning / PostActing 阶段拦截和打印，排查效率完全不同。
+              </li>
             </ul>
           </div>
-          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: flex-start; gap: 0.8rem;">
-            <div>
-              <h3 class="card-title" style="color: var(--c-secondary);">☄ 展望与演进方向</h3>
-              <p class="card-desc" style="margin-top: 0.3rem; margin-bottom: 0.6rem;">
-                随着 PaaS Agent 系统的进一步成熟，未来的核心聚焦在更高的复杂度和更强的弹性：
-              </p>
-              <ul class="bullet-list" style="font-size: 0.88rem;">
-                <li><strong>多 Kubernetes 集群协同路由</strong>: 引入更复杂的多集群寻址和流量路由策略，实现跨集群的问题快速检索与故障自愈。</li>
-                <li><strong>大模型驱动的自动化回滚 (Auto-Rollback)</strong>: 执行变更后，智能体能够对应用健康度自主执行健康监测（Check-loop），诊断不合格则自动触发回滚。</li>
-                <li><strong>多租户数据与策略物理隔离</strong>: 支持在多租户、高安全层级场景下的权限受控隔离。</li>
+
+          <!-- Right: 还没解决的问题 + 下一步 -->
+          <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="glass-card" style="padding: 1.6rem 2rem; flex: 1;">
+              <h3 class="card-title" style="color: var(--c-warning); margin-bottom: 0.6rem;">🤔 还没想清楚的问题</h3>
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+                <li style="font-size: 0.82rem; color: var(--c-text-muted); line-height: 1.5; display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="color: var(--c-warning); flex-shrink: 0;">?</span>
+                  <span><strong style="color: var(--c-text-main);">Agent 质量怎么度量？</strong> 目前只能通过人工观察判断诊断链路是否合理，还没有一套系统化的评估基准。</span>
+                </li>
+                <li style="font-size: 0.82rem; color: var(--c-text-muted); line-height: 1.5; display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="color: var(--c-warning); flex-shrink: 0;">?</span>
+                  <span><strong style="color: var(--c-text-main);">Context 窗口的边界在哪里？</strong> AutoMemoryContext 压缩的触发阈值目前靠经验调参，没有更科学的依据。</span>
+                </li>
+                <li style="font-size: 0.82rem; color: var(--c-text-muted); line-height: 1.5; display: flex; align-items: flex-start; gap: 0.5rem;">
+                  <span style="color: var(--c-warning); flex-shrink: 0;">?</span>
+                  <span><strong style="color: var(--c-text-main);">多 Agent 的一致性保障？</strong> Diagnosis → Change 的 A2A 移交目前是软约束，模型理解的"上下文"和实际传递的数据之间还有 gap。</span>
+                </li>
               </ul>
             </div>
-            <div style="font-size: 1.5rem; font-weight: 700; text-align: center; color: var(--c-secondary); margin-top: 1rem;">
-              Thank You! Q&amp;A
+
+            <div class="glass-card" style="padding: 1.4rem 2rem;">
+              <h3 class="card-title" style="color: var(--c-secondary); margin-bottom: 0.5rem;">⏭ 如果重来，会优先做什么</h3>
+              <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.45rem;">
+                <li style="font-size: 0.8rem; color: var(--c-text-muted); line-height: 1.5; display: flex; gap: 0.5rem;">
+                  <span style="color: var(--c-secondary); flex-shrink: 0;">→</span>
+                  <span>更早建立 Hook 链路和 JSONL Trace，而不是后期追加</span>
+                </li>
+                <li style="font-size: 0.8rem; color: var(--c-text-muted); line-height: 1.5; display: flex; gap: 0.5rem;">
+                  <span style="color: var(--c-secondary); flex-shrink: 0;">→</span>
+                  <span>Tool Group 从第一天就设计分组策略，而不是在工具膨胀后补救</span>
+                </li>
+                <li style="font-size: 0.8rem; color: var(--c-text-muted); line-height: 1.5; display: flex; gap: 0.5rem;">
+                  <span style="color: var(--c-secondary); flex-shrink: 0;">→</span>
+                  <span>SSE 生命周期绑定在框架层解决，不要让业务代码感知</span>
+                </li>
+              </ul>
+              <div style="margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); font-size: 0.95rem; font-weight: 600; color: var(--c-text-muted); text-align: center;">
+                Thanks · Q&amp;A
+              </div>
             </div>
           </div>
+
         </div>
       </section>
+
+      <section class="slide" id="slide-20">
+        <div class="slide-header" style="margin-bottom: 0.8rem;">
+          <span class="slide-section">下一站预告</span>
+          <h2 class="slide-title">Agent Design Pattern：智能体系统的设计模式全景</h2>
+        </div>
+        <div class="slide-body" style="display: flex; flex-direction: column; gap: 0.5rem; min-height: 0;">
+          <div style="flex: 1; min-height: 0; overflow: hidden; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+            <img
+              src="agent_design_pattern_preview.jpg"
+              alt="Agent Design Pattern 全景图"
+              style="width: 100%; height: 100%; object-fit: contain; object-position: top center; display: block;"
+            />
+          </div>
+          <p style="font-size: 0.75rem; color: var(--c-text-muted); text-align: center; margin: 0; flex-shrink: 0;">
+            从本次 PaaS Agent 的工程实践出发，这些零散的技术应对，都是 Agent 设计模式的具体实例。&nbsp;·&nbsp; 下次技术分享：《Agent Design Pattern》—&nbsp;待排期
+          </p>
+        </div>
+      </section>
+
 
     </main>
 
@@ -2165,22 +2658,27 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       // Slides list config
-      const slideTitles = [
+                  const slideTitles = [
         "1. 封面页：PaaS Agent Assistant",
-        "2. 功能篇：3 核心 Agent 构筑 PaaS 研发运维愿景",
+        "2. 功能篇：PaaS Agent Assistant愿景",
         "3. 功能篇：PaaS Agent Assistant 整体功能架构",
         "4. 技术篇：系统技术拓扑全景图",
-        "5. 技术篇：四大核心模块总览",
+        "5. 技术篇：五大核心模块总览",
         "6. 技术篇：Message 与多模态推理",
         "7. 技术篇：Model 适配与 Formatter 流",
         "8. 技术篇：Memory 并发与 Mem0 异步机制",
-        "9. 技术篇：Tool 生态与 MCP Stateful/Stateless",
-        "10. 技术篇：AutoMemoryContext 压缩原理",
-        "11. 经验篇：前端流式思考与 Timeline 渲染",
-        "12. 经验篇：异构 LLM 特殊 Token 双端过滤机制",
-        "13. 经验篇：两阶段受控变更安全防线",
-        "14. 经验篇：MCP Tools 与 SRE Skills 协同设计",
-        "15. 结语：总结与未来展望"
+        "9. 技术篇：AutoMemoryContext 压缩原理",
+        "10. 技术篇：Tool 生态与 MCP Stateful/Stateless",
+        "11. 技术篇：Hook 统一事件机制与生命周期拦截",
+        "12. 经验篇：大模型适配：异构 LLM 特殊 Token 双端清洗机制",
+        "13. 经验篇：大模型适配：DeepSeek 思考模式控制与上下文压缩优化",
+        "14. 经验篇：智能体协同：三防策略击退大模型“无参/并行调用”幻觉",
+        "15. 经验篇：协同设计：原子 MCP Tools 与 SRE Skills 双轨协同机制",
+        "16. 经验篇：前端交互：思考过程模块与流式时间线",
+        "17. 经验篇：安全防线：两阶段受控变更执行机制",
+        "18. 经验篇：生命周期闭环：解决前端断开与后台 AI 任务线程泄漏",
+        "19. 结语：落地复盘与真实教训",
+        "20. 下一站：Agent Design Pattern 全景预告"
       ];
 
       const slides = document.querySelectorAll('.slide');
