@@ -8,12 +8,12 @@ description: >
   以及环境变量/配置注入异常。本 Skill 为只读诊断，不执行任何变更。
 scope: read-only
 triggers:
-  - "Pod 状态为 CrashLoopBackOff"
-  - "Pod 状态为 ImagePullBackOff 或 ErrImagePull"
-  - "Pod 状态为 Init:0/N"
-  - "Pod READY 列为 X/N（X 小于 N），某容器未就绪"
+  - "Pod 状态为 CrashLoopBackOff，且用户明确要求排查原因"
+  - "Pod 状态为 ImagePullBackOff 或 ErrImagePull，且作为故障现象输入"
+  - "Pod 状态为 Init:0/N，且用户询问为什么无法启动"
+  - "Pod READY 列为 X/N（X 小于 N），某容器未就绪，且用户要求诊断"
   - "Pod RESTARTS 列持续递增，Events 含 Liveness probe failed"
-  - "Pod Running 但 Endpoints 为空"
+  - "Pod Running 但 Endpoints 为空，且作为故障现象被要求排查原因"
   - "新版本 Pod 上线后大量 502/503 错误"
 references:
   - references/exit_code_reference.md    # 容器退出码含义速查
@@ -29,9 +29,10 @@ references:
 ### Step 0：自动化诊断（K8sGPT）
 
 > **💡 最佳实践**：在进行繁琐的手工抓取日志和事件前，优先让 K8sGPT 进行自动化扫描定界。
+> **💡 最佳实践**：在进行繁琐的手工抓取日志和事件前，优先让 K8sGPT 进行自动化扫描定界。
 
 ```
-工具：analyze(namespace=<ns>, name=<pod>, filters=["Pod"])
+工具：analyze(cluster, namespace=<ns>, name=<pod>, filters=["Pod"])
 → 若输出结果已包含明确错误原因（如 CrashLoopBackOff 退出码解释、ImagePullBackOff 原因），可直接参考该结论，跳过后续部分手工排查步骤。
 ```
 
@@ -42,7 +43,7 @@ references:
 ```
 工具：list_k8s_pod(cluster, namespace)
 或使用 kubectl 兜底工具查看宽表以获取 Pod IP 和主机节点名：
-工具：kubectl(cluster, cmd="get pods -n <namespace> -o wide")
+工具：kubectl(cluster, args=["get", "pods", "-n", "<namespace>", "-o", "wide"])
 → 观察 STATUS / READY / RESTARTS 列
 
 STATUS = Pending
@@ -206,16 +207,6 @@ Running 但 Endpoints 为空
 
 ---
 
-## 诊断报告格式
-
-```
-**Root Cause:** [因果链中最早的失败事件或错误配置]
-**Evidence Chain:** [事件] → [触发] → [影响] → [用户观察到的症状]
-**Confidence:** [High / Medium / Low — 置信度依据]
-**Recommended Fix:** [面向运维人员的修复建议]
-```
-
-⚠️ **SRE 提醒**：K8s Events 默认只有 1 小时 TTL。如果未查询到相关 Events，不能断定没发生过故障，需在报告中声明 Events 可能已过 TTL 自动清理，并将 Confidence（置信度）适当降级。
 
 **示例（Liveness Probe 路径错误）**：
 > **Root Cause:** Deployment `livenessProbe.httpGet.path` 配置为 `/health`，但应用实际暴露的健康检查路径为 `/healthz`。  
@@ -229,8 +220,8 @@ Running 但 Endpoints 为空
 
 在上述专用 MCP 工具（如 `get_k8s_pod_logs` 或 `describe_k8s_pod`）不可用、执行出错或有局限性时，可使用只读 `kubectl` 兜底工具执行命令：
 - 宏观排查或检查 Pod 运行所在 IP 与 Node 节点：
-  `工具：kubectl(cluster, cmd="get pods -n <namespace> -o wide")`
+  `工具：kubectl(cluster, args=["get", "pods", "-n", "<namespace>", "-o", "wide"])`
 - 查看 Pod 运行事件与具体条件详情：
-  `工具：kubectl(cluster, cmd="describe pod <pod-name> -n <namespace>")`
+  `工具：kubectl(cluster, args=["describe", "pod", "<pod-name>", "-n", "<namespace>"])`
 - 获取容器崩溃前的 previous 日志：
-  `工具：kubectl(cluster, cmd="logs <pod-name> -n <namespace> -c <container-name> -p --tail=100")`
+  `工具：kubectl(cluster, args=["logs", "<pod-name>", "-n", "<namespace>", "-c", "<container-name>", "-p", "--tail=100"])`

@@ -32,3 +32,6 @@ offline-deps/maven-repository/**
 offline-deps/npm-cache/**
 !offline-deps/npm-cache/.gitkeep
 offline-deps/node_modules-*.tar.gz
+/.codex/config.toml
+
+**/.DS_Store

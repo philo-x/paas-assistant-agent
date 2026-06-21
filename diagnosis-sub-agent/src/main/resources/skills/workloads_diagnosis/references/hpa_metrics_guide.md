@@ -30,7 +30,7 @@
 适用场景：Minikube、Kind、kubeadm 自建集群
 
 排查工具：
-  get_k8s_pod_logs(namespace=kube-system, name=<metrics-server-pod>)
+  get_k8s_pod_logs(cluster, namespace=kube-system, name=<metrics-server-pod>)
 ```
 
 ### 问题 2：metrics-server 未安装
@@ -38,7 +38,7 @@
 现象：kube-system 中没有 metrics-server Deployment
 
 排查工具：
-  list_k8s_resource(namespace=kube-system, kind=Deployment)
+  list_k8s_resource(cluster, namespace=kube-system, kind=Deployment)
   → 没有 metrics-server → 未安装
 ```
 
@@ -71,4 +71,4 @@ status:
     - type: ScalingLimited    # True = 副本数被 min/max 限制
 ```
 
-> 诊断工具：`get_k8s_resource(kind=HorizontalPodAutoscaler, group=autoscaling, version=v2, name=<hpa>)` 读取 status 字段
+> 诊断工具：`get_k8s_resource(cluster, kind=HorizontalPodAutoscaler, group=autoscaling, version=v2, name=<hpa>)` 读取 status 字段

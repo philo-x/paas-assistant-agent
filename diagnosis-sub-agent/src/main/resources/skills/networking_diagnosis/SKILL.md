@@ -48,7 +48,7 @@ references:
 > **💡 最佳实践**：在深入追踪 Endpoints 或手工测试网络连通性前，优先进行自动化分析。
 
 ```
-工具：analyze(namespace=<ns>, name=<svc>, filters=["Service", "NetworkPolicy"])
+工具：analyze(cluster, namespace=<ns>, name=<svc>, filters=["Service", "NetworkPolicy"])
 → 若 K8sGPT 提示 Selector mismatch（如标签匹配错误），可直接修复，跳过底层探测。
 ```
 
@@ -63,7 +63,7 @@ references:
 
    工具：get_pod_linked_endpoints(cluster, namespace, name=<pod>)
    或使用 kubectl 兜底命令查看 Service 与 Endpoints 列表：
-   工具：kubectl(cluster, cmd="get svc,ep -n <namespace> -o wide")
+   工具：kubectl(cluster, args=["get", "svc,ep", "-n", "<namespace>", "-o", "wide"])
    → 若 Endpoints 为空 → 跳转 Step 2A（Selector 问题）
    → 若 Endpoints 不空但连接失败 → 跳转 Step 2B（Port 问题）
 
@@ -244,21 +244,11 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 
 ---
 
-## 诊断报告格式
-
-```
-**Root Cause:** [因果链中最早的失败事件或错误配置]
-**Evidence Chain:** [事件] → [触发] → [影响] → [用户观察到的症状]
-**Confidence:** [High / Medium / Low — 置信度依据]
-**Recommended Fix:** [面向运维人员的修复建议]
-```
-
-⚠️ **SRE 提醒**：K8s Events 默认只有 1 小时 TTL。如果未查询到相关 Events，不能断定没发生过故障，需在报告中声明 Events 可能已过 TTL 自动清理，并将 Confidence（置信度）适当降级。
 
 **示例（Selector 不匹配）**：
 > **Root Cause:** Service `spec.selector` 配置为 `{app: frontend}`，而 Deployment Pod template 的 labels 为 `{app: backend}`，Selector 无法匹配任何 Pod。  
 > **Evidence Chain:** Service selector `{app:frontend}` 与 Pod labels `{app:backend}` 不匹配 → Endpoints 控制器找不到符合条件的 Pod → Service Endpoints 列表为空 → 所有到 Service 的请求无目标，返回 connection refused。  
-> **Confidence:** High — `get_k8s_resource(Service)` 返回 selector={app:frontend}；`list_k8s_pod` 返回 Pod labels={app:backend}；`get_pod_linked_endpoints` 返回 Endpoints 为空。  
+> **Confidence:** High — `get_k8s_resource(cluster, kind=Service)` 返回 selector={app:frontend}；`list_k8s_pod` 返回 Pod labels={app:backend}；`get_pod_linked_endpoints` 返回 Endpoints 为空。  
 > **Recommended Fix:** 建议运维人员将 Service 的 `spec.selector` 修改为 `{app: backend}` 与 Pod labels 一致，或将 Deployment Pod template labels 修改为 `{app: frontend}`。
 
 **示例（ALB2 路由规则指向了空 Endpoints）**：
@@ -285,14 +275,14 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 
 在专用 MCP 工具（如 `get_pod_linked_endpoints` 等）受限或无法满足深度排查时，可使用只读 `kubectl` 兜底工具执行命令：
 - 宏观排查 Service、Endpoints 端口与 IP 映射：
-  `工具：kubectl(cluster, cmd="get svc,ep -n <namespace> -o wide")`
+  `工具：kubectl(cluster, args=["get", "svc,ep", "-n", "<namespace>", "-o", "wide"])`
 - 检查 Service 的详细配置及 Selector 匹配规则：
-  `工具：kubectl(cluster, cmd="describe service <service-name> -n <namespace>")`
+  `工具：kubectl(cluster, args=["describe", "service", "<service-name>", "-n", "<namespace>"])`
 - 查看网络策略（NetworkPolicy）的实际应用情况：
-  `工具：kubectl(cluster, cmd="get networkpolicy -n <namespace> -o yaml")`
+  `工具：kubectl(cluster, args=["get", "networkpolicy", "-n", "<namespace>", "-o", "yaml"])`
 - 排查 ALB2、Frontend 和 Rule 自定义资源配置关系：
-  `工具：kubectl(cluster, cmd="get alb2,frontends.crd.alauda.io,rules.crd.alauda.io -n cpaas-system -o wide")`
-  `工具：kubectl(cluster, cmd="get rules.crd.alauda.io <rule-name> -n cpaas-system -o yaml")`
+  `工具：kubectl(cluster, args=["get", "alb2,frontends.crd.alauda.io,rules.crd.alauda.io", "-n", "cpaas-system", "-o", "wide"])`
+  `工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "<rule-name>", "-n", "cpaas-system", "-o", "yaml"])`
 - 按优先级排序查看同一 Frontend 下所有 Rule 的域名、路径与优先级（用于排查优先级冲突）：
   `工具：kubectl(cluster, args=["get", "rules.crd.alauda.io", "-n", "cpaas-system", "-l", "alb2.cpaas.io/frontend=<frontend-name>", "--sort-by=.spec.priority", "-o", "custom-columns=NAME:.metadata.name,PRIORITY:.spec.priority,DOMAIN:.spec.domain,URL:.spec.url,DSL:.spec.dsl,SVC_NS:.spec.serviceGroup.services[*].namespace,SVC_NAME:.spec.serviceGroup.services[*].name,SVC_PORT:.spec.serviceGroup.services[*].port"])`
 - 查看 Rule 的后端 Service 配置（含跨 Namespace 信息）：

@@ -65,7 +65,7 @@ exec:
       但 initialDelaySeconds=5，Liveness 在应用就绪前开始探测。
 结果：CrashLoopBackOff，容器反复重启，实际应用没有问题。
 
-诊断：get_k8s_pod_logs(previous=true) → 日志显示应用每次都在初始化阶段被终止
+诊断：get_k8s_pod_logs(cluster, previous=true) → 日志显示应用每次都在初始化阶段被终止
 修复建议：将 initialDelaySeconds 增大到 > 应用启动时间（如 90s）
 ```
 

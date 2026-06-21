@@ -56,4 +56,4 @@ PV 进入 Released 状态（数据保留）
 | Local Storage | Delete |
 | 自定义 StorageClass | 由 `reclaimPolicy` 字段决定 |
 
-> 诊断时查看 StorageClass 详情：`get_k8s_resource(kind=StorageClass, name=<sc>)` → 读取 `reclaimPolicy` 字段
+> 诊断时查看 StorageClass 详情：`get_k8s_resource(cluster, kind=StorageClass, name=<sc>)` → 读取 `reclaimPolicy` 字段

@@ -60,8 +60,8 @@ spec:
   → connection refused = 连接被对端拒绝（表示网络本身可达但目标端口未正常监听，非 NetworkPolicy 拦截问题，需返回检查 targetPort）
 
 验证步骤：
-  1. list_k8s_resource(kind=NetworkPolicy) → 确认存在 Policy
-  2. get_k8s_resource(kind=NetworkPolicy, name=<policy>) → 读取规则
+  1. list_k8s_resource(cluster, kind=NetworkPolicy) → 确认存在 Policy
+  2. get_k8s_resource(cluster, kind=NetworkPolicy, name=<policy>) → 读取规则
   3. 对比 podSelector 是否覆盖 Target Pod
   4. 对比 ingress[].from[].podSelector 是否覆盖 Source Pod 的 Labels
   5. 对比 ports[] 是否包含目标端口

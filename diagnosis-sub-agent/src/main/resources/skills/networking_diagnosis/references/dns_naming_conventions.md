@@ -38,7 +38,7 @@ Headless Service（`clusterIP: None`）的 DNS 直接解析到 Pod IP：
 
 ```
 正常情况：CoreDNS Pod 在 kube-system 中处于 Running 状态
-          list_k8s_pod(namespace=kube-system) → 找 coredns-xxxx Pod
+          list_k8s_pod(cluster, namespace=kube-system) → 找 coredns-xxxx Pod
 
 故障表现：
   - nslookup 超时 → CoreDNS Pod 无响应或 CrashLoop

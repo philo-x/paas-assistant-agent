@@ -283,6 +283,7 @@ public class AgentScopeRunner {
             }
             return reactor.core.publisher.Mono.fromCallable(() -> {
                         String userId = parseUserIdFromMessages(requestMessages);
+                        String clusterId = parseClusterIdFromMessages(requestMessages);
                         // Per-request isolation: create a fresh agent instance
                         ReActAgent agent = buildReActAgent(userId);
                         agentCache.put(options.getTaskId(), agent);
@@ -290,6 +291,7 @@ public class AgentScopeRunner {
                         // Load existing session state from MySQL
                         Session session = new MysqlSession(dataSource, true);
                         agent.loadIfExists(session, options.getTaskId());
+                        cleanMemoryMessages(agent.getMemory());
 
                         if (agent.getMemory().getMessages().isEmpty()) {
                             agent.getMemory()
@@ -302,15 +304,22 @@ public class AgentScopeRunner {
                                                                     .build())
                                                     .build());
                         }
-                        return new Object[]{agent, session};
+                        return new Object[]{agent, clusterId, userId, session};
                     })
                     .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
                     .flatMapMany(params -> {
                         ReActAgent agent = (ReActAgent) params[0];
-                        Session session = (Session) params[1];
+                        String clusterId = (String) params[1];
+                        String userId = (String) params[2];
+                        Session session = (Session) params[3];
                         return agent.stream(requestMessages, FULL_STREAM_OPTIONS)
+                                .contextWrite(ctx -> ctx.put(AgentConstants.CTX_TOOL_CACHE, new ConcurrentHashMap<String, io.modelcontextprotocol.spec.McpSchema.CallToolResult>())
+                                        .put(AgentConstants.CTX_CLUSTER_ID, clusterId)
+                                        .put(AgentConstants.CTX_USER_ID, userId)
+                                        .put(AgentConstants.CTX_CHAT_ID, options.getTaskId()))
                                 .doOnComplete(() -> {
                                     try {
+                                        cleanMemoryMessages(agent.getMemory());
                                         agent.saveTo(session, options.getTaskId());
                                         logger.info("Successfully saved session state for taskId: {}", options.getTaskId());
                                     } catch (Exception e) {
@@ -324,7 +333,78 @@ public class AgentScopeRunner {
                                         cachedAgent.interrupt();
                                     }
                                 });
+                    })
+                    .onErrorResume(e -> {
+                        logger.error("Error during agent stream for taskId {}: ", options.getTaskId(), e);
+                        Msg errorMsg = Msg.builder()
+                                .role(MsgRole.ASSISTANT)
+                                .content(TextBlock.builder()
+                                        .text(String.format(AgentConstants.GUIDE_ERROR_MARKDOWN_TEMPLATE, e.getMessage()))
+                                        .build())
+                                .build();
+                        return Flux.just(new Event(EventType.AGENT_RESULT, errorMsg, false));
                     });
+        }
+
+        private void cleanMemoryMessages(io.agentscope.core.memory.Memory memory) {
+            if (memory == null) {
+                return;
+            }
+            cleanMessageList(memory.getMessages());
+            try {
+                java.lang.reflect.Method getOriginal = memory.getClass().getMethod("getOriginalMemoryMsgs");
+                Object origList = getOriginal.invoke(memory);
+                if (origList instanceof List<?> list) {
+                    cleanMessageList((List<Msg>) list);
+                }
+            } catch (Exception ignored) {
+            }
+        }
+
+        private void cleanMessageList(List<Msg> messages) {
+            if (messages == null) {
+                return;
+            }
+            for (Msg msg : messages) {
+                if (msg == null || msg.getContent() == null) {
+                    continue;
+                }
+                for (Object block : msg.getContent()) {
+                    if (block instanceof TextBlock textBlock) {
+                        try {
+                            java.lang.reflect.Field field = TextBlock.class.getDeclaredField("text");
+                            field.setAccessible(true);
+                            String rawText = (String) field.get(textBlock);
+                            if (rawText != null && !rawText.isEmpty()) {
+                                String cleaned = io.agentscope.examples.paasassistant.common.stream.ToolNarrator.cleanLlmTokens(rawText);
+                                field.set(textBlock, cleaned);
+                            }
+                        } catch (Exception e) {
+                            logger.warn("Failed to clean TextBlock via reflection: {}", e.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+
+        private String parseClusterIdFromMessages(List<Msg> requestMessages) {
+            for (Msg msg : requestMessages) {
+                if (msg.getContent() == null) {
+                    continue;
+                }
+                for (var block : msg.getContent()) {
+                    if (block instanceof TextBlock textBlock) {
+                        String text = textBlock.getText();
+                        if (text != null) {
+                            Matcher matcher = AgentConstants.CLUSTER_ID_PATTERN.matcher(text);
+                            if (matcher.find()) {
+                                return matcher.group(1).trim();
+                            }
+                        }
+                    }
+                }
+            }
+            return "";
         }
 
         private String parseUserIdFromMessages(List<Msg> requestMessages) {

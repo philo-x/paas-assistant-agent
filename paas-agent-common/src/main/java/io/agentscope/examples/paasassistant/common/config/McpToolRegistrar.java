@@ -15,9 +15,8 @@ import java.util.List;
 /**
  * Centralised MCP tool registration for K8s-related tool groups.
  *
- * <p>Both the <em>analyze-sub-agent</em> and <em>diagnosis-sub-agent</em> share the
- * same k8sgpt + KOM MCP tool groups.  This utility class eliminates the duplication
- * by providing a single {@link #registerK8sToolGroups} entry point.
+ * <p>This utility class provides a single {@link #registerK8sToolGroups} entry point
+ * for the diagnosis-sub-agent's k8sgpt + KOM MCP tool groups.
  */
 public final class McpToolRegistrar {
 

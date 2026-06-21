@@ -46,15 +46,15 @@ Step 1：确认 Pod 的 ServiceAccount
   describe_k8s_pod → 读取 "Service Account" 字段
 
 Step 2：查找 SA 绑定的 RoleBinding（Namespace 级）
-  list_k8s_resource(kind=RoleBinding, namespace=<ns>)
+  list_k8s_resource(cluster, kind=RoleBinding, namespace=<ns>)
   → 找 subjects[].name == <sa-name> AND subjects[].kind == ServiceAccount
 
 Step 3：查找 SA 绑定的 ClusterRoleBinding（集群级）
-  list_k8s_resource(kind=ClusterRoleBinding)
+  list_k8s_resource(cluster, kind=ClusterRoleBinding)
   → 找 subjects[].name == <sa-name> AND subjects[].namespace == <ns>
 
 Step 4：查看 Role/ClusterRole 的权限规则
-  get_k8s_resource(kind=Role 或 ClusterRole, name=<role>)
+  get_k8s_resource(cluster, kind=Role 或 ClusterRole, name=<role>)
   → 读取 rules[].{apiGroups, resources, verbs}
 
 Step 5：对比应用实际需要的权限

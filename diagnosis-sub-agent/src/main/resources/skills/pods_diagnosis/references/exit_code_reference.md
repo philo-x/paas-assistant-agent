@@ -9,7 +9,7 @@
 | Exit Code | 信号/来源 | 含义 | 典型排查方向 |
 |-----------|---------|------|------------|
 | `0` | 正常退出 | 容器进程正常结束 | 检查是否是一次性 Job，若是长期服务则检查 CMD |
-| `1` | 应用逻辑错误 | 应用主进程以非零码退出 | 查看 `get_k8s_pod_logs(previous=true)` |
+| `1` | 应用逻辑错误 | 应用主进程以非零码退出 | 查看 `get_k8s_pod_logs(cluster, previous=true)` |
 | `2` | Shell 语法错误 | bash/sh entrypoint 脚本语法错误 | 检查 command/args 中的 shell 脚本 |
 | `126` | 权限拒绝 | 命令存在但无执行权限 | 检查镜像内文件系统权限 |
 | `127` | 命令不存在 | PATH 中找不到指定命令 | 检查 `command` 字段，确认命令在镜像中存在 |
@@ -30,7 +30,7 @@ OOMKilled（Exit Code 137）是最常见的崩溃原因之一。
 诊断步骤：
 1. describe_k8s_pod → Last State.Exit Code = 137
 2. get_k8s_pod_resource_usage → 实际内存使用量接近或超过 limits.memory
-3. get_k8s_pod_logs(previous=true) → 查看 OOM 前的应用行为（通常是内存持续增长）
+3. get_k8s_pod_logs(cluster, previous=true) → 查看 OOM 前的应用行为（通常是内存持续增长）
 
 关键字段对比：
   spec.containers[].resources.limits.memory  = 内存上限（如 512Mi）

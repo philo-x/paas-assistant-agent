@@ -76,7 +76,7 @@ export interface ChatRequest {
   user_id: string
   user_query: string
   cluster_id: string
-  mode?: 'flash' | 'pro'
+  mode?: 'diagnosis' | 'guide'
 }
 
 export type StructuredChatRequest = ChatRequest

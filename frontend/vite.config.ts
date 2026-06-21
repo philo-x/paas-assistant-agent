@@ -32,8 +32,8 @@ export default defineConfig({
         target: 'http://localhost:10006',
         changeOrigin: true,
       },
-      '/api/analyze': {
-        target: 'http://localhost:10007',
+      '/api/guide': {
+        target: 'http://localhost:10005',
         changeOrigin: true,
       },
     },

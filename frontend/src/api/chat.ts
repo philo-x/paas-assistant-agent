@@ -100,7 +100,7 @@ export class ChatApiService {
 
   async sendStructuredMessage(
     query: string,
-    mode: 'flash' | 'pro',
+    mode: 'diagnosis' | 'guide',
     onEvent: (event: StructuredSseEvent) => void,
     signal?: AbortSignal
   ): Promise<void> {
@@ -120,7 +120,7 @@ export class ChatApiService {
       headers['Authorization'] = `Bearer ${this.configStore.token}`
     }
 
-    const apiPath = mode === 'flash' ? '/api/analyze/chat/structured' : '/api/diagnosis/chat/structured'
+    const apiPath = mode === 'guide' ? '/api/guide/chat/structured' : '/api/diagnosis/chat/structured'
     const requestUrl = `${this.configStore.baseUrl}${apiPath}`
 
     const response = await fetch(requestUrl, {

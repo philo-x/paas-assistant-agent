@@ -22,13 +22,11 @@ const labels: ThoughtsTimelineLabels = {
   agentLabels: {
     supervisor_agent: 'Supervisor',
     diagnosis_agent: 'Diagnosis Agent',
-    analyze_agent: 'Quick Diagnosis Agent',
     guide_agent: 'Guide Agent'
   },
   titles: {
     supervisorInitial: '分析用户请求',
     diagnosisInitial: '诊断 Kubernetes 问题',
-    analyzeInitial: '快速扫描集群状态',
     guideInitial: '整理解释与建议',
     afterTool: '分析工具结果',
     afterSubAgent: '整合子 Agent 结果',

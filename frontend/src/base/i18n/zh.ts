@@ -62,15 +62,15 @@ export default {
   },
   chat: {
     mode: {
-      flash: "极速扫描",
-      pro: "深度诊断",
-      flashDesc: "专注资源查找与快速扫描，响应极速",
-      proDesc: "专注应用、资源诊断与故障根因排查，推理深入"
+      diagnosis: "诊断",
+      guide: "咨询",
+      diagnosisDesc: "深度分析与诊断集群中的故障问题",
+      guideDesc: "解释 YAML 字段、解读输出或推荐命令"
     },
     title: 'PaaS 平台 Agent 助手',
     placeholder: {
-      flash: '请输入资源查找或快速分析问题，例如：kube-system 命名空间下有哪些 Pod？',
-      pro: '请输入需要深度诊断的故障或现象，例如：诊断 kube-system 命名空间下的 Deployment coredns'
+      diagnosis: '请输入需要深度诊断的故障或现象，例如：诊断 kube-system 命名空间下的 Deployment coredns',
+      guide: '请输入需要咨询的资源字段或命令，例如：解释 Deployment 的 spec.strategy 字段'
     },
     send: '发送',
     clear: '清空对话',
@@ -126,13 +126,11 @@ export default {
     },
     agentNames: {
       supervisor: 'Supervisor',
-      analyze: 'Analyze Agent',
       diagnosis: 'Diagnosis Agent',
       guide: 'Guide Agent'
     },
     timelineTitles: {
       supervisorInitial: '分析用户请求',
-      analyzeInitial: '快速扫描集群状态',
       diagnosisInitial: '诊断 Kubernetes 问题',
       guideInitial: '整理解释与建议',
       afterTool: '分析工具结果',
@@ -151,7 +149,6 @@ export default {
       emptyAnswer: '诊断未完成。可能由于命名空间资源过多导致请求超时被取消，请更换为更具体的诊断范围或查看思考时间线中的执行轨迹。'
     },
     toolNames: {
-      callAnalyzeAgent: '调用 analyze_agent',
       callDiagnosisAgent: '调用 diagnosis_agent',
       callGuideAgent: '调用 guide_agent'
     }

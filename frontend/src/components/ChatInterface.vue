@@ -61,7 +61,7 @@ const configStore = useConfigStore()
 const isManagedByPaaS = computed(() => !!configStore.token)
 
 const inputValue = ref('')
-const chatMode = ref<'flash' | 'pro'>('pro')
+const chatMode = ref<'diagnosis' | 'guide'>('diagnosis')
 const isDropdownOpen = ref(false)
 const isTooltipOpen = ref(false)
 const handleDropdownVisibleChange = (open: boolean) => {
@@ -422,13 +422,13 @@ onMounted(() => {
           <Input.TextArea
             id="chatInputTextArea"
             v-model:value="inputValue"
-            :placeholder="chatMode === 'flash' ? t('chat.placeholder.flash') : t('chat.placeholder.pro')"
+            :placeholder="chatMode === 'diagnosis' ? t('chat.placeholder.diagnosis') : t('chat.placeholder.guide')"
             :auto-size="{ minRows: 2, maxRows: 5 }"
             :disabled="chatStore.isLoading"
             class="message-input"
             @keydown.enter.exact.prevent="sendMessage"
           />
-           <Tooltip 
+          <Tooltip 
             placement="topRight" 
             :trigger="isDropdownOpen ? [] : ['hover']"
             :open="isDropdownOpen ? false : isTooltipOpen"
@@ -437,10 +437,10 @@ onMounted(() => {
             <template #title>
               <div style="padding: 4px; font-size: 12px; line-height: 1.6;">
                 <div style="margin-bottom: 6px;">
-                  <strong style="color: #60a5fa;">{{ t('chat.mode.flash') }}</strong>: {{ t('chat.mode.flashDesc') }}
+                  <strong style="color: #60a5fa;">{{ t('chat.mode.diagnosis') }}</strong>: {{ t('chat.mode.diagnosisDesc') }}
                 </div>
                 <div>
-                  <strong style="color: #60a5fa;">{{ t('chat.mode.pro') }}</strong>: {{ t('chat.mode.proDesc') }}
+                  <strong style="color: #60a5fa;">{{ t('chat.mode.guide') }}</strong>: {{ t('chat.mode.guideDesc') }}
                 </div>
               </div>
             </template>
@@ -449,8 +449,8 @@ onMounted(() => {
               class="mode-select"
               @dropdownVisibleChange="handleDropdownVisibleChange"
             >
-              <Select.Option value="flash">{{ t('chat.mode.flash') }}</Select.Option>
-              <Select.Option value="pro">{{ t('chat.mode.pro') }}</Select.Option>
+              <Select.Option value="diagnosis">{{ t('chat.mode.diagnosis') }}</Select.Option>
+              <Select.Option value="guide">{{ t('chat.mode.guide') }}</Select.Option>
             </Select>
           </Tooltip>
         </div>
@@ -754,8 +754,6 @@ onMounted(() => {
 .mode-select:hover :deep(.ant-select-selector) {
   background: #f1f5f9 !important;
 }
-
-
 .user-id-modal {
   position: fixed;
   inset: 0;

@@ -6,14 +6,14 @@ description: >
   诊断 Deployment、StatefulSet、DaemonSet 等工作负载的生命周期问题：副本数为零、滚动更新卡住、HPA 无法获取指标、蓝绿/金丝雀发布流量异常、有状态应用数据不一致、DaemonSet 节点分布异常等。本 Skill 为只读诊断，不执行任何变更。
 scope: read-only
 triggers:
-  - "Deployment / StatefulSet / DaemonSet AVAILABLE 副本数为 0，服务不可用"
+  - "Deployment / StatefulSet / DaemonSet AVAILABLE 副本数为 0，服务不可用，且用户要求排查"
   - "kubectl rollout status 长时间未完成"
   - "新版本发布期间服务完全中断或部分节点异常"
   - "蓝绿发布切换后用户仍访问旧版本"
   - "金丝雀版本流量占比与预期不符"
-  - "HPA TARGETS 列显示 unknown，不触发扩缩容"
+  - "HPA TARGETS 列显示 unknown，不触发扩缩容，且作为故障现象输入"
   - "StatefulSet Pod 重启后数据丢失，Pod 名称随机变化"
-  - "DaemonSet 某些节点上无 Pod 或分布不均"
+  - "DaemonSet 某些节点上无 Pod 或分布不均，且用户询问原因"
 references:
   - references/rollout_strategy_guide.md   # 滚动更新策略参数说明
   - references/hpa_metrics_guide.md        # HPA 指标配置与 metrics-server 排查
@@ -28,9 +28,10 @@ references:
 ### Step 0：自动化工作负载异常扫描（K8sGPT）
 
 > **💡 最佳实践**：在逐步排查控制器和 Pod 之前，优先让 K8sGPT 扫描常见的副本/调度/HPA错误。
+> **💡 最佳实践**：在逐步排查控制器和 Pod 之前，优先让 K8sGPT 扫描常见的副本/调度/HPA错误。
 
 ```
-工具：analyze(namespace=<ns>, name=<workload-name>, filters=["Deployment", "StatefulSet", "DaemonSet", "ReplicaSet", "HorizontalPodAutoscaler"])
+工具：analyze(cluster, namespace=<ns>, name=<workload-name>, filters=["Deployment", "StatefulSet", "DaemonSet", "ReplicaSet", "HorizontalPodAutoscaler"])
 → 快速识别 AVAILABLE 副本数为零、HPA 找不到 Metrics，或滚动更新卡住等常见问题。
 ```
 
@@ -74,11 +75,11 @@ DaemonSet 问题 → Step 2F（DaemonSet 节点分布异常）
 
 ```
 ① 查看发布状态
-   工具：kubectl(cluster, cmd="rollout status <workload-kind>/<name> -n <namespace>")
+   工具：kubectl(cluster, args=["rollout", "status", "<workload-kind>/<name>", "-n", "<namespace>"])
    → 若长时间未完成 → 卡住（注：对 Deployment，也可优先用 get_k8s_deployment_rollout_status 工具）
 
 ② 查看发布历史（识别新旧版本信息）
-   工具：kubectl(cluster, cmd="rollout history <workload-kind>/<name> -n <namespace>")
+   工具：kubectl(cluster, args=["rollout", "history", "<workload-kind>/<name>", "-n", "<namespace>"])
    → 记录当前版本号（revision）
 
 ③ 查看工作负载详细信息（关键：确认是否超时）
@@ -127,7 +128,7 @@ DaemonSet 问题 → Step 2F（DaemonSet 节点分布异常）
    工具：get_k8s_resource(cluster, namespace, kind=HorizontalPodAutoscaler,
          group=autoscaling, version=v2, name=<hpa>)
    → 读取 spec.metrics 字段，确认是 Resource / Custom / External 指标
-   → 查看 HPA 的 Events 记录（通过 describe_k8s_resource(HPA) 或 list_k8s_event）
+   → 查看 HPA 的 Events 记录（通过 describe_k8s_resource(cluster, kind=HorizontalPodAutoscaler) 或 list_k8s_event）
    ⚠️ SRE 提醒：HPA 缩容有默认 5 分钟（缩容）或根据 behavior 配置的冷却期。如果指标满足条件但未发生动作，检查 Events 中是否提示由于 cooldown 窗口未过而限制了操作，不可仅判定 metrics-server 故障。
 
 ⑤ 查看历史监控指标趋势 (以验证 HPA 扩缩容判定是否合理)
@@ -195,26 +196,18 @@ DaemonSet 问题 → Step 2F（DaemonSet 节点分布异常）
    → 若节点存在污点 (Taints) 但没有相应容忍度，Pod 将无法调度到该节点
 
 ③ 结合节点状态排查未调度原因
-   工具：分析 node 状态为何该节点没有运行对应的 DaemonSet Pod
+   工具：list_k8s_node(cluster)
+   工具：describe_k8s_resource(cluster, kind="Node", name="<node>")
+   → 分析 node 状态为何该节点没有运行对应的 DaemonSet Pod
 ```
 
 ---
 
-## 诊断报告格式
-
-```
-**Root Cause:** [因果链中最早的失败事件或错误配置]
-**Evidence Chain:** [事件] → [触发] → [影响] → [用户观察到的症状]
-**Confidence:** [High / Medium / Low — 置信度依据]
-**Recommended Fix:** [面向运维人员的修复建议]
-```
-
-⚠️ **SRE 提醒**：K8s Events 默认只有 1 小时 TTL。如果未查询到相关 Events，不能断定没发生过故障，需在报告中声明 Events 可能已过 TTL 自动清理，并将 Confidence（置信度）适当降级。
 
 **示例（HPA metrics-server 缺失）**：
 > **Root Cause:** 集群未安装 metrics-server，HPA 控制器无法从 metrics API 获取 Pod 的 CPU 使用率。  
 > **Evidence Chain:** metrics-server 缺失 → HPA 调用 `metrics.k8s.io` API 失败 → HPA `status.currentMetrics` 为空，TARGETS 显示 `<unknown>` → HPA 无法计算目标副本数，replicas 始终停留在 minReplicas。  
-> **Confidence:** High — `list_k8s_resource(kube-system, kind=Deployment)` 未找到 metrics-server；`get_k8s_deployment_hpa_list` 返回 `TARGETS=<unknown>/50%`。  
+> **Confidence:** High — `list_k8s_resource(cluster, kube-system, kind=Deployment)` 未找到 metrics-server；`get_k8s_deployment_hpa_list` 返回 `TARGETS=<unknown>/50%`。  
 > **Recommended Fix:** 建议运维人员在 kube-system 命名空间安装 metrics-server（官方 components.yaml），本地集群需额外添加 `--kubelet-insecure-tls` 启动参数。
 
 ---
@@ -223,9 +216,9 @@ DaemonSet 问题 → Step 2F（DaemonSet 节点分布异常）
 
 在排查各类应用工作负载（Deployment, StatefulSet, DaemonSet）或 HPA 遇到特定自动化或专用 MCP 工具失效时，可使用只读 `kubectl` 兜底工具执行命令：
 - 宏观排查工作负载副本就绪及配置详情：
-  `工具：kubectl(cluster, cmd="get deploy,sts,ds -n <namespace> -o wide")`
+  `工具：kubectl(cluster, args=["get", "deploy,sts,ds", "-n", "<namespace>", "-o", "wide"])`
 - 详细排查特定工作负载滚动更新状态与版本历史：
-  `工具：kubectl(cluster, cmd="rollout status <workload-kind>/<workload-name> -n <namespace>")`
-  `工具：kubectl(cluster, cmd="rollout history <workload-kind>/<workload-name> -n <namespace>")`
+  `工具：kubectl(cluster, args=["rollout", "status", "<workload-kind>/<workload-name>", "-n", "<namespace>"])`
+  `工具：kubectl(cluster, args=["rollout", "history", "<workload-kind>/<workload-name>", "-n", "<namespace>"])`
 - 排查 HPA 自动缩容状态及限制阈值：
-  `工具：kubectl(cluster, cmd="get hpa -n <namespace> -o yaml")`
+  `工具：kubectl(cluster, args=["get", "hpa", "-n", "<namespace>", "-o", "yaml"])`

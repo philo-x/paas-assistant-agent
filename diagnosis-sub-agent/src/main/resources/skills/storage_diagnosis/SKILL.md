@@ -9,7 +9,7 @@ description: >
   本 Skill 为只读诊断，不执行任何变更。
 scope: read-only
 triggers:
-  - "PVC 状态长期处于 Pending"
+  - "PVC 状态长期处于 Pending，且用户询问原因或要求排查"
   - "Pod 状态为 ContainerCreating，Events 含 Unable to mount volumes"
   - "容器日志报 Permission denied 写入挂载目录"
   - "StatefulSet 多副本之间数据相互损坏"
@@ -31,7 +31,7 @@ references:
 > **💡 最佳实践**：在深入追踪 PV 和挂载事件前，优先让 K8sGPT 进行定界分析。
 
 ```
-工具：analyze(namespace=<ns>, name=<pvc-name>, filters=["PersistentVolumeClaim"])
+工具：analyze(cluster, namespace=<ns>, name=<pvc-name>, filters=["PersistentVolumeClaim"])
 → K8sGPT 能够自动分析 PVC Pending 的原因（如 StorageClass 不存在、容量不足等），是最快速的一键定界手段。
 ```
 
@@ -178,21 +178,11 @@ references:
 
 ---
 
-## 诊断报告格式
-
-```
-**Root Cause:** [因果链中最早的失败事件或错误配置]
-**Evidence Chain:** [事件] → [触发] → [影响] → [用户观察到的症状]
-**Confidence:** [High / Medium / Low — 置信度依据]
-**Recommended Fix:** [面向运维人员的修复建议，需标注数据操作风险等级]
-```
-
-⚠️ **SRE 提醒**：K8s Events 默认只有 1 小时 TTL。如果未查询到相关 Events，不能断定没发生过故障，需在报告中声明 Events 可能已过 TTL 自动清理，并将 Confidence（置信度）适当降级。
 
 **示例（PVC StorageClass 不存在）**：
 > **Root Cause:** PVC `spec.storageClassName` 配置为 "fast-ssd"，但该 StorageClass 在集群中不存在（仅有 "standard"）。  
 > **Evidence Chain:** PVC storageClassName="fast-ssd" 写入 → PVC 控制器找不到匹配 StorageClass → 无法触发动态制备 PV → PVC 持续 Pending → Pod 因 Volume 未绑定无法完成挂载，卡在 ContainerCreating。  
-> **Confidence:** High — `list_k8s_resource(kind=StorageClass)` 仅返回 "standard"；`get_k8s_resource(PVC)` 显示 storageClassName="fast-ssd"。  
+> **Confidence:** High — `list_k8s_resource(cluster, kind=StorageClass)` 仅返回 "standard"；`get_k8s_resource(cluster, kind=PersistentVolumeClaim)` 显示 storageClassName="fast-ssd"。  
 > **Recommended Fix:** ⚠️【数据安全操作，需运维人员确认】建议将 PVC 的 `storageClassName` 修改为 "standard"（注意：部分字段修改需删除并重建 PVC，重建前需确认是否有数据需要迁移）。
 
 ---
@@ -201,10 +191,10 @@ references:
 
 在 PV/PVC、CSI 挂载遇到特定接口不可用或返回字段不足时，可使用只读 `kubectl` 兜底工具执行命令：
 - 宏观排查 PV/PVC 状态、所属 StorageClass 和容量大小：
-  `工具：kubectl(cluster, cmd="get pvc,pv -n <namespace> -o wide")`
+  `工具：kubectl(cluster, args=["get", "pvc,pv", "-n", "<namespace>", "-o", "wide"])`
 - 检查存储类（StorageClass）定义及制备器类型：
-  `工具：kubectl(cluster, cmd="get storageclass -o yaml")`
+  `工具：kubectl(cluster, args=["get", "storageclass", "-o", "yaml"])`
 - 检查具体 PV 的 ReclaimPolicy、卷路径等细节信息：
-  `工具：kubectl(cluster, cmd="describe pv <pv-name>")`
+  `工具：kubectl(cluster, args=["describe", "pv", "<pv-name>"])`
 - 查看持久卷的卷挂载挂起状态（排查多节点挂载卡死）：
-  `工具：kubectl(cluster, cmd="get volumeattachment -o wide")`
+  `工具：kubectl(cluster, args=["get", "volumeattachment", "-o", "wide"])`

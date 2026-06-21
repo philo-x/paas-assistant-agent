@@ -23,7 +23,7 @@ references:
 # configuration_security — 配置与安全诊断
 
 > **⚠️ 只读模式**：本 Skill 仅输出诊断报告，不执行任何修复变更。  
-> **🔒 安全提示**：`get_k8s_resource(kind=Secret)` 返回 Base64 编码内容，**禁止**在诊断报告中输出 Secret 明文值。
+> **🔒 安全提示**：`get_k8s_resource(cluster, kind=Secret)` 返回 Base64 编码内容，**禁止**在诊断报告中输出 Secret 明文值。
 
 ## 诊断工作流
 
@@ -32,7 +32,7 @@ references:
 > **💡 最佳实践**：在繁杂的 Events 和 RBAC 绑定关系中迷失前，先尝试让 K8sGPT 一键发现缺失的配置或被拦截的准入控制。
 
 ```
-工具：analyze(namespace=<ns>, name=<pod-or-workload>, filters=["Pod", "MutatingWebhookConfiguration", "ValidatingWebhookConfiguration"])
+工具：analyze(cluster, namespace=<ns>, name=<pod-or-workload>, filters=["Pod", "MutatingWebhookConfiguration", "ValidatingWebhookConfiguration"])
 → K8sGPT 可以快速识别 ConfigMap/Secret Key 缺失、Webhook 拦截或者部分权限安全导致的启动失败，作为手工检索 Events 之前的有效补充。
 ```
 
@@ -64,7 +64,7 @@ references:
    工具：list_k8s_resource(cluster, namespace, kind=RoleBinding,
          group=rbac.authorization.k8s.io, version=v1)
    或使用 kubectl 兜底命令批量查询 RoleBinding 和 ClusterRoleBinding：
-   工具：kubectl(cluster, cmd="get rolebinding,clusterrolebinding -n <namespace> -o wide")
+   工具：kubectl(cluster, args=["get", "rolebinding,clusterrolebinding", "-n", "<namespace>", "-o", "wide"])
    → 找 subjects 中包含该 ServiceAccount 的 RoleBinding
    ⚠️ SRE 提醒：在刚刚应用新 YAML（如刚刚创建/更新了 RoleBinding）的瞬间，API-Server 的鉴权或 Kubelet 鉴权缓存可能存在 10-30 秒的短时间延迟。若发现 RoleBinding 配置正确但仍然偶发/瞬间报 403，需考虑缓存同步延迟因素。
 
@@ -101,14 +101,14 @@ references:
    工具：get_k8s_resource(cluster, namespace, kind=ConfigMap,
          name=<cm>, version=v1)
    或使用 kubectl 兜底命令查看 ConfigMap 详情：
-   工具：kubectl(cluster, cmd="get configmap <cm> -n <namespace> -o yaml")
+   工具：kubectl(cluster, args=["get", "configmap", "<cm>", "-n", "<namespace>", "-o", "yaml"])
    → 读取 data 字段的所有 key
 
 ③ 对比 Pod 引用的 key 与 ConfigMap 实际 key 是否一致
    → 若 Pod 引用的 key 不在 ConfigMap data 中 → 确认问题根因
 ```
 
-> ⚠️ 若引用的是 Secret，同样使用 `get_k8s_resource(kind=Secret)` 查看 data 字段的 key 列表，但**不得输出具体的 Base64 值**。
+> ⚠️ 若引用的是 Secret，同样使用 `get_k8s_resource(cluster, kind=Secret)` 查看 data 字段的 key 列表，但**不得输出具体的 Base64 值**。
 
 ---
 
@@ -172,21 +172,11 @@ references:
 
 ---
 
-## 诊断报告格式
-
-```
-**Root Cause:** [因果链中最早的失败事件或错误配置]
-**Evidence Chain:** [事件] → [触发] → [影响] → [用户观察到的症状]
-**Confidence:** [High / Medium / Low — 置信度依据]
-**Recommended Fix:** [面向运维人员的修复建议]
-```
-
-⚠️ **SRE 提醒**：K8s Events 默认只有 1 小时 TTL。如果未查询到相关 Events，不能断定没发生过故障，需在报告中声明 Events 可能已过 TTL 自动清理，并将 Confidence（置信度）适当降级。
 
 **示例（ConfigMap Key 缺失）**：
 > **Root Cause:** Pod 通过 `valueFrom.configMapKeyRef` 引用 ConfigMap "app-config" 的键 "database_host"，但该 ConfigMap 中实际不存在此键（仅有 "app_name" 和 "app_version"）。  
 > **Evidence Chain:** Pod spec 引用 `configMapKeyRef.key="database_host"` → K8s Kubelet 在启动容器前验证 ConfigMap 键存在性失败 → 容器配置注入失败 → Pod 进入 `CreateContainerConfigError` 状态，无法启动。  
-> **Confidence:** High — `describe_k8s_pod` Events 含 "couldn't find key database_host in ConfigMap default/app-config"；`get_k8s_resource(ConfigMap, app-config)` data 字段中无 database_host 键。  
+> **Confidence:** High — `describe_k8s_pod` Events 含 "couldn't find key database_host in ConfigMap default/app-config"；`get_k8s_resource(cluster, ConfigMap, app-config)` data 字段中无 database_host 键。  
 > **Recommended Fix:** 建议运维人员在 ConfigMap "app-config" 的 `data` 字段中补充 `database_host: "<正确的数据库地址>"`，补充后需重启 Pod（通过 rollout restart）使变更生效。
 
 ---
@@ -195,9 +185,9 @@ references:
 
 在排查安全性准入或 RBAC/配置项时遇到专用 MCP 工具失效时，可使用只读 `kubectl` 兜底工具执行命令：
 - 宏观排查 Namespace 内的 RBAC 绑定关系：
-  `工具：kubectl(cluster, cmd="get role,rolebinding,serviceaccount -n <namespace> -o wide")`
+  `工具：kubectl(cluster, args=["get", "role,rolebinding,serviceaccount", "-n", "<namespace>", "-o", "wide"])`
 - 详细查看 ClusterRoleBinding 和全局权限（只读）：
-  `工具：kubectl(cluster, cmd="get clusterrolebinding -o wide")`
+  `工具：kubectl(cluster, args=["get", "clusterrolebinding", "-o", "wide"])`
 - 检查 ConfigMap / Secret 的数据键名（只读查看，禁止在报告中明文打印 Secret 具体值）：
-  `工具：kubectl(cluster, cmd="get configmap <cm-name> -n <namespace> -o yaml")`
-  `工具：kubectl(cluster, cmd="get secret <secret-name> -n <namespace> -o yaml")`
+  `工具：kubectl(cluster, args=["get", "configmap", "<cm-name>", "-n", "<namespace>", "-o", "yaml"])`
+  `工具：kubectl(cluster, args=["get", "secret", "<secret-name>", "-n", "<namespace>", "-o", "yaml"])`

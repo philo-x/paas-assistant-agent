@@ -49,31 +49,31 @@ spec:
 
 ---
 # ==========================================
-# Analyze Sub-Agent
+# Guide Sub-Agent
 # ==========================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: analyze-sub-agent
+  name: guide-sub-agent
   namespace: paas-ai
   labels:
-    app: analyze-sub-agent
+    app: guide-sub-agent
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: analyze-sub-agent
+      app: guide-sub-agent
   template:
     metadata:
       labels:
-        app: analyze-sub-agent
+        app: guide-sub-agent
     spec:
       containers:
-        - name: analyze-sub-agent
-          image: <YOUR_REGISTRY_URL>/analyze-sub-agent:1.0.11 # 替换为实际镜像地址
+        - name: guide-sub-agent
+          image: <YOUR_REGISTRY_URL>/guide-sub-agent:1.0.12 # 替换为实际镜像地址
           imagePullPolicy: Always
           ports:
-            - containerPort: 10007
+            - containerPort: 10005
           resources:
             requests:
               cpu: 500m
@@ -86,13 +86,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: analyze-sub-agent-svc
+  name: guide-sub-agent-svc
   namespace: paas-ai
 spec:
   selector:
-    app: analyze-sub-agent
+    app: guide-sub-agent
   ports:
     - protocol: TCP
-      port: 10007
-      targetPort: 10007
+      port: 10005
+      targetPort: 10005
   type: ClusterIP

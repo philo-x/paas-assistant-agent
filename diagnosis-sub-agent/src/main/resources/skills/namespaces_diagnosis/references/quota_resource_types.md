@@ -41,7 +41,7 @@
   "forbidden: [cpu request is over quota]"
 
 查看具体超出的资源：
-  get_k8s_resource(kind=ResourceQuota, name=<quota>)
+  get_k8s_resource(cluster, kind=ResourceQuota, name=<quota>)
   → status.used.<resource> >= status.hard.<resource>
 
 计算剩余可用量：

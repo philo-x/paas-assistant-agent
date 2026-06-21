@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Central constants repository for the analyze-sub-agent module.
+ * Central constants repository for the paas-assistant-agent modules.
  *
  * <p>All magic strings, Reactor context keys, MCP parameter names, and
  * regex patterns are defined here to avoid scatter across classes and
@@ -127,11 +127,9 @@ public final class AgentConstants {
     // -------------------------------------------------------------------------
 
     public static final String AGENT_NAME_DIAGNOSIS = "diagnosis_agent";
-    public static final String AGENT_NAME_ANALYZE = "analyze_agent";
     public static final String AGENT_NAME_GUIDE = "guide_agent";
 
     public static final String AGENT_DESC_DIAGNOSIS = "Diagnosis agent for PaaS Assistant";
-    public static final String AGENT_DESC_ANALYZE = "Quick diagnosis agent for PaaS Assistant";
     public static final String AGENT_DESC_GUIDE = "Guide agent for PaaS Assistant";
 
     // -------------------------------------------------------------------------
@@ -139,7 +137,6 @@ public final class AgentConstants {
     // -------------------------------------------------------------------------
 
     public static final int MAX_ITERS_DIAGNOSIS = 150;
-    public static final int MAX_ITERS_ANALYZE = 80;
     public static final int MAX_ITERS_GUIDE = 50;
 
     // -------------------------------------------------------------------------
@@ -147,7 +144,6 @@ public final class AgentConstants {
     // -------------------------------------------------------------------------
 
     public static final String MEMORY_NAME_DIAGNOSIS = "DiagnosisAgent";
-    public static final String MEMORY_NAME_ANALYZE = "AnalyzeAgent";
     public static final String MEMORY_NAME_GUIDE = "GuideAgent";
 
     public static final long DEFAULT_MEMORY_TIMEOUT_SECONDS = 60L;
@@ -166,8 +162,8 @@ public final class AgentConstants {
     public static final String DIAGNOSIS_ERROR_MARKDOWN_TEMPLATE =
             "\n\n> [!CAUTION]\n> **代理执行异常**\n> \n> 抱歉，诊断过程中遇到了技术故障：\n> `%s`\n> \n> 请尝试精简您的问题，或者稍后重试。";
 
-    public static final String ANALYZE_ERROR_MARKDOWN_TEMPLATE =
-            "\n\n> [!CAUTION]\n> **代理执行异常**\n> \n> 抱歉，助手在处理您的请求时遇到了技术故障：\n> `%s`\n> \n> 请尝试精简您的问题，或者稍后重试。";
+    public static final String GUIDE_ERROR_MARKDOWN_TEMPLATE =
+            "\n\n> [!CAUTION]\n> **代理执行异常**\n> \n> 抱歉，指南助手在处理请求时遇到了技术故障：\n> `%s`\n> \n> 请尝试精简您的问题，或者稍后重试。";
 
     // -------------------------------------------------------------------------
     // Controller HTTP Headers, Stages & Comments

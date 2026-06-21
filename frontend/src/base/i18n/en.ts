@@ -62,15 +62,15 @@ export default {
   },
   chat: {
     mode: {
-      flash: "Quick Scan",
-      pro: "Deep Diagnosis",
-      flashDesc: "Focus on resource lookup and quick scanning, fast response",
-      proDesc: "Focus on application and resource diagnosis and root-cause analysis, in-depth reasoning"
+      diagnosis: "Diagnosis",
+      guide: "Consultation",
+      diagnosisDesc: "Deep analysis and diagnosis of cluster issues",
+      guideDesc: "Explain YAML fields, interpret output or recommend commands"
     },
     title: 'PaaS Platform Agent Assistant',
     placeholder: {
-      flash: 'Enter questions about resource lookup or quick scan, e.g., what Pods are in the kube-system namespace?',
-      pro: 'Enter problems requiring deep diagnosis, e.g., diagnose Deployment coredns in the kube-system namespace'
+      diagnosis: 'Enter problems requiring deep diagnosis, e.g., diagnose Deployment coredns in the kube-system namespace',
+      guide: 'Enter questions about resource fields or commands, e.g., explain the spec.strategy field of Deployment'
     },
     send: 'Send',
     clear: 'Clear Chat',
@@ -127,13 +127,11 @@ export default {
     agentNames: {
       supervisor: 'Supervisor Agent',
       diagnosis: 'Diagnosis Agent',
-      analyze: 'Analyze Agent',
       guide: 'Guide Agent'
     },
     timelineTitles: {
       supervisorInitial: 'Analyzing the request',
       diagnosisInitial: 'Diagnosing the Kubernetes issue',
-      analyzeInitial: 'Fast scanning cluster status',
       guideInitial: 'Preparing explanation and guidance',
       afterTool: 'Reviewing tool results',
       afterSubAgent: 'Merging sub-agent output',
@@ -151,7 +149,6 @@ export default {
       emptyAnswer: 'Diagnosis did not complete. The request might have timed out and been cancelled due to excessive resources in the namespace. Please specify a more targeted namespace, or inspect the thinking timeline above for details.'
     },
     toolNames: {
-      callAnalyzeAgent: 'Call analyze_agent',
       callDiagnosisAgent: 'Call diagnosis_agent',
       callGuideAgent: 'Call guide_agent'
     }

@@ -6,7 +6,7 @@
 
 ## Node Conditions 一览
 
-通过 `describe_k8s_resource(kind=Node, name=<node>)` 可查看节点的 Conditions 列表。
+通过 `describe_k8s_resource(cluster, kind=Node, name=<node>)` 可查看节点的 Conditions 列表。
 
 | Condition | Status=True 的含义 | 严重性 |
 |-----------|------------------|--------|
@@ -27,9 +27,9 @@
 → kubelet 检测到节点内存使用超过 eviction.hard 阈值（默认 memory.available<100Mi）
 
 诊断步骤：
-1. get_k8s_node_resource_usage(node) → 确认内存使用率
-2. get_k8s_top_pod(namespace) → 找到内存占用最高的 Pod
-3. get_k8s_pod_resource_usage(namespace, name=<pod>) → 确认是否存在内存超限
+1. get_k8s_node_resource_usage(cluster, node) → 确认内存使用率
+2. get_k8s_top_pod(cluster, namespace) → 找到内存占用最高的 Pod
+3. get_k8s_pod_resource_usage(cluster, namespace, name=<pod>) → 确认是否存在内存超限
 
 后果：
 - kubelet 开始驱逐内存占用最高的 Pod（QoS 等级 BestEffort 优先）
@@ -50,9 +50,9 @@
 → 节点 /var/lib/kubelet（镜像/容器层）或 /var/lib/docker 磁盘使用超阈值
 
 诊断步骤：
-1. describe_k8s_resource(kind=Node, name=<node>) → 读取 DiskPressure Condition 的 Message
-2. list_k8s_pod(namespace) + list_k8s_pod_event(pod) → 确认是否有 Pod 因 Evicted 被驱逐
-3. get_k8s_pod_logs(pod) → 确认应用是否大量写日志到容器内
+1. describe_k8s_resource(cluster, kind=Node, name=<node>) → 读取 DiskPressure Condition 的 Message
+2. list_k8s_pod(cluster, namespace) + list_k8s_pod_event(cluster, pod) → 确认是否有 Pod 因 Evicted 被驱逐
+3. get_k8s_pod_logs(cluster, pod) → 确认应用是否大量写日志到容器内
 
 后果：
 - 镜像拉取可能失败（无空间存储新镜像）

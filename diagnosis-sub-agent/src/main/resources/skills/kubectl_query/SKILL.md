@@ -43,8 +43,7 @@ references:
 - 在 `outputFields` 中传入以 `.` 开头的字段路径列表。
 ```json
 // 示例：查询 Ingress 规则的名称及后端域名
-工具：kubectl(
-  cluster,
+工具：kubectl(cluster, cluster,
   args=["get", "ingress", "-n", "default"],
   outputFields=[".metadata.name", ".spec.rules[*].host"]
 )
@@ -56,8 +55,7 @@ references:
 - 避免使用 `cmd` 传递参数，以规避 shell 转义错误。
 ```json
 // 示例：以制表符分隔获取 Pod IP 与名称
-工具：kubectl(
-  cluster, 
+工具：kubectl(cluster, cluster, 
   args=["get", "pods", "-n", "default", "-o", "jsonpath={range .items[*]}{.metadata.name}{\t}{.status.podIP}{\n}{end}"]
 )
 ```

@@ -11,9 +11,9 @@ triggers:
   - "Pod 状态长期 Pending，Events 含 Insufficient cpu/memory"
   - "Pod Events 含 didn't match node affinity 或 had taints that pod didn't tolerate"
   - "节点 drain 操作挂起，提示 Cannot evict pod as it would violate PDB"
-  - "节点状态为 NotReady 或 Unknown"
-  - "节点含 MemoryPressure / DiskPressure / PIDPressure 条件"
-  - "节点 IP 资源耗尽，新 Pod 无法获取 IP"
+  - "节点状态为 NotReady 或 Unknown，且用户明确要求排查或定位原因"
+  - "节点含 MemoryPressure / DiskPressure / PIDPressure 条件，且作为故障现象输入"
+  - "节点 IP 资源耗尽，新 Pod 无法获取 IP，且用户要求排查"
 references:
   - references/scheduling_constraints.md   # 亲和性/污点/PDB 字段说明
   - references/node_condition_guide.md     # Node Condition 类型与含义
@@ -30,7 +30,7 @@ references:
 > **💡 最佳实践**：在梳理复杂的亲和性、污点和 PDB 前，先让 K8sGPT 给出高度概括的诊断结论。
 
 ```
-工具：analyze(filters=["Node", "PodDisruptionBudget", "Pod"])
+工具：analyze(cluster, filters=["Node", "PodDisruptionBudget", "Pod"])
 → 利用 K8sGPT 一键分析 Node 的 NotReady 原因，以及 PDB 阻塞和 Pod 调度失败（资源/污点不满足）的综合情况。（通常节点故障不需要指定 namespace，若针对特定未调度 Pod 可带上 namespace 参数）
 ```
 
@@ -41,7 +41,7 @@ references:
 ```
 工具：list_k8s_node(cluster)
 或使用 kubectl 兜底命令查看节点宽表信息（如内网/外网 IP、操作系统内核）：
-工具：kubectl(cluster, cmd="get nodes -o wide")
+工具：kubectl(cluster, args=["get", "nodes", "-o", "wide"])
 → 观察所有节点的 STATUS / ROLES / VERSION
 → 若有节点 NotReady → 跳转 Step 4（节点健康诊断）
 → 若所有节点 Ready → 问题在调度层 → 继续 Step 2
@@ -78,8 +78,8 @@ references:
 ② 获取集群节点资源用量排名
    工具：get_k8s_top_node(cluster)
    或使用 kubectl top node/pod 兜底监控：
-   工具：kubectl(cluster, cmd="top nodes")
-   工具：kubectl(cluster, cmd="top pods -A")
+   工具：kubectl(cluster, args=["top", "nodes"])
+   工具：kubectl(cluster, args=["top", "pods", "-A"])
    → 识别哪些节点资源已接近饱和
 
 ③ 查看单节点详细可分配资源
@@ -187,34 +187,15 @@ references:
 
 ---
 
-## 诊断报告格式
-
-> 收集充分证据后，**必须**输出以下结构化报告：
-
-```
-**Root Cause:** [因果链中最早的失败事件或错误配置]
-**Evidence Chain:** [事件] → [触发] → [影响] → [用户观察到的症状]
-**Confidence:** [High / Medium / Low — 置信度依据]
-**Recommended Fix:** [面向运维人员的修复建议]
-```
-
-⚠️ **SRE 提醒**：K8s Events 默认只有 1 小时 TTL。如果未查询到相关 Events，不能断定没发生过故障，需在报告中声明 Events 可能已过 TTL 自动清理，并将 Confidence（置信度）适当降级。
-
-**示例（资源不足场景）**：
-> **Root Cause:** Deployment spec 将 `requests.cpu` 设置为 `8000m`，超出集群最大节点的可分配 CPU（`7800m`）。  
-> **Evidence Chain:** `spec.resources.requests.cpu=8000m` 写入 → Scheduler 遍历所有节点均返回 Insufficient cpu → Pod 无法完成调度 → Pod 持续处于 Pending 状态。  
-> **Confidence:** High — `get_k8s_node_resource_usage` 返回最大节点 Allocatable CPU = 7800m；`describe_k8s_pod` 返回 Pod requests.cpu = 8000m，差值直接导致调度失败。  
-> **Recommended Fix:** 建议运维人员将 Deployment `spec.template.spec.containers[].resources.requests.cpu` 修改为节点可分配量以内的值（如 `2000m`），或向基础设施团队申请扩容节点。
-
 ---
 
 ## 兜底排查机制（kubectl）
 
-当特定的节点或资源指标 MCP 工具受限或无法上报最新状态时，可使用只读 `kubectl` 兜底工具执行命令：
+在特定的节点或资源指标 MCP 工具受限或无法上报最新状态时，可使用只读 `kubectl` 兜底工具执行命令：
 - 查看节点宽表及全局网络/操作系统属性：
-  `工具：kubectl(cluster, cmd="get nodes -o wide")`
+  `工具：kubectl(cluster, args=["get", "nodes", "-o", "wide"])`
 - 监控集群实时的节点 and Pod 资源开销：
-  `工具：kubectl(cluster, cmd="top nodes")`
-  `工具：kubectl(cluster, cmd="top pods -A")`
+  `工具：kubectl(cluster, args=["top", "nodes"])`
+  `工具：kubectl(cluster, args=["top", "pods", "-A"])`
 - 查看节点的详细配置与脏污/条件详情：
-  `工具：kubectl(cluster, cmd="describe node <node-name>")`
+  `工具：kubectl(cluster, args=["describe", "node", "<node-name>"])`
