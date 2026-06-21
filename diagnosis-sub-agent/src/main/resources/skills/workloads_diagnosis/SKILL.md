@@ -1,37 +1,36 @@
 ---
 name: workloads_diagnosis
-version: "1.0"
+version: "1.1"
 category: Workloads
 description: >
-  诊断 Deployment、StatefulSet、DaemonSet 等工作负载的生命周期问题：副本数为零、
-  滚动更新卡住、HPA 无法获取指标、蓝绿/金丝雀发布流量异常，以及有状态应用
-  误用 Deployment 导致数据不一致。本 Skill 为只读诊断，不执行任何变更。
+  诊断 Deployment、StatefulSet、DaemonSet 等工作负载的生命周期问题：副本数为零、滚动更新卡住、HPA 无法获取指标、蓝绿/金丝雀发布流量异常、有状态应用数据不一致、DaemonSet 节点分布异常等。本 Skill 为只读诊断，不执行任何变更。
 scope: read-only
 triggers:
-  - "Deployment AVAILABLE 副本数为 0，服务不可用"
+  - "Deployment / StatefulSet / DaemonSet AVAILABLE 副本数为 0，服务不可用"
   - "kubectl rollout status 长时间未完成"
-  - "新版本发布期间服务完全中断"
+  - "新版本发布期间服务完全中断或部分节点异常"
   - "蓝绿发布切换后用户仍访问旧版本"
   - "金丝雀版本流量占比与预期不符"
   - "HPA TARGETS 列显示 unknown，不触发扩缩容"
   - "StatefulSet Pod 重启后数据丢失，Pod 名称随机变化"
+  - "DaemonSet 某些节点上无 Pod 或分布不均"
 references:
   - references/rollout_strategy_guide.md   # 滚动更新策略参数说明
   - references/hpa_metrics_guide.md        # HPA 指标配置与 metrics-server 排查
 ---
 
-# workloads_diagnosis — 工作负载诊断
+# workloads_diagnosis — 工作负载诊断 (v1.1)
 
 > **⚠️ 只读模式**：本 Skill 仅输出诊断报告，不执行任何修复变更。
 
-## 诊断工作流
+## 诊断工作流（v1.1）
 
 ### Step 0：自动化工作负载异常扫描（K8sGPT）
 
 > **💡 最佳实践**：在逐步排查控制器和 Pod 之前，优先让 K8sGPT 扫描常见的副本/调度/HPA错误。
 
 ```
-工具：analyze(namespace=<ns>, name=<workload-name>, filters=["Deployment", "StatefulSet", "ReplicaSet", "HorizontalPodAutoscaler"])
+工具：analyze(namespace=<ns>, name=<workload-name>, filters=["Deployment", "StatefulSet", "DaemonSet", "ReplicaSet", "HorizontalPodAutoscaler"])
 → 快速识别 AVAILABLE 副本数为零、HPA 找不到 Metrics，或滚动更新卡住等常见问题。
 ```
 
@@ -40,7 +39,7 @@ references:
 ### Step 1：确认工作负载状态
 
 ```
-工具：list_k8s_resource(cluster, namespace, kind=Deployment, group=apps, version=v1)
+工具：list_k8s_resource(cluster, namespace, kind=<workload-kind>, group=apps, version=v1)
 → 观察 READY / UP-TO-DATE / AVAILABLE 三列
 
 AVAILABLE = 0 且 UP-TO-DATE = 0 → Step 2A（副本数为零）
@@ -48,6 +47,7 @@ AVAILABLE = 0 且 UP-TO-DATE 持续不变（发布中） → Step 2B（滚动更
 HPA 相关 → Step 2C（HPA 指标问题）
 流量分配异常（蓝绿/金丝雀） → Step 2D（发布策略诊断）
 StatefulSet 问题 → Step 2E（有状态应用诊断）
+DaemonSet 问题 → Step 2F（DaemonSet 节点分布异常）
 ```
 
 ---
@@ -56,16 +56,15 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
 
 ```
 ① 确认当前副本配置
-   工具：get_k8s_resource(cluster, namespace, kind=Deployment, name=<name>,
+   工具：get_k8s_resource(cluster, namespace, kind=<workload-kind>, name=<name>,
          group=apps, version=v1)
-   → 读取 spec.replicas 字段
+   → 读取 spec.replicas 字段（若为 DaemonSet，则读取 status.desiredNumberScheduled）
 
 ② 确认是否有历史停止注解
    → 读取 metadata.annotations 中是否存在副本数记录
-   （stop_k8s_deployment 会将原始副本数写入注解）
 
-③ 查看 Deployment 相关事件
-   工具：list_k8s_event(cluster, namespace, involvedObjectName=<name>, involvedObjectKind="Deployment")
+③ 查看工作负载相关事件
+   工具：list_k8s_event(cluster, namespace, involvedObjectName=<name>, involvedObjectKind="<workload-kind>")
    → 判断是人为操作还是异常触发
 ```
 
@@ -75,20 +74,19 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
 
 ```
 ① 查看发布状态
-   工具：get_k8s_deployment_rollout_status(cluster, namespace, name=<name>)
-   → 若长时间显示 "Waiting for deployment xxx rollout to finish" → 卡住
+   工具：kubectl(cluster, cmd="rollout status <workload-kind>/<name> -n <namespace>")
+   → 若长时间未完成 → 卡住（注：对 Deployment，也可优先用 get_k8s_deployment_rollout_status 工具）
 
 ② 查看发布历史（识别新旧版本信息）
-   工具：get_k8s_deployment_rollout_history(cluster, namespace, name=<name>)
+   工具：kubectl(cluster, cmd="rollout history <workload-kind>/<name> -n <namespace>")
    → 记录当前版本号（revision）
 
-③ 查看 Deployment 详细信息（关键：确认是否超时）
-   工具：get_k8s_resource(cluster, namespace, kind=Deployment, name=<name>, group=apps, version=v1)
-   → 读取 status.conditions，确认是否存在 Type=Progressing 且 Reason=ProgressDeadlineExceeded 状况。
-   （K8s 默认 600s 未完成滚动更新将标记此超时错误）
+③ 查看工作负载详细信息（关键：确认是否超时）
+   工具：get_k8s_resource(cluster, namespace, kind=<workload-kind>, name=<name>, group=apps, version=v1)
+   → 读取 status.conditions，确认是否有明确的超时或异常状况（注：Deployment 默认 600s 标记 ProgressDeadlineExceeded）
 
-④ 查看 Deployment Events
-   工具：list_k8s_event(cluster, namespace, involvedObjectName=<name>, involvedObjectKind="Deployment")
+④ 查看 Events
+   工具：list_k8s_event(cluster, namespace, involvedObjectName=<name>, involvedObjectKind="<workload-kind>")
    → 找 FailedCreate / ImagePullBackOff / Insufficient 等事件
 
 ⑤ 查看新版本 Pod 的具体错误
@@ -98,7 +96,7 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
    → 确认卡住原因（镜像错误 / 资源不足 / 配置错误）
 
 ⑥ 检查更新策略配置
-   → 读取 spec.strategy.rollingUpdate.maxUnavailable 和 maxSurge
+   → 读取 spec.strategy（或 spec.updateStrategy）的 maxUnavailable 和 maxSurge
 ```
 
 > 参考：[滚动更新策略说明](references/rollout_strategy_guide.md)
@@ -147,18 +145,18 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
    工具：get_k8s_resource(cluster, namespace, kind=Service, name=<svc>, version=v1)
    → 读取 spec.selector
 
-② 查看各版本 Deployment 的 Pod Labels
-   工具：list_k8s_resource(cluster, namespace, kind=Deployment,
+② 查看各版本工作负载的 Pod Labels
+   工具：list_k8s_resource(cluster, namespace, kind=<workload-kind>,
          group=apps, version=v1)
    → 对比 Blue 和 Green 的 Pod template labels
 
 ③ 确认当前流量指向哪个版本
-   → Service selector 中的 label 匹配哪个 Deployment 的 Pod
+   → Service selector 中的 label 匹配哪个版本的 Pod
 
 ④ 查看各版本副本数（金丝雀分流比例）
-   工具：list_k8s_resource(cluster, namespace, kind=Deployment,
+   工具：list_k8s_resource(cluster, namespace, kind=<workload-kind>,
          group=apps, version=v1)
-   → 计算实际流量比 = canary.replicas / (stable.replicas + canary.replicas)
+   → 计算实际流量比
 ```
 
 ---
@@ -180,6 +178,24 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
          group=apps, version=v1, name=<name>)
    → 读取 spec.volumeClaimTemplates 字段
    → 若为空但使用了固定 PVC → 配置错误
+```
+
+---
+
+### Step 2F：DaemonSet 节点分布异常诊断
+
+```
+① 确认预期调度节点数与实际就绪节点数
+   工具：get_k8s_resource(cluster, namespace, kind=DaemonSet, name=<name>, group=apps, version=v1)
+   → 比较 status.desiredNumberScheduled 与 status.numberReady
+   → 若 desiredNumberScheduled < 预期集群或节点组节点数，说明 NodeSelector 或 Affinity 未匹配足够节点
+
+② 检查容忍度 (Tolerations) 配置
+   → 读取 spec.template.spec.tolerations
+   → 若节点存在污点 (Taints) 但没有相应容忍度，Pod 将无法调度到该节点
+
+③ 结合节点状态排查未调度原因
+   工具：分析 node 状态为何该节点没有运行对应的 DaemonSet Pod
 ```
 
 ---
@@ -209,7 +225,7 @@ StatefulSet 问题 → Step 2E（有状态应用诊断）
 - 宏观排查工作负载副本就绪及配置详情：
   `工具：kubectl(cluster, cmd="get deploy,sts,ds -n <namespace> -o wide")`
 - 详细排查特定工作负载滚动更新状态与版本历史：
-  `工具：kubectl(cluster, cmd="rollout status deployment/<workload-name> -n <namespace>")`
-  `工具：kubectl(cluster, cmd="rollout history deployment/<workload-name> -n <namespace>")`
+  `工具：kubectl(cluster, cmd="rollout status <workload-kind>/<workload-name> -n <namespace>")`
+  `工具：kubectl(cluster, cmd="rollout history <workload-kind>/<workload-name> -n <namespace>")`
 - 排查 HPA 自动缩容状态及限制阈值：
   `工具：kubectl(cluster, cmd="get hpa -n <namespace> -o yaml")`

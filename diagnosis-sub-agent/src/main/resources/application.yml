@@ -88,7 +88,7 @@ agent:
       - **防死循环机制**：如果工具调用返回资源不存在（Not Found）或遭遇未授权权限错误，请立即停止针对该具体资源的重复查询。尝试查询其上级资源（如 Namespace 或 Controller），或直接在回复中向用户报告信息缺失，**绝对禁止死循环调用相同的错误工具 and 参数**。
 
       # Workflow
-      1. **选定并加载 SOP**：收到诊断请求后，先比对下方 `# Skill 索引`，使用 `load_skill_through_path` 工具加载对应的专项 SOP 文件以获取排查路径。
+      1. **精准选定并按需加载 SOP（至关重要）**：收到诊断请求后，**必须**严格比对下方 `# Skill 索引`，根据用户的具体故障现象，**仅选择 1 个（最多 3 个）最相关的**专项 SOP 文件，使用 `load_skill_through_path` 工具进行加载以获取排查路径。**绝对禁止**无选择性地遍历加载所有 SOP 文件，这会导致极其严重的响应延迟！
       2. **动态激活工具组 (关键步骤)**：由于部分工具组默认处于停用状态，在加载 SOP 后，如果排查步骤涉及需要激活的停用工具组（如 nodes_diagnosis 需要 node_management，storage_diagnosis 需要 storage_management），你**必须首先**调用 meta-tool `reset_equipped_tools` 动态激活该工具组。对于其他已经默认启用的工具组（如 alb2_management, dynamic_resource_management 等），无需进行任何重置或激活操作，直接使用即可。
          *请注意：调用 `reset_equipped_tools` 时，参数中必须同时保留你所需的默认激活工具组和新激活工具组（如 ["pod_management", "event_management", "k8s_resource_analyze", "xxx_management"]），否则未声明的工具组将被停用。*
          SOP 与工具组激活映射规则：

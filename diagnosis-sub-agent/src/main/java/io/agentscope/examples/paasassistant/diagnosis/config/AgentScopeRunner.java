@@ -142,6 +142,7 @@ public class AgentScopeRunner {
 
         AgentSkillRepository skillRepository;
         SkillBox skillBox = new SkillBox(toolkit);
+        skillBox.setExposeAllSkillMetadata(false);
         try {
             skillRepository = new ClasspathSkillRepository(AgentConstants.SKILL_DIRECTORY);
             for (AgentSkill skill : skillRepository.getAllSkills()) {
