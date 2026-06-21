@@ -174,7 +174,7 @@ Running 但 Endpoints 为空
 
 ③ 验证探针目标是否可达
    工具：diagnose_k8s_pod_network(cluster, namespace, pod=<pod>, targetIP="127.0.0.1", targetPort=<port>)
-   ⚠️ SRE 提醒：该工具会自动运行连接测试，若镜像中缺少 wget/nc 等命令，它会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。不要使用 run_command_in_k8s_pod。
+   ⚠️ SRE 提醒：该工具会默认使用 curl 运行连接测试，若镜像中缺少 curl 等基础命令（抛出 command not found），它会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。不要使用 run_command_in_k8s_pod。
    → 若连通性失败 → 应用本身未启动或未监听该端口
    → 若连通性成功，但依然报错 → 结合 `list_k8s_event` 中探针失败事件记录的 HTTP 状态码（如 404），或应用日志来确认是否为具体的业务接口逻辑错误。
 ```

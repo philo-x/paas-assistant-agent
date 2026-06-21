@@ -127,7 +127,7 @@ public final class McpToolRegistrar {
         public static final String DESC_POD_MANAGEMENT = "Pod生命周期与容器内诊断管理，支持Pod日志拉取、环境变量与关联Services/Endpoints查询";
         public static final String DESC_DYNAMIC_RESOURCE_MANAGEMENT = "Kubernetes任意资源动态诊断与历史指标(Metrics)查询管理，支持Namespace/事件列表查询、特定计算资源指标历史以及任意特定K8s资源的Get/List/Describe";
         public static final String DESC_STORAGE_MANAGEMENT = "持久化存储与PV/PVC管理，支持Pod关联存储卷绑定状态、StorageClass的PV/PVC数量统计及CSI驱动挂载卡死故障诊断";
-        public static final String DESC_ALB2_MANAGEMENT = "网络连通性与路由管理，支持Pod内网络连通性探测(nc/curl/wget/临时诊断Pod测试)、CoreDNS域名解析测试及ALB2负载分流与路由规则诊断";
+        public static final String DESC_ALB2_MANAGEMENT = "网络连通性与路由管理，支持Pod内网络连通性探测(默认curl/临时诊断Pod回退探测)、CoreDNS域名解析测试及ALB2负载分流与路由规则诊断";
         public static final String DESC_KUBECTL_MANAGEMENT = "Kubectl只读兜底命令行管理，支持在专用MCP工具受限时执行只读命令(如get/describe/logs -p等)";
         public static final String DESC_CONTAINER_INTERACTIVE = "容器内文件与命令交互管理，支持容器内文件列表检索与交互式诊断命令执行";
 

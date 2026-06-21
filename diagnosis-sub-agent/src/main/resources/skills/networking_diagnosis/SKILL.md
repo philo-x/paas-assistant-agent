@@ -117,7 +117,7 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 
 ③ 测试应用监听端口
    工具：diagnose_k8s_pod_network(cluster, namespace, pod=<pod>, targetIP="127.0.0.1", targetPort=<port>)
-   ⚠️ SRE 提醒：该工具会运行端口连接测试。若目标镜像中缺少 wget/nc 等命令，该工具会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。不需要使用 run_command_in_k8s_pod。
+   ⚠️ SRE 提醒：该工具会默认使用 curl 运行端口连接测试。若目标镜像中缺少 curl 等基础命令（抛出 command not found），该工具会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。不需要使用 run_command_in_k8s_pod。
    → 逐一测试不同端口，找到实际监听端口
 ```
 
@@ -148,7 +148,7 @@ Pod metadata.labels:    {app: "frontend", env: "staging"}
 ```
 ① 确认网络连通性与错误类型
    工具：diagnose_k8s_pod_network(cluster, namespace, pod=<pod>, targetIP=<target-ip>, targetPort=<port>)
-   ⚠️ SRE 提醒：该工具会自动运行连接测试，若镜像中缺少 wget/nc 等命令，它会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。
+   ⚠️ SRE 提醒：该工具会默认使用 curl 运行连接测试，若镜像中缺少 curl 等命令（抛出 command not found），它会自动启动一个临时 busybox Pod 进行连通性探测，能彻底解决 scratch/distroless 等极简镜像无法执行探测的问题。
    → timeout/丢包 → 网络静默丢包（需考虑 NetworkPolicy 拦截、云安全组/防火墙阻断或 CNI 路由异常等原因）
    → refused/拒绝 → 端口服务未监听，回到 Step 2B
 
