@@ -740,7 +740,7 @@ onMounted(() => {
 }
 
 .mode-select {
-  width: 110px;
+  width: 85px;
 }
 
 .mode-select :deep(.ant-select-selector) {
