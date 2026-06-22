@@ -49,7 +49,7 @@ ENV SERVER_PORT=10006 \
     K8SGPT_MCP_URL=http://k8sgpt-server:8089/mcp \
     MEM0_API_KEY="" \
     NACOS_SERVER_ADDR=127.0.0.1:8848 \
-    NACOS_NAMESPACE=public \
+    NACOS_NAMESPACE=1753e191-d96a-4578-846a-e7df4657b203 \
     JAVA_OPTS="-Xms512m -Xmx1024m"
 
 # Health check

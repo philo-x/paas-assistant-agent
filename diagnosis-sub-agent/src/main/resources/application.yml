@@ -19,17 +19,17 @@ agentscope:
     base-url: ${MEM0_BASE_URL:https://api.mem0.ai}
     api-type: ${MEM0_API_TYPE:auto}
     infer-enabled: ${MEM0_INFER_ENABLED:false}
+  nacos:
+    server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+    namespace: ${NACOS_NAMESPACE:1753e191-d96a-4578-846a-e7df4657b203}
+    username: ${NACOS_USERNAME:nacos}
+    password: ${NACOS_PASSWORD:nacos}
   mcp:
     k8sgpt-mcp-url: ${K8SGPT_MCP_URL:http://localhost:8089/mcp}
     k8s-mcp-url: ${K8S_MCP_URL:http://localhost:9096/mcp}
     # Timeout for each individual MCP tool call.
     # Must be shorter than the A2A child-agent-timeout on the supervisor side.
     tool-timeout: ${MCP_TOOL_TIMEOUT:PT3M}
-    nacos:
-      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
-      namespace: ${NACOS_NAMESPACE:public}
-      username: ${NACOS_USERNAME:nacos}
-      password: ${NACOS_PASSWORD:nacos}
   a2a:
     nacos:
       server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}

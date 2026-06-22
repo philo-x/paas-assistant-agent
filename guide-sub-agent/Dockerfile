@@ -56,7 +56,7 @@ ENV SERVER_PORT=10005 \
     DB_USERNAME=paas_agent_assistant \
     DB_PASSWORD=paas_agent_assistant@321 \
     NACOS_SERVER_ADDR=127.0.0.1:8848 \
-    NACOS_NAMESPACE=public \
+    NACOS_NAMESPACE=1753e191-d96a-4578-846a-e7df4657b203 \
     NACOS_CLIENT_ENABLED=true \
     JAVA_OPTS="-Xms512m -Xmx1024m"
 

@@ -62,7 +62,7 @@ public class NacosMcpServerRegistrar {
     @Value("${spring.application.name}")
     private String serviceName;
 
-    @Value("${agentscope.mcp.nacos.namespace:public}")
+    @Value("${agentscope.nacos.namespace:public}")
     private String namespace;
 
     @Value("${agentscope.mcp.nacos.registry.enabled:true}")
