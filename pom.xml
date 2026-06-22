@@ -27,7 +27,7 @@
     <description>PaaS platform multi-agent assistant for Kubernetes diagnosis and guided operations</description>
 
     <modules>
-        <module>platform-mcp-server</module>
+        <module>change-mcp-server</module>
         <module>guide-sub-agent</module>
         <module>diagnosis-sub-agent</module>
         <module>paas-agent-common</module>
