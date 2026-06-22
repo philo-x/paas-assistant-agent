@@ -5,7 +5,10 @@ import io.agentscope.examples.paasassistant.common.hooks.TruncationHook;
 import io.agentscope.examples.paasassistant.common.hooks.MonitoringHook;
 import io.agentscope.examples.paasassistant.common.memory.CompatibleMem0LongTermMemory;
 
-
+import com.alibaba.nacos.api.ai.AiService;
+import io.agentscope.extensions.nacos.mcp.NacosMcpServerManager;
+import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientBuilder;
+import io.agentscope.extensions.nacos.mcp.client.NacosMcpClientWrapper;
 
 import io.agentscope.core.ReActAgent;
 
@@ -110,6 +113,7 @@ public class AgentScopeRunner {
             GuideTools guideTools,
             Knowledge knowledge,
             Model model,
+            AiService aiService,
             DataSource dataSource) {
 
         Toolkit toolkit = new Toolkit(io.agentscope.core.tool.ToolkitConfig.builder().parallel(false).build());
@@ -134,6 +138,7 @@ public class AgentScopeRunner {
                 mem0BaseUrl,
                 mem0ApiType,
                 mem0InferEnabled,
+                aiService,
                 dataSource);
     }
 
@@ -167,7 +172,9 @@ public class AgentScopeRunner {
         private final String mem0BaseUrl;
         private final String mem0ApiType;
         private final boolean mem0InferEnabled;
+        private final AiService aiService;
         private final DataSource dataSource;
+        private volatile boolean mcpInitialized = false;
 
         private CustomAgentRunner(
                 String agentName,
@@ -180,6 +187,7 @@ public class AgentScopeRunner {
                 String mem0BaseUrl,
                 String mem0ApiType,
                 boolean mem0InferEnabled,
+                AiService aiService,
                 DataSource dataSource) {
             this.agentName = agentName;
             this.sysPrompt = sysPrompt;
@@ -192,10 +200,30 @@ public class AgentScopeRunner {
             this.mem0BaseUrl = mem0BaseUrl;
             this.mem0ApiType = mem0ApiType;
             this.mem0InferEnabled = mem0InferEnabled;
+            this.aiService = aiService;
             this.dataSource = dataSource;
         }
 
+        private void initializeMcpOnce() {
+            if (!mcpInitialized) {
+                synchronized (this) {
+                    if (!mcpInitialized) {
+                        try {
+                            NacosMcpServerManager manager = NacosMcpServerManager.from(aiService);
+                            NacosMcpClientWrapper mcpClient = NacosMcpClientBuilder.create("change-mcp-server", manager).build();
+                            toolkit.registerMcpClient(mcpClient).block();
+                            mcpInitialized = true;
+                            logger.info("Successfully registered change-mcp-server from Nacos to guide-sub-agent Toolkit");
+                        } catch (Exception e) {
+                            logger.warn("Failed to initialize Nacos MCP client for change-mcp-server: {}", e.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+
         private ReActAgent buildReActAgent(String userId) {
+            initializeMcpOnce();
             Mem0ApiType apiType = resolveMem0ApiType(mem0BaseUrl, mem0ApiType);
             CompatibleMem0LongTermMemory longTermMemory = new CompatibleMem0LongTermMemory(
                     AgentConstants.MEMORY_NAME_GUIDE,

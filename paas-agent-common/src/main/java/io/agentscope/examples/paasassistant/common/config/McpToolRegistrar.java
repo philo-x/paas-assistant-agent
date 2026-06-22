@@ -180,13 +180,13 @@ public final class McpToolRegistrar {
         );
 
         // 1. 集群管理 (Cluster Management)
-        toolkit.createToolGroup(Groups.CLUSTER_MANAGEMENT, Groups.DESC_CLUSTER_MANAGEMENT, false);
+        toolkit.createToolGroup(Groups.CLUSTER_MANAGEMENT, Groups.DESC_CLUSTER_MANAGEMENT, true);
         toolkit.registration().mcpClient(sanitizedK8sClient)
                 .enableTools(List.of(Kom.TOOL_LIST_K8S_CLUSTERS))
                 .group(Groups.CLUSTER_MANAGEMENT).apply();
 
         // 2. 节点管理 (Node)
-        toolkit.createToolGroup(Groups.NODE_MANAGEMENT, Groups.DESC_NODE_MANAGEMENT, false);
+        toolkit.createToolGroup(Groups.NODE_MANAGEMENT, Groups.DESC_NODE_MANAGEMENT, true);
         toolkit.registration().mcpClient(sanitizedK8sClient)
                 .enableTools(List.of(
                         Kom.TOOL_LIST_K8S_NODE, Kom.TOOL_GET_K8S_NODE_IP_USAGE,
@@ -223,7 +223,7 @@ public final class McpToolRegistrar {
                 .group(Groups.DYNAMIC_RESOURCE_MANAGEMENT).apply();
 
         // 6. 存储管理 (Storage)
-        toolkit.createToolGroup(Groups.STORAGE_MANAGEMENT, Groups.DESC_STORAGE_MANAGEMENT, false);
+        toolkit.createToolGroup(Groups.STORAGE_MANAGEMENT, Groups.DESC_STORAGE_MANAGEMENT, true);
         toolkit.registration().mcpClient(sanitizedK8sClient)
                 .enableTools(List.of(
                         Kom.TOOL_GET_K8S_POD_LINKED_PV, Kom.TOOL_GET_K8S_POD_LINKED_PVC,
@@ -242,13 +242,13 @@ public final class McpToolRegistrar {
                 .group(Groups.ALB2_MANAGEMENT).apply();
 
         // 8. 容器内文件与命令交互管理 (Container Interactive)
-        toolkit.createToolGroup(Groups.CONTAINER_INTERACTIVE, Groups.DESC_CONTAINER_INTERACTIVE, false);
+        toolkit.createToolGroup(Groups.CONTAINER_INTERACTIVE, Groups.DESC_CONTAINER_INTERACTIVE, true);
         toolkit.registration().mcpClient(sanitizedK8sClient)
                 .enableTools(List.of(Kom.TOOL_LIST_FILES_IN_K8S_POD))
                 .group(Groups.CONTAINER_INTERACTIVE).apply();
 
         // 9. Kubectl 兜底管理
-        toolkit.createToolGroup(Groups.KUBECTL_MANAGEMENT, Groups.DESC_KUBECTL_MANAGEMENT, false);
+        toolkit.createToolGroup(Groups.KUBECTL_MANAGEMENT, Groups.DESC_KUBECTL_MANAGEMENT, true);
         toolkit.registration().mcpClient(sanitizedK8sClient)
                 .enableTools(List.of(Kom.TOOL_KUBECTL))
                 .group(Groups.KUBECTL_MANAGEMENT).apply();

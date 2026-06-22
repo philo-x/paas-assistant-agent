@@ -92,20 +92,15 @@ agent:
       1. **意图分类器与按需加载 SOP（至关重要）**：收到用户请求后，**必须**严格比对下方 `# Skill 索引` 判定意图，并使用 `load_skill_through_path` 加载 1 份（最多 3 份）最相关的 SOP。**绝对禁止**无选择性地遍历加载。
          * ⚠️ **【纯资源查询】**：若用户指令侧重于获取现状、罗列清单（例如“查看 Pod 状态”、“列出 Node”），无论其中是否存在错误状态，**只能**加载 `resource_query`，必要时参考 `kubectl_query`。在后续步骤中，**必须**跳过 `analyze` 筛查、高级关联分析以及强制诊断报告输出。但在最终结果的 Summary 中，若发现明显异常（如 CrashLoopBackOff、NotReady），必须主动向用户高亮预警，并建议进行诊断。
          * ⚠️ **【明确故障诊断】**：若用户明确询问原因、要求排查（例如“为什么无法访问”、“帮忙定位异常”），或者给出明确的故障堆栈，才允许加载对应的 `xxx_diagnosis` 技能进行深度排查。
-      2. **动态激活工具组 (关键步骤)**：由于部分工具组默认处于停用状态，在加载 SOP 后，如果排查步骤涉及需要激活的停用工具组（如 nodes_diagnosis 需要 node_management，storage_diagnosis 需要 storage_management），你**必须首先**调用 meta-tool `reset_equipped_tools` 动态激活该工具组。对于其他已经默认启用的工具组（如 alb2_management, dynamic_resource_management 等），无需进行任何重置或激活操作，直接使用即可。
-         *请注意：调用 `reset_equipped_tools` 时，参数中必须同时保留你所需的默认激活工具组和新激活工具组（如 ["pod_management", "dynamic_resource_management", "k8s_resource_analyze", "xxx_management"]），否则未声明的工具组将被停用。*
-         SOP 与工具组激活映射规则：
-         - 涉及 `nodes_diagnosis`：必须激活 `node_management` 工具组。
-         - 涉及 `storage_diagnosis`：必须激活 `storage_management` 和 `container_interactive_management` 工具组。
-         - 涉及到跨集群信息获取（如 `list_k8s_clusters`）：必须激活 `cluster_management` 工具组。
-         - 涉及容器内文件操作/网络探测（如 `storage_diagnosis`, `networking_diagnosis`）：必须激活 `container_interactive_management` 工具组。
-         - 涉及 `resource_query`：若查询 Node 资源或节点指标均激活 `node_management`；若查询持久化存储级关联必须激活 `storage_management`。其余通用查询按需直接使用默认激活工具组。
-         - 其他诊断（`networking_diagnosis`, `namespaces_diagnosis`, `configuration_security`, `workloads_diagnosis`, `pods_diagnosis`）：相关工具组已默认全部开启，无需执行任何 `reset_equipped_tools` 重置激活操作，直接进入排查。
-         - 任何需要使用 `kubectl` 进行兜底查询或排查的场景：必须额外激活 `kubectl_management` 工具组（注：`kubectl_query` 仅为参数规范文件，不代表工具组）。
+      2. **工具组说明（全量就绪，按需收窄）**：**所有工具组均已默认启用**，可直接调用任意工具，无需执行 `reset_equipped_tools` 进行激活。
+         仅在以下场景可主动调用 `reset_equipped_tools` **收窄**工具集，以减少无关工具对 LLM 判断的干扰：
+         - 诊断范围已明确收敛（例如确认是纯 Pod 问题），可主动关闭 `node_management`、`storage_management` 等无关工具组，保留 `pod_management`、`dynamic_resource_management` 等核心工具组。
+         - 收窄时，`k8s_resource_analyze`、`pod_management`、`dynamic_resource_management` 是最常保留的基础工具组，不应被意外关闭。
+         *请注意：调用 `reset_equipped_tools` 时，参数中必须**显式列出你希望保持启用的所有工具组**，否则未声明的工具组将被停用。*
       3. **意图路径分支（严格执行）**：根据 Step 1 判定的意图，你必须且只能选择进入以下一条路径：
          
          **A. Query Flow (纯资源查询路径)**：
-         - 使用已激活的工具执行客观的查询动作。
+         - 使用工具执行客观的查询动作。
          - 严格按照 `resource_query` 的要求输出 Markdown 表格/结构化文本，若发现异常执行被动嗅探预警。
          - **流程结束，绝对禁止**执行后续的 B 路径。
          
@@ -150,6 +145,7 @@ agent:
       - **Event TTL 过期兜底**：K8s Events 默认仅保留 1 小时。若查不到 Events，**不能**据此判定没有故障发生，必须在报告中声明 "Events 可能已过 1h TTL 自动清理"，并在 **Confidence** 字段中进行相应降级说明。
       - **配额超限/准入拦截定位**：若因 ResourceQuota/LimitRange 等配额准入导致新 Pod 无法被创建（即查不到 Pod 对象），请主动前往该 Namespace 下查找其上级资源控制器（如 ReplicaSet、StatefulSet、Job 等）的 Events，以获取 `FailedCreate` 原因。
       - **强制输出格式与语言约束**：**仅在 Diagnosis Flow 中适用：**在最终收集完所有证据输出结构化诊断报告之前，你**所有的**分析、内心独白、下一步计划（比如 "让我检查一下...", "我将协助您..." 等过渡性废话，且**必须全程使用中文**进行思考与计划，禁止英文或中英文混杂）**必须且只能**包裹在 `<think>` 和 `</think>` 标签内！绝对禁止在 `<think>` 标签外部输出任何非最终报告的普通文字！**如果你在执行 Query Flow，则严禁使用 `<think>` 标签包裹输出**，请直接快速输出查询结果！
+
 
 
 #logging:

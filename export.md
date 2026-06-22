@@ -4,12 +4,12 @@ kubectl -n mem0 port-forward svc/mem0-dashboard 3000:3000
 
 
 docker build --build-arg MODULE=diagnosis-sub-agent --build-arg PORT=8082 \
--t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-diagnosis:2.0.4 .
+-t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-diagnosis:2.0.5 .
 
 docker build --build-arg MODULE=guide-sub-agent --build-arg PORT=8081 \
--t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-guide:2.0.4 .
+-t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-guide:2.0.5 .
 
-docker build -t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-frontend:2.0.4 .
+docker build -t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-frontend:2.0.5 .
 
 
 
@@ -17,9 +17,11 @@ docker build -t dev-apaas-harbor-app.mis.bcs/ai/paas-agent-frontend:2.0.4 .
 
 
 docker save -o paas-agents-all.tar \
-dev-apaas-harbor-app.mis.bcs/ai/paas-agent-diagnosis:2.0.4 \
-dev-apaas-harbor-app.mis.bcs/ai/paas-agent-frontend:2.0.4 \
-dev-apaas-harbor-app.mis.bcs/ai/paas-agent-guide:2.0.4
+dev-apaas-harbor-app.mis.bcs/ai/paas-agent-diagnosis:2.0.5 \
+dev-apaas-harbor-app.mis.bcs/ai/paas-agent-guide:2.0.5 \
+dev-apaas-harbor-app.mis.bcs/ai/change-mcp-server:2.0.5
+dev-apaas-harbor-app.mis.bcs/ai/paas-agent-frontend:2.0.5 \
+
 
 dev-apaas-harbor-app.mis.bcs/ai/kom:0.2.71 \
 dev-apaas-harbor-app.mis.bcs/ai/k8sgpt:0.4.33 \
