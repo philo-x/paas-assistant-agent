@@ -37,3 +37,6 @@ agentscope:
     nacos:
       registry:
         enabled: ${NACOS_REGISTER_ENABLED:true}
+    ssh:
+      username: ${SSH_USERNAME:root}
+      password: ${SSH_PASSWORD:Cebbank2@13}

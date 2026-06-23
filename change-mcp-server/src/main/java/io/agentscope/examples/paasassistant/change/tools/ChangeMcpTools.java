@@ -24,6 +24,7 @@ import io.agentscope.core.tool.Tool;
 import io.agentscope.core.tool.ToolParam;
 import java.io.InputStream;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
@@ -34,30 +35,34 @@ public class ChangeMcpTools {
 
     private final ObjectMapper objectMapper;
 
+    @Value("${agentscope.mcp.ssh.username:root}")
+    private String defaultUsername;
+
+    @Value("${agentscope.mcp.ssh.password:Cebbank2@13}")
+    private String defaultPassword;
+
     public ChangeMcpTools(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
     @Tool(
             name = "docker-system-prune-vm",
-            description = "Log into a VM via SSH and execute docker system prune -f -a")
+            description = "Reclaims host disk space by cleaning up unused Docker resources (stopped containers, dangling images, build cache).")
     public String dockerSystemPrune(
-            @ToolParam(name = "host", description = "SSH Host (IP or hostname)") String host,
-            @ToolParam(name = "port", description = "SSH Port", required = false) Integer port,
-            @ToolParam(name = "username", description = "SSH Username") String username,
-            @ToolParam(name = "password", description = "SSH Password", required = false) String password,
-            @ToolParam(name = "privateKeyPath", description = "Path to private key", required = false) String privateKeyPath) {
+            @ToolParam(name = "host", description = "Target Host (IP or hostname)") String host,
+            @ToolParam(name = "port", description = "Connection Port", required = false) Integer port,
+            @ToolParam(name = "username", description = "Connection Username (optional, defaults to system configured user)", required = false) String username,
+            @ToolParam(name = "password", description = "Connection Password (optional, defaults to system configured password)", required = false) String password) {
 
         int sshPort = (port != null) ? port : 22;
+        String sshUser = (username != null && !username.isEmpty()) ? username : defaultUsername;
+        String sshPass = (password != null && !password.isEmpty()) ? password : defaultPassword;
         StringBuilder output = new StringBuilder();
         try {
             JSch jsch = new JSch();
-            if (privateKeyPath != null && !privateKeyPath.isEmpty()) {
-                jsch.addIdentity(privateKeyPath);
-            }
-            Session session = jsch.getSession(username, host, sshPort);
-            if (password != null && !password.isEmpty()) {
-                session.setPassword(password);
+            Session session = jsch.getSession(sshUser, host, sshPort);
+            if (sshPass != null && !sshPass.isEmpty()) {
+                session.setPassword(sshPass);
             }
             session.setConfig("StrictHostKeyChecking", "no");
             session.connect(10000);
