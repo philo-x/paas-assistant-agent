@@ -40,3 +40,4 @@ agentscope:
     ssh:
       username: ${SSH_USERNAME:root}
       password: ${SSH_PASSWORD:Cebbank2@13}
+      port: ${SSH_PORT:22}

@@ -41,6 +41,9 @@ public class ChangeMcpTools {
     @Value("${agentscope.mcp.ssh.password:Cebbank2@13}")
     private String defaultPassword;
 
+    @Value("${agentscope.mcp.ssh.port:22}")
+    private Integer defaultPort;
+
     public ChangeMcpTools(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
@@ -49,14 +52,11 @@ public class ChangeMcpTools {
             name = "docker-system-prune-vm",
             description = "Reclaims host disk space by cleaning up unused Docker resources (stopped containers, dangling images, build cache).")
     public String dockerSystemPrune(
-            @ToolParam(name = "host", description = "Target Host (IP or hostname)") String host,
-            @ToolParam(name = "port", description = "Connection Port", required = false) Integer port,
-            @ToolParam(name = "username", description = "Connection Username (optional, defaults to system configured user)", required = false) String username,
-            @ToolParam(name = "password", description = "Connection Password (optional, defaults to system configured password)", required = false) String password) {
+            @ToolParam(name = "host", description = "Target Host (IP or hostname)") String host) {
 
-        int sshPort = (port != null) ? port : 22;
-        String sshUser = (username != null && !username.isEmpty()) ? username : defaultUsername;
-        String sshPass = (password != null && !password.isEmpty()) ? password : defaultPassword;
+        int sshPort = (defaultPort != null) ? defaultPort : 22;
+        String sshUser = defaultUsername;
+        String sshPass = defaultPassword;
         StringBuilder output = new StringBuilder();
         try {
             JSch jsch = new JSch();
