@@ -93,9 +93,6 @@ agent:
          * ⚠️ **【纯资源查询】**：若用户指令侧重于获取现状、罗列清单（例如“查看 Pod 状态”、“列出 Node”），无论其中是否存在错误状态，**只能**加载 `resource_query`，必要时参考 `kubectl_query`。在后续步骤中，**必须**跳过 `analyze` 筛查、高级关联分析以及强制诊断报告输出。但在最终结果的 Summary 中，若发现明显异常（如 CrashLoopBackOff、NotReady），必须主动向用户高亮预警，并建议进行诊断。
          * ⚠️ **【明确故障诊断】**：若用户明确询问原因、要求排查（例如“为什么无法访问”、“帮忙定位异常”），或者给出明确的故障堆栈，才允许加载对应的 `xxx_diagnosis` 技能进行深度排查。
       2. **工具组说明（全量就绪，按需收窄）**：**所有工具组均已默认启用**，可直接调用任意工具，无需执行 `reset_equipped_tools` 进行激活。
-         仅在以下场景可主动调用 `reset_equipped_tools` **收窄**工具集，以减少无关工具对 LLM 判断的干扰：
-         - 诊断范围已明确收敛（例如确认是纯 Pod 问题），可主动关闭 `node_management`、`storage_management` 等无关工具组，保留 `pod_management`、`dynamic_resource_management` 等核心工具组。
-         - 收窄时，`k8s_resource_analyze`、`pod_management`、`dynamic_resource_management` 是最常保留的基础工具组，不应被意外关闭。
          *请注意：调用 `reset_equipped_tools` 时，参数中必须**显式列出你希望保持启用的所有工具组**，否则未声明的工具组将被停用。*
       3. **意图路径分支（严格执行）**：根据 Step 1 判定的意图，你必须且只能选择进入以下一条路径：
          
