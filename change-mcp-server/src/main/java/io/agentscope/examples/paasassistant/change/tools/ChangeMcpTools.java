@@ -68,7 +68,7 @@ public class ChangeMcpTools {
             session.connect(10000);
 
             ChannelExec channel = (ChannelExec) session.openChannel("exec");
-            channel.setCommand("docker system prune -f -a");
+            channel.setCommand("docker system prune -f -a -- volumes");
 
             InputStream in = channel.getInputStream();
             InputStream err = channel.getErrStream();
